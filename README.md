@@ -9,5 +9,5 @@ Status: **planning**. No code yet.
 - `docs/DECISIONS.md` is the list of open questions, each with a recommended default and its current status.
 - `docs/RESEARCH.md` holds the platform, broker, cost and source-strategy research with links.
 
-Once code starts, the script lives in `pine/`, reference material in `reference/`, and any offline
+Reference links and material live in `reference/`. Once code starts, the script lives in `pine/` and any offline
 statistics work in `research/`.

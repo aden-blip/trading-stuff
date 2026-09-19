@@ -12,6 +12,10 @@ Facts gathered for the plan, with sources. Dated 2026-09-19. Numbers change; re-
 - Premium gives 20k historical bars per chart, Bar Magnifier, Deep Backtesting, 400 alerts, and webhooks.
 - Essential and Plus have **no webhook notifications**, so Premium is the minimum for any bot.
 - Ultimate is $199.95 per month with 40k bars and 64 data requests per script instead of 40.
+- Confirmed 2026-09-19: Premium with the US stocks bundle and CME Group real-time data.
+- The CME Group real-time package is one $9.95 bundle covering CME, CBOT, COMEX and NYMEX. NQ is
+  on CME, CL on NYMEX, SI on COMEX. If a CL or SI chart shows a delayed-data badge, the bundle is
+  not what is active and the bot cannot trade those live.
 
 Sources: [TradingView pricing](https://www.tradingview.com/pricing/),
 [April 2026 price change](https://chartinglens.com/blog/tradingview-price-increase-2026),
@@ -104,7 +108,15 @@ Sources: [1,000 trade slippage data 2026](https://blog.pickmytrade.io/real-slipp
 
 ## 4. Bridges and prop-firm automation rules
 
-**PickMyTrade.** Connects TradingView alerts to Tradovate, Rithmic, ProjectX and TopstepX accounts,
+**What a bridge is.** TradingView cannot send an order to Tradovate. A strategy can only fire an
+alert, which is a text message sent to a web address. A bridge is a paid service that owns that
+address: it reads the message and places the order in your Tradovate account, moves the stop when
+a later message says so, and closes the position when told to. Without a bridge the strategy is a
+signal service you execute by hand. TradingView's built-in Tradovate panel is for manual trading only.
+
+**PickMyTrade.** $50 per month, $135 per quarter or $500 per year, unlimited alerts and accounts,
+7-day free trial with no card, and it works against Tradovate demo accounts, so nothing is paid
+until you go live. Connects TradingView alerts to Tradovate, Rithmic, ProjectX and TopstepX accounts,
 and to prop firms including Apex, Topstep and MyFundedFutures. Average execution under 200 ms.
 Its alert JSON supports: `symbol`, `data` (buy / sell / close), `quantity`, `price` for limit
 orders, `sl`, `tp`, `update_sl` and `update_tp` to modify an open position's stop or target,
@@ -119,7 +131,9 @@ trading with restrictions: no high-frequency trading, no co-location or latency 
 supported platform. Apex's current rules permit supervised alert-driven automation and ban
 unattended 24/7 bots and rented commercial EAs. Rules change; confirm with the firm in writing before running live.
 
-Sources: [PickMyTrade JSON alert fields](https://docs.pickmytrade.trade/docs/tradingview-json-alert-configuration/),
+Sources: [PickMyTrade pricing](https://pickmytrade.trade/pages/pricing/),
+[PickMyTrade Tradovate demo](https://docs.pickmytrade.trade/docs/tradovate-demo-account/),
+[PickMyTrade JSON alert fields](https://docs.pickmytrade.trade/docs/tradingview-json-alert-configuration/),
 [PickMyTrade supported prop firms](https://pickmytrade.trade/en/supported-propfirms/),
 [PickMyTrade webhook FAQ](https://pickmytrade.io/faq/tradingview-webhooks/),
 [TradersPost TradingView docs](https://docs.traderspost.io/docs/learn/signal-sources/tradingview),
@@ -131,6 +145,13 @@ Sources: [PickMyTrade JSON alert fields](https://docs.pickmytrade.trade/docs/tra
 description uses supply and demand, pivots and daily levels, with stop-loss and position-sizing
 discipline. YouTube: [@Socrates_Investments](https://www.youtube.com/@Socrates_Investments).
 Site: [socratesinvestments.com](https://socratesinvestments.com/).
+
+The six videos you pointed at are listed in `reference/links.md`. Their titles: scalping the
+Nasdaq using the VIX for entries; how he sees pivots for entries and exits; charting pivots on the
+4-hour; a live trading recap; a breakdown of the key-level pivot system; and charting the
+methodology for entry and exit points. Transcripts are blocked from this environment, so the
+rules below come from the site and the third-party write-up; the videos can correct them once you
+paste a transcript.
 
 A third-party NinjaTrader implementation of the method
 ([repository](https://github.com/izacturner95-sketch/Anthropic-claude-code-ninjatrader-SOCRATES))
@@ -159,3 +180,24 @@ that gap. Both are parked as a possible later level type (section 11 of the plan
 
 **LuxAlgo.** Helped produce the earlier script; the target ladder and ATR normalization ideas in the
 plan come from that conversation.
+
+## 6. Your own rules document (Google Drive, May 2026)
+
+Found while looking for TradeZella data: "Rebel Trades Trading Rules and Goals". Only the
+strategy-relevant lines are recorded here.
+
+- NQ, MNQ and NAS100 only at that time; no Asia session trading.
+- Size tiers: 2, 3 or 5 contracts, all with a 50-tick stop; max 5 contracts.
+- Daily loss limit $800.
+- 08:30 to 09:00 CT: TradeZella showed under a 20 % win rate with most stops hit within 2 minutes,
+  so that window was limited to one 1-contract trade with a 100-tick stop.
+- A quarter of all trades ran into profit and still closed as losers.
+- Lock out after the session ends.
+
+How the plan uses it: opening blackout (D-43), daily loss limit in dollars (D-44), optional stop
+cap in ticks (D-45), optional size-by-score tiers (D-46), staged stops to address the
+profit-then-loss pattern, and the index profile defaulting to the New York session only.
+
+The claim that CL and SIL trade best at the 19:00 CT Asia open could not be confirmed: no
+TradeZella export exists in Drive, Dropbox, Gmail or Wispr notes, and other Claude chats are not
+readable from here. D-47 asks for the export.

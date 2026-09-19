@@ -1,6 +1,17 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: PLANNING. No code yet. Version 0.2, 2026-09-19.
+Status: PLANNING. No code yet. Version 0.3, 2026-09-19.
+
+Changes in 0.3, after the second review round:
+- Premium plan confirmed with the CME Group real-time bundle. MNQ is the main contract, Tradovate Free plan.
+- Flatten is **15:55 CT** for every futures profile. Entries per profile use **allowed sessions** instead of one window.
+- Flip redesigned the way you described it: a resting limit at the target for the open size plus the
+  flip size, so one fill closes the trade and leaves the opposite position. Toggle, off by default.
+- Higher-timeframe rejection is a **bonus**, never a requirement. First tests still trade. A "level
+  history" score replaces the plain first-test score.
+- From your own rules document: an **opening blackout** for the first 30 minutes after the cash open,
+  a **daily loss limit in dollars**, an optional **stop cap in ticks**, and optional **size by score** tiers.
+- What a bridge is, and what PickMyTrade costs, in `docs/RESEARCH.md` section 4.
 
 Changes in 0.2, after the first review round:
 - "Fade" is now **reversal trade (REV)**. The close-and-go-the-other-way feature at a target is now **flip**, so the two never get confused.
@@ -60,8 +71,8 @@ One TradingView Pine Script v6 **strategy** that:
 
 | Constraint | Value | Consequence for us |
 |---|---|---|
-| Your plan | Premium-tier features (your price matches Premium monthly plus data add-ons; confirm in D-01) | 20k bars per chart, Bar Magnifier, Deep Backtesting, 400 alerts, webhooks. Plus and Essential have **no webhooks**, so Premium is the minimum for a bot. |
-| Real-time CME data | Separate add-on on TradingView | Without it the chart is 10 minutes delayed and every alert is late. Confirm it is active (D-01). |
+| Your plan | Premium, confirmed, with the US stocks bundle and CME Group real-time data | 20k bars per chart, Bar Magnifier, Deep Backtesting, 400 alerts, webhooks. |
+| Real-time CME data | The $9.95 CME Group bundle covers CME, CBOT, COMEX and NYMEX | NQ trades on CME, CL on NYMEX, SI on COMEX. Open a CL and an SI chart once and make sure neither shows a delayed-data badge (D-01). |
 | `request.*()` calls per script | 40 | Every higher-timeframe level group, MTF check, and breadth symbol costs one call. Budget in 4.1. |
 | Intraday history | 20k bars on Premium; Deep Backtesting runs a strategy over all history | On a 5-minute chart 20k bars is about 3.5 months of NQ. Deep Backtesting extends that to years for statistics. |
 | Bar Magnifier | Available on Premium | The backtest can use 1-minute data inside each 5-minute bar, so "hit target and stop in the same bar" is resolved properly. |
@@ -249,7 +260,10 @@ Two more entry triggers are planned as options, not defaults:
 
 Stop (D-22): the far edge of the zone plus `stopBuffer`, default 0.03 daily ATR with a 4-tick floor
 (about 9 NQ points on a 300-point ATR day). Options: the rejection bar's extreme, or the farther of
-the two. Ladder: the next zones in the bounce direction, skipping any closer than `minTargetDist`.
+the two. A separate cap, `maxStopTicks` (default 0 = off), rejects any setup whose stop would be
+wider than that many ticks. Your manual habit is a 50-tick stop on MNQ; a bot that enters one bar
+later than you do needs more room, so the right number comes out of the backtests (D-45).
+Ladder: the next zones in the bounce direction, skipping any closer than `minTargetDist`.
 
 **BRK (zone fails).**
 
@@ -276,12 +290,13 @@ TP1 distance  >= minTargetDist
 |---|---|---|
 | Reliability | 0 to 40 | `rankPct * 0.4`, using hold-rank for REV and break-rank for BRK; unknown type = 20 |
 | Stack | 0 to 20 | 1 member = 5, 2 = 12, 3 or more = 20 |
-| First test | 0 to 15 | fresh = 15, touched once = 7, more = 0 |
-| HTF rejection | 0 to 15 | timeframes among 5m / 15m / 1h / 4h whose last completed candle rejected the same zone: 0 = 0, 1 = 7, 2 = 12, 3 or more = 15 |
-| Bias | 0 to 10 | with bias = 10, neutral = 5, against = 0 |
+| Level history today | 0 to 15 | fresh, first test = 12; already rejected cleanly today (classifier said HELD) = 15; touched with no verdict = 6; broken through earlier today = 3 |
+| HTF rejection | 0 to 10 | timeframes among 5m / 15m / 1h / 4h whose last completed candle rejected the same zone: 0 = 0, 1 = 5, 2 = 8, 3 or more = 10. A bonus, never a requirement. |
+| Bias | 0 to 15 | with bias = 15, neutral = 7, against = 0 |
 
-`minScore` default 60. Weights are inputs. The label shows the total and the HTF count,
-for example `REV PDL+AL  S 78  HTF 2/4`.
+`minScore` default 60. Weights are inputs. A fresh level of a top-ranked type with no
+higher-timeframe help and neutral bias scores 40 + 5 + 12 + 0 + 7 = 64, so first tests trade on
+their own. The label shows the total and the HTF count, for example `REV PDL+AL  S 78  HTF 1/4`.
 
 ### 4.6 [F] Filters
 
@@ -289,14 +304,20 @@ for example `REV PDL+AL  S 78  HTF 2/4`.
   `chopMinutes` (default 30), converted to bars from the chart timeframe. If highest minus lowest
   over the window is within the band, chop is ON and the band is frozen. Chop turns OFF on the first
   close outside the frozen band. No entries while ON. We tune this after the first backtests (D-28).
-- **Time window.** Entries allowed between `entryStart` and `entryEnd`, from the instrument profile
-  (section 5.2). For 24/7 symbols the window can be disabled.
-- **Flatten.** At `flattenTime` close everything and cancel orders. Index default pending D-10.
+- **Allowed sessions.** Three checkboxes, Asia / London / New York, plus an optional custom window.
+  Entries only inside a checked session. Index profile default: New York only. Energy and metals:
+  all three, since you trade them at any time. For 24/7 symbols the filter can be disabled.
+- **Entry cutoff.** No new entries after `entryCutoff`, default 15:00 CT, so a trade has time to work before the flatten.
+- **Opening blackout.** No entries for `openingBlackoutMin` minutes after the New York open, default
+  30 (08:30 to 09:00 CT). Your own stats put that window under a 20 % win rate with most stops hit
+  within 2 minutes (D-43).
+- **Flatten.** At `flattenTime` close everything and cancel orders. **15:55 CT** for every futures profile (D-10).
 - **News blackout (new, D-40).** No entries from `blackoutBefore` to `blackoutAfter` minutes around
   the times in a text input. Default `07:30, 09:00` CT, 2 minutes before and 5 after, ON.
   Energy profile adds Wednesday 09:30 CT. Tradovate aggregates data during bursts and slippage is
   4 to 8 ticks on news days, so this protects both the fills and the stats.
-- **Caps.** `maxSignalsPerDay` (default 4), `maxLossesPerDay` (default 2, 0 = off), one open position.
+- **Caps.** `maxSignalsPerDay` (default 4), `maxLossesPerDay` (default 2, 0 = off), `maxDailyLossUSD`
+  (default 800, 0 = off, from your rules), one open position. Once a cap trips, no entries until the next daily rollover.
 - **Re-entry.** After a stop-out the same zone is blocked for `cooldownBars` (default 12), and at
   most one re-entry per zone per day.
 - **Geometry.** `minRR` (default 1.0), `minTargetDist` (default 0.15 daily ATR, floor 10 ticks),
@@ -344,13 +365,23 @@ P4H 19,940, PDH 20,010.
 touch of TP1, and at that same bar move the stop on the remainder to entry plus cushion, so no
 risk remains on the trade. The remainder then follows the ladder. Needs at least 2 contracts.
 
-**Flip** (D-35, built in M7, OFF until it passes its tests). On a soft-target exit, if the target
-zone is REV-eligible in the opposite direction and a normal REV setup (same rejection rules, same
-minimum score) is present there on this bar, open the opposite trade with `flipQtyMult` times the
-base size, targeting the ladder back the way we came. It is simply the next reversal trade, allowed
-to start on the same bar our exit happens. Example: short from PDH 20,010 down to MO 19,900; MO
-rejects with a qualifying wick; the short exits and a long opens from 19,900 with 1.5x size,
-targeting 20,010.
+**Flip** (D-35, toggle, OFF by default, built in M7). Your version: long 2 MNQ toward a target,
+and a resting **limit order for 4 MNQ** sits at the target. When price touches the target the limit
+fills, the 2 long are closed at the level, and you are short 2 from the level, targeting the ladder
+back the way you came. Inputs: `flipEnabled`, `flipQty` (net size of the new position, default =
+base size), so the limit is always `open size + flipQty`.
+
+Rules around it:
+
+- The flip limit is armed only when the target zone is REV-eligible in the opposite direction and
+  the would-be flip trade clears `minScore` with its confirmation component unknown. At a weak
+  target the normal soft-target and ladder logic runs instead.
+- While a flip limit is armed, TP1 for that trade is hard (the limit itself), so there is no
+  promotion at TP1. That is the trade-off: a level that rips through fills the flip, and the new
+  position stops out quickly off the level for a small loss instead of riding the ladder.
+- Option `flipConfirmed` (OFF by default): wait for the rejection bar plus follow-through at the
+  target, like a normal REV entry, instead of resting a limit. Later fill, fewer rip-through losses.
+- The flipped position is a normal REV trade from then on: stop off the level, staged stops, its own ladder.
 
 Flatten: `flattenTime` closes everything.
 
@@ -366,7 +397,8 @@ Your higher-timeframe read is about what the candles do at the level, so that is
 - **HTF rejection (primary).** For each of 5m, 15m, 1h, 4h, fetch the last *completed* candle
   (`[1]`, lookahead on). If it traded into the current zone and closed back on the approach side
   with a wick of at least `htfWickRatio` (default 0.4) of its range, that timeframe counts as a
-  rejection. The count feeds the score (4.5) and the label.
+  rejection. The count feeds the score (4.5) and the label. It is a bonus: a first test with no
+  higher-timeframe help still trades.
 - **Trend votes (optional, OFF by default).** Close above or below EMA(`mtfEmaLen`, default 50) on
   each timeframe; `minVotes` aligned required. Kept for anyone who wants a trend gate.
 
@@ -402,7 +434,8 @@ Bias = majority of the enabled sources; a tie is neutral.
 ```
 
 Events: ENTRY, STOP_MOVE (`update_sl`), TP_PROMOTE (`update_sl`), PARTIAL (close with quantity),
-EXIT (close), FLATTEN (close), FLIP (close then opposite entry). Exact field names get verified
+EXIT (close), FLATTEN (close), FLIP (one resting limit for open size plus `flipQty`, or close then
+opposite entry in confirmed mode). Exact field names get verified
 against the bridge on a Tradovate sim account in M4.
 
 ---
@@ -421,12 +454,17 @@ against the bridge on a Tradovate sim account in M4.
 
 Detected from the symbol root, overridable with an input. Times in CT (NY in brackets).
 
-| Profile | Symbols | Main session (NH/NL/NO) | Entry window | Flatten | VIX / Mag 7 | Notes |
-|---|---|---|---|---|---|---|
-| Index | NQ, MNQ, ES, MES | 08:30 to 15:00 (09:30 to 16:00) | 08:30 to 14:30 | 14:55 proposed, see D-10 | NQ / MNQ only | Cash close 15:00 CT, futures close 16:00 CT |
-| Energy | CL, MCL | 08:00 to 13:30 (09:00 to 14:30) | 08:00 to 13:00 | 13:25 | off | Settlement 13:30 CT. EIA report Wednesday 09:30 CT |
-| Metals | SI, SIL, GC, MGC | 07:20 to 12:30 (08:20 to 13:30) | 07:20 to 12:00 | 12:20 | off | Silver settles 12:25 CT, gold 12:30 CT |
-| Generic | anything else | 08:30 to 15:00 | 08:30 to 14:30 | 14:55 | off | Crypto: window and flatten off |
+| Profile | Symbols | Main session (NH/NL/NO) | Allowed sessions | Entry cutoff | Flatten | VIX / Mag 7 | Notes |
+|---|---|---|---|---|---|---|---|
+| Index | NQ, MNQ, ES, MES | 08:30 to 15:00 (09:30 to 16:00) | New York | 15:00 | 15:55 | NQ / MNQ only | Opening blackout 08:30 to 09:00. Cash close 15:00 CT, futures close 16:00 CT |
+| Energy | CL, MCL | 08:00 to 13:30 (09:00 to 14:30) | Asia, London, New York | 15:00 | 15:55 | off | Settlement 13:30 CT. EIA report Wednesday 09:30 CT is in the news blackout |
+| Metals | SI, SIL, GC, MGC | 07:20 to 12:30 (08:20 to 13:30) | Asia, London, New York | 15:00 | 15:55 | off | Silver settles 12:25 CT, gold 12:30 CT |
+| Generic | anything else | 08:30 to 15:00 | New York | 15:00 | 15:55 | off | Crypto: sessions and flatten off |
+
+Your May rules said no Asia trading on NQ, which is why the index profile defaults to New York only.
+Your best-hours claim for CL and SIL at the 19:00 CT Asia open could not be confirmed (D-47), so the
+energy and metals profiles allow every session until we have numbers. The stats table reports P&L
+per session so the bot's own results can settle it.
 
 Cost defaults per profile are in `docs/RESEARCH.md`; they go into the strategy Properties, which
 Pine cannot set per symbol from an input.
@@ -461,6 +499,7 @@ an offline study later if we want more (M8).
 | REV | wickRatio / minBarATR | 0.5 / 0.6 | ratio / exec ATR |
 | REV | strongSkip | OFF | |
 | REV | stopBuffer (off the level) | 0.03 / 4 | daily ATR / ticks |
+| REV | maxStopTicks | 0 (off) | ticks |
 | BRK | minBreakBodyATR | 0.5 | exec ATR |
 | BRK | retestBars | 6 | execution bars |
 | Filters | minScore | 60 | points |
@@ -468,15 +507,19 @@ an offline study later if we want more (M8).
 | Filters | minTargetDist | 0.15 / 10 | daily ATR / ticks |
 | Filters | maxRiskATR | 0.35 | daily ATR |
 | Filters | chopPct / chopMinutes | 0.25 % / 30 | percent / minutes |
-| Filters | entry window / flatten | per profile | CT |
+| Filters | allowed sessions / entry cutoff / flatten | per profile / 15:00 / 15:55 | CT |
 | Filters | news blackout | 07:30, 09:00 CT, 2 before / 5 after | minutes |
-| Filters | maxSignalsPerDay / maxLossesPerDay | 4 / 2 | count |
+| Filters | openingBlackoutMin | 30 | minutes |
+| Filters | maxSignalsPerDay / maxLossesPerDay / maxDailyLossUSD | 4 / 2 / 800 | count / count / dollars |
 | Manager | stage thresholds | 0.5 / 1.0 / 1.5 | R |
 | Manager | beTicks / beATR | 2 / 0.02 | ticks / exec ATR |
 | Manager | structLookback / structATR / chaseATR | 5 / 0.5 / 2.0 | bars / exec ATR |
 | Manager | maxLadder / contConfirm | 4 / 0.03 | levels / daily ATR |
 | Manager | partials / partialPct | OFF / 50 | percent |
-| Manager | flip / flipQtyMult | OFF / 1.5 | multiplier |
+| Manager | flip / flipQty / flipConfirmed | OFF / base size / OFF | contracts |
+| Sizing | baseQty | 2 | contracts |
+| Sizing | sizeByScore tiers (60 to 69 / 70 to 84 / 85 and up) | OFF (2 / 3 / 5) | contracts |
+| Score | weights: reliability / stack / level history / HTF / bias | 40 / 20 / 15 / 10 / 15 | points |
 | HTF | timeframes / htfWickRatio | 5, 15, 60, 240 / 0.4 | minutes / ratio |
 | HTF | trend votes | OFF | |
 | Costs | commission / slippage | per profile, see RESEARCH.md | per side / ticks |
@@ -540,6 +583,8 @@ the LuxAlgo output, links).
 - **Two data feeds.** Alerts fire on TradingView's CME feed; orders fill on Tradovate's. Small mismatches are normal, larger ones happen during news bursts when Tradovate aggregates data. The news blackout and 2-tick slippage setting account for this.
 - **Prop-firm rules.** Apex and Topstep allow supervised automation, not unattended bots. Rules change; confirm with the firm before running live.
 - **Live stop modification** depends on the bridge. PickMyTrade documents `update_sl`; M4 verifies it on a sim account.
+- **Your own numbers.** Your May rules note that a quarter of your trades ran into profit and still
+  closed as losers. The staged stops exist for exactly that; keep them on when comparing backtests to your manual results.
 
 ---
 
