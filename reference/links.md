@@ -13,6 +13,16 @@
 
 Channel: https://www.youtube.com/@Socrates_Investments. More recent material is on Facebook.
 
+## Socrates Investments, Facebook reels (provided 2026-09-19)
+
+- https://www.facebook.com/share/r/1bSqw2QyrT/?mibextid=wwXIfr
+- https://www.facebook.com/share/r/1Eb71aigqi/?mibextid=wwXIfr
+- https://www.facebook.com/share/r/1CAR8GsNnh/?mibextid=wwXIfr
+
+Facebook shows a login wall to anything automated, so these cannot be read from the build
+environment. To get a reel's content into the plan, paste the caption text and a short note of
+what he says or shows, or a screenshot, into this folder as `fb_<number>.md` or `fb_<number>.png`.
+
 Transcripts could not be downloaded from the build environment (YouTube blocks it). To get a
 video's rules into the plan: open the video, click "...more" under it, click "Show transcript",
 select all, and paste into a file here named `transcript_<number>.txt`.
