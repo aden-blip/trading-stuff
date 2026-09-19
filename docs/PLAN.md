@@ -1,6 +1,18 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: PLANNING. No code yet. Version 0.3, 2026-09-19.
+Status: PLANNING. No code yet. Version 0.4, 2026-09-19.
+
+Changes in 0.4, after the third review round:
+- Daily caps are all **off for backtesting** and stay available as settings: signal count, loss count,
+  and a loss limit as a **percent of account** instead of dollars. A daily **profit target in percent**
+  only blocks new entries; it never closes a running trade.
+- Cooldown after a stop-out is measured in **minutes**, not candles, so it means the same thing on every timeframe.
+- Level-type ranking affects the **score only** until we have enough data; the hard split into
+  reversal-only and break-only types is a switch you turn on after research.
+- Opening blackout confirmed: skip the trades, no reduced-size variant.
+- Stop cap and size-by-score stay off until backtesting says otherwise.
+- New **backtest log** (`docs/BACKTEST_LOG.md`) with a rule in `CLAUDE.md` that every backtest session gets an entry.
+- Optional **thin-market filter** for CL and SI when volume dries up.
 
 Changes in 0.3, after the second review round:
 - Premium plan confirmed with the CME Group real-time bundle. MNQ is the main contract, Tradovate Free plan.
@@ -220,12 +232,14 @@ then type those into the `priorRate` / `priorN` inputs so the live chart starts 
 An offline study on downloaded data is the stronger version of the same idea and is optional (M8).
 
 Ranking: sort types by `holdRate` descending. `rankPct` is the percentile position (top = 100).
-Eligibility (D-24, default):
 
-- REV-eligible: type in the top half by rank, or fewer than `minSamples` interactions
-  (unknown types are allowed but score lower).
-- BRK-eligible: type in the bottom half, or unknown.
-- Strict mode (option): exact halves only, unknown types trade nothing.
+Eligibility (D-24). Default `rankGate = OFF`: every level type may be traded both ways and the
+ranking only moves the score, so a type that keeps breaking scores low for reversals and high for
+breaks without being banned. `rankGate = ON` is the switch for after the research: top half by hold
+rate may be traded as reversals only, bottom half as breaks only, types with fewer than
+`minSamples` interactions allowed both ways. Your starting belief that 4-hour highs and lows are the
+strongest becomes the seed for the priors once we have measured it (Deep Backtesting run, then the
+TradeZella export if it arrives).
 
 Table (toggle): type, N, hold %, break %, rank, preferred (REV / BRK), trades, win %, net P&L.
 Footer: REV versus BRK totals.
@@ -310,16 +324,22 @@ their own. The label shows the total and the HTF count, for example `REV PDL+AL 
 - **Entry cutoff.** No new entries after `entryCutoff`, default 15:00 CT, so a trade has time to work before the flatten.
 - **Opening blackout.** No entries for `openingBlackoutMin` minutes after the New York open, default
   30 (08:30 to 09:00 CT). Your own stats put that window under a 20 % win rate with most stops hit
-  within 2 minutes (D-43).
+  within 2 minutes, and you would rather skip that trade than shrink it (D-43).
 - **Flatten.** At `flattenTime` close everything and cancel orders. **15:55 CT** for every futures profile (D-10).
 - **News blackout (new, D-40).** No entries from `blackoutBefore` to `blackoutAfter` minutes around
   the times in a text input. Default `07:30, 09:00` CT, 2 minutes before and 5 after, ON.
   Energy profile adds Wednesday 09:30 CT. Tradovate aggregates data during bursts and slippage is
   4 to 8 ticks on news days, so this protects both the fills and the stats.
-- **Caps.** `maxSignalsPerDay` (default 4), `maxLossesPerDay` (default 2, 0 = off), `maxDailyLossUSD`
-  (default 800, 0 = off, from your rules), one open position. Once a cap trips, no entries until the next daily rollover.
-- **Re-entry.** After a stop-out the same zone is blocked for `cooldownBars` (default 12), and at
-  most one re-entry per zone per day.
+- **Caps, all OFF for backtesting, all available as settings.** `maxSignalsPerDay` (0 = off),
+  `maxLossesPerDay` (0 = off), `maxDailyLossPct` (percent of account, 0 = off; you want 2 to 3 % once
+  live), `dailyTargetPct` (0 = off; you want 3 to 5 % once live). A tripped cap blocks new entries
+  until the next daily rollover. The profit target **never closes an open trade**: a trade that is
+  trailing keeps trailing past the target. One open position at a time always.
+- **Re-entry.** After a stop-out the same zone is blocked for `cooldownMinutes` (default 12, which is
+  12 candles on the 1-minute chart and about 2 on the 5-minute), and at most one re-entry per zone per day.
+- **Thin-market filter (option, OFF).** Skip entries when the last 20 candles' volume is below
+  `thinVolumePct` of the same window's 20-day average (default 40 %). Meant for CL and SI when the
+  1-minute chart gets unreadable on low volume (D-49).
 - **Geometry.** `minRR` (default 1.0), `minTargetDist` (default 0.15 daily ATR, floor 10 ticks),
   `maxRiskATR` (default 0.35 daily ATR).
 - **Bias gate (option).** ON: only trade in the bias direction. OFF (default): bias only affects the score.
@@ -510,7 +530,11 @@ an offline study later if we want more (M8).
 | Filters | allowed sessions / entry cutoff / flatten | per profile / 15:00 / 15:55 | CT |
 | Filters | news blackout | 07:30, 09:00 CT, 2 before / 5 after | minutes |
 | Filters | openingBlackoutMin | 30 | minutes |
-| Filters | maxSignalsPerDay / maxLossesPerDay / maxDailyLossUSD | 4 / 2 / 800 | count / count / dollars |
+| Filters | maxSignalsPerDay / maxLossesPerDay | 0 (off) / 0 (off) | count |
+| Filters | maxDailyLossPct / dailyTargetPct | 0 (off) / 0 (off), later 2 to 3 / 3 to 5 | percent of account |
+| Filters | cooldownMinutes | 12 | minutes |
+| Filters | thinMarket / thinVolumePct | OFF / 40 | percent |
+| Stats | rankGate / minSamples | OFF / 30 | switch / interactions |
 | Manager | stage thresholds | 0.5 / 1.0 / 1.5 | R |
 | Manager | beTicks / beATR | 2 / 0.02 | ticks / exec ATR |
 | Manager | structLookback / structATR / chaseATR | 5 / 0.5 / 2.0 | bars / exec ATR |
@@ -556,6 +580,10 @@ the LuxAlgo output, links).
 - I write Pine here; you compile in TradingView. When it fails, paste the first error line with its
   line number. When it runs, send a screenshot of one session.
 - Each milestone ships with a checklist. We do not start the next until the checklist passes on NQ or MNQ.
+- **Every backtest session gets a log entry** in `docs/BACKTEST_LOG.md`: settings used, symbol and
+  dates, the headline stats, what went wrong, and what we changed before the next session. I write
+  the entry from what you report and ask for anything missing. `CLAUDE.md` in the repo root carries
+  this rule so any future session follows it.
 - One file, module headers from section 3, every parameter an input.
 - Defaults are frozen per instrument profile, never per symbol, to limit overfitting.
 

@@ -6,18 +6,18 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Round 1 and round 2 answered 2026-09-19. Waiting on you: D-19, D-20, D-24, D-30, D-31, D-36,
-D-43, D-45, D-46, D-47, plus the CL / SI data check in D-01.
+Rounds 1 to 3 answered 2026-09-19. Waiting on you: only D-47 (the TradeZella export) and the
+beta script in D-39. Everything else is decided or at a default you have accepted.
 
 ---
 
 ## A. Platform and execution
 
-### D-01  TradingView plan and data  (DECIDED, one check left)
+### D-01  TradingView plan and data  (DECIDED)
 **Answer:** Premium, with the US stocks bundle and CME Group real-time data. That gives 20k bars,
-Bar Magnifier, Deep Backtesting and webhooks. The $9.95 CME Group bundle covers CME, CBOT, COMEX
-and NYMEX. One check: NQ trades on CME but CL is NYMEX and SI is COMEX, so open a CL chart and an
-SI chart once and confirm neither shows a delayed-data badge. If either does, the bot cannot trade it live.
+Bar Magnifier, Deep Backtesting and webhooks. CL and SI confirmed real-time. You noted the 1-minute
+chart on CL and SI gets hard to read in low volume; the bot runs on 5-minute candles, and an
+optional thin-market filter exists for those symbols (D-49).
 
 ### D-02  One script or two  (DEFAULT)
 **Default:** one strategy script with display toggles. M1 to M3 ship as an indicator anyway.
@@ -98,17 +98,18 @@ trailing stop. Never entries, not drawn unless active as TP1 or TP2.
 **Answer:** rejection bar plus follow-through bar on the execution timeframe, rejection may extend
 past the level. Later options: higher-timeframe rejection with a 1-minute trigger (M6), sweep-reclaim-retest (M7).
 
-### D-19  Rejection candle thresholds  (DEFAULT, open for the next round)
-Wick at least 50 % of the bar range, bar range at least 0.6 execution ATRs, engulfing = body
-engulfs the prior body.
-**Default:** as stated.
-**Answer:**
+### D-19  Rejection candle thresholds  (DECIDED)
+**Answer:** as proposed. Wick at least 50 % of the candle, candle range at least 0.6 of the
+5-minute ATR, engulfing means the body covers the prior body.
 
-### D-20  Break entry details  (DEFAULT, open for the next round)
-Enter on the bar after the closing break, or wait for a retest? If a bar closes back inside the
-level before TP1, exit at once (default) or wait for the stop?
-**Default:** immediate entry, failed-break exit ON, retest mode as an option.
-**Answer:**
+### D-20  Break entry details  (DECIDED at default, explained in chat)
+**Answer:** A break trade starts when a 5-minute candle closes through a level by more than the
+confirmation distance, not when it merely wicks through. Entry happens at the open of the next
+candle. If a later candle closes back on the wrong side of the level before the first target, the
+trade exits right there instead of waiting for the stop, since the break has failed. The retest
+option waits for price to come back to the level after the break and buys or sells there with a
+limit order; later entry, fewer fake-outs, sometimes no fill. Default stays immediate entry with
+the failed-break exit on; retest is a switch.
 
 ### D-21  Execution timeframe  (DECIDED)
 **Answer:** 5-minute. 1-minute trigger mode later (D-42).
@@ -123,11 +124,13 @@ level before TP1, exit at once (default) or wait for the stop?
 ### D-23  Where the hold / break statistics come from  (DECIDED)
 **Answer:** live counters, then one Deep Backtesting run to seed the priors. Offline study optional.
 
-### D-24  REV versus BRK eligibility rule  (DEFAULT, open for the next round)
-Rank types by hold rate; top half may be traded as reversals, bottom half as breaks, unknown types
-(fewer than 10 samples) either at a lower score. Or strict halves only.
-**Default:** halves with unknowns allowed.
-**Answer:**
+### D-24  REV versus BRK eligibility rule  (DECIDED)
+**Answer:** You read it right: this is about measuring which level types hold most often so the
+bot leans on those for reversals and trades the weaker ones as breaks. You believe 4-hour highs and
+lows are the strongest and want research before anything is locked. Recorded as `rankGate = OFF`
+by default: every level type may be traded both ways and the measured ranking only moves the score.
+The hard split becomes a switch to turn on after the Deep Backtesting run and, if it arrives, the
+TradeZella export. Your 4-hour belief seeds the priors once measured.
 
 ### D-25  Score weights and minimum  (DECIDED, revised)
 **Answer:** Reliability 40, stack 20, level history 15, HTF rejection 10, bias 15, minimum 60.
@@ -153,17 +156,16 @@ zone adds up to 10 points. First tests are still taken. EMA trend votes exist as
 ### D-29  Bias sources  (DECIDED)
 **Answer:** opens, Mag 7 and VIX on for NQ/MNQ, off automatically on other symbols, sector breadth off, score only.
 
-### D-30  Daily caps and re-entry  (DEFAULT, open for the next round)
-Max 4 signals per day, max 2 losses per day, daily loss limit $800 (D-44), one position at a time,
-12-bar cooldown on a zone after a stop-out, one re-entry per zone per day.
-**Default:** as stated.
-**Answer:**
+### D-30  Daily caps and re-entry  (DECIDED)
+**Answer:** For backtesting, all caps off: no signal count, no loss count, no dollar limit. Each
+stays in the settings for later. Loss and profit limits are a percent of the account (D-44). The
+cooldown after a stop-out is now measured in minutes, default 12, since 12 candles on a 15-minute
+chart would skip good entries; you had the 1-minute chart in mind. One re-entry per zone per day
+stays. One open position at a time stays.
 
-### D-31  Trade geometry minimums  (DEFAULT, open for the next round)
-Min reward-to-risk 1.0, min distance to TP1 0.15 daily ATR (about 45 NQ points on a 300-point ATR
-day), max stop 0.35 daily ATR plus the optional tick cap in D-45.
-**Default:** as stated.
-**Answer:**
+### D-31  Trade geometry minimums  (DECIDED at default)
+**Answer:** not objected to. Min reward-to-risk 1.0, target at least 0.15 daily ATR away, max stop
+0.35 daily ATR, tick cap off (D-45).
 
 ---
 
@@ -188,11 +190,12 @@ long and leaves a 2 MNQ short from the level. Inputs `flipEnabled` (OFF by defau
 
 ## H. Output and workflow
 
-### D-36  Chart cleanliness  (DEFAULT, open for the next round)
-Draw only zones within 1 daily ATR of price, short right-edge codes, touched zones dimmed, stats
-table top-right with an off switch, small management markers.
-**Default:** as stated.
-**Answer:**
+### D-36  Chart cleanliness  (DECIDED at default, explained in chat)
+**Answer:** In plain words: the script only draws levels that are near the current price, roughly
+one average day's range above and below, so the chart is not covered in lines. Each line gets a
+two- or three-letter tag at its right end, such as PDH or MO, instead of long text. A level price
+has already touched today is drawn fainter. The statistics box sits in the top-right corner and can
+be hidden. Small triangles and diamonds mark stop moves and target promotions. All of it has toggles.
 
 ### D-37  Alert content  (DEFAULT)
 **Default:** PickMyTrade field names plus our own logging fields (plan 4.10).
@@ -223,37 +226,49 @@ entry cutoff 15:00 CT, flatten 15:55 CT. Best-hours claim in D-47.
 
 ---
 
+## K. New in round 3
+
+### D-48  Backtest log  (DECIDED)
+Your ask: after each backtesting session, record how the version reacted, its stats, issues, and
+the changes made between sessions, so problems get diagnosed instead of guessed at.
+**Answer:** `docs/BACKTEST_LOG.md` holds a template with those fields. `CLAUDE.md` in the repo root
+tells every Claude session to write an entry after each backtest and to ask for missing fields.
+I will prompt you for the numbers each time you report a session.
+
+### D-49  Thin-market filter for CL and SI  (DEFAULT)
+Low-volume periods make the 1-minute chart on CL and SI hard to read. Optional filter: skip entries
+when the last 20 candles' volume is under 40 % of that window's 20-day average.
+**Default:** OFF; try it in backtesting on CL and SI.
+
+---
+
 ## J. New in round 2, from your May rules document
 
-### D-43  Opening blackout  (OPEN)
-Your rules restrict 08:30 to 09:00 CT to one small trade with a wide stop because TradeZella showed
-under a 20 % win rate there with most stops hit within 2 minutes. The simplest bot version is no
-entries for the first 30 minutes after the cash open. A later option can allow one reduced-size
-trade instead.
-**Default:** ON, 30 minutes, index profile only.
-**Answer:**
+### D-43  Opening blackout  (DECIDED)
+**Answer:** ON, 30 minutes after the cash open, index profile. You would rather remove the losing
+trade than shrink it, so there is no reduced-size variant.
 
-### D-44  Daily loss limit in dollars  (DEFAULT)
-From your rules: $800 per day. Once hit, no entries until the next rollover.
-**Default:** 800, adjustable, 0 = off.
+### D-44  Daily loss and profit limits  (DECIDED)
+**Answer:** The $800 figure is relative to account size, so it is gone. Replaced by two percent
+inputs: `maxDailyLossPct` and `dailyTargetPct`, both OFF for backtesting. Once live you want a loss
+limit of 2 to 3 % and a target of 3 to 5 %. The target only stops new entries; a trade that is
+already trailing keeps running, so a big winner is never cut short by the target.
 
-### D-45  Stop cap in ticks  (OPEN)
-Your manual stop is 50 ticks on MNQ. The bot's stop sits off the level, and its entry comes one
-bar later than yours, so 50 will reject most setups. Proposal: no cap until the first backtest, then
-set the cap where the backtest shows stops stop paying for themselves. Or name a number now.
-**Default:** off, then tuned.
-**Answer:**
+### D-45  Stop cap in ticks  (DECIDED)
+**Answer:** The 50-tick stop belonged to a different strategy. Cap stays off until backtests show
+what stop sizes pay; nothing is set in stone before that.
 
-### D-46  Size by score  (OPEN)
-Your 2 / 3 / 5 contract tiers mapped to score bands 60 to 69, 70 to 84, 85 and up. Fits "more size
-on more conviction". Max 5 contracts as in your rules.
-**Default:** OFF, fixed 2.
-**Answer:**
+### D-46  Size by score  (DECIDED)
+**Answer:** You like the idea. Standard fixed sizing for now, size-by-score stays in the settings
+to experiment with during backtesting.
 
 ### D-47  TradeZella export  (OPEN)
-No TradeZella data exists in your Drive, Dropbox, Gmail or Wispr notes, and I cannot see your other
-Claude chats. Export your trades from TradeZella as a CSV and drop it into `reference/` and I will
-compute win rate and P&L by symbol, session and hour, which settles the CL / SIL Asia-open question
-and tunes the allowed-sessions defaults.
+Second search 2026-09-19: checked Gmail attachments, Dropbox, Google Drive spreadsheets, your Claude
+artifacts and docs, and your Claude Code session list. Nothing holds your TradeZella trades. The
+only trade log in Drive is "Copy of Daryl's Trades", which is another trader's journal template.
+The chat where you uploaded the trades is a claude.ai conversation, and those are not reachable
+from a Claude Code session. Two ways forward: export again from TradeZella (Trades, then Export CSV)
+and add the file to `reference/` through GitHub's upload button, or paste the stats that chat
+produced here as text. Either way I compute win rate and P&L by symbol, session and hour.
 **Default:** none; profiles stay as proposed.
 **Answer:**

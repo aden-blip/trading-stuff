@@ -198,6 +198,8 @@ How the plan uses it: opening blackout (D-43), daily loss limit in dollars (D-44
 cap in ticks (D-45), optional size-by-score tiers (D-46), staged stops to address the
 profit-then-loss pattern, and the index profile defaulting to the New York session only.
 
-The claim that CL and SIL trade best at the 19:00 CT Asia open could not be confirmed: no
-TradeZella export exists in Drive, Dropbox, Gmail or Wispr notes, and other Claude chats are not
-readable from here. D-47 asks for the export.
+The claim that CL and SIL trade best at the 19:00 CT Asia open could not be confirmed. Two
+searches on 2026-09-19 covered Drive, Dropbox, Gmail attachments, Wispr notes, Claude artifacts and
+docs, and the Claude Code session list. The only trade log found, "Copy of Daryl's Trades" in Drive,
+is another trader's journal template, not your data. The chat where the trades were uploaded is a
+claude.ai conversation, which is not readable from a Claude Code session. D-47 asks for the export.
