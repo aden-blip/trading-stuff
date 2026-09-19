@@ -6,7 +6,7 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Rounds 1 to 5 answered 2026-09-19. Waiting on you: the Facebook reels (D-39) if you want them in, and the optional beta script.
+Rounds 1 to 6 answered 2026-09-19. Planning is complete. Nothing is waiting on you; the beta script stays optional.
 
 ---
 
@@ -205,9 +205,8 @@ has been relevant. The statistics box sits in the top-right corner and can be hi
 ### D-39  Reference material  (DECIDED)
 **Answer:** All six YouTube transcripts received on 2026-09-19 and saved under
 `reference/transcripts/`. The rules they contain are folded into the plan (D-51 to D-55) and listed
-in `docs/RESEARCH.md` section 5. The three Facebook reels cannot be read from this session and there
-is no browser here to sign into; a screen recording with sound, uploaded to Google Drive or Dropbox,
-can be transcribed from here. The beta script remains optional.
+in `docs/RESEARCH.md` section 5. The three Facebook reels are closed as not needed: you judged the
+YouTube material covers the method. The beta script remains optional.
 
 ---
 
@@ -249,7 +248,8 @@ going to move, the volume's not there it's not going to move"; holding through t
 "if the volume is following suit". The plan had no volume check. Added: a reversal entry needs the
 follow-through bar's volume at or above the 20-bar average (multiplier input), and ladder promotion
 needs the close-through bar's volume at or above the same average.
-**Default:** both ON, multiplier 1.0. Turn off to compare in backtests.
+**Default:** both ON on the Index profile (NQ, MNQ, ES, MES), OFF on energy, metals and generic,
+multiplier 1.0. Your call from round 6: the volume rule is for NQ and MNQ only. Turn off to compare in backtests.
 
 ### D-53  Break then retest at daily levels  (NOTED)
 He says his go-to is "waiting for a daily high or a daily open, we would retest that, and then we
@@ -276,12 +276,14 @@ separate input from `maxLossesPerDay`, since his rule is consecutive.
 
 ## L. New in round 4
 
-### D-50  Break trades are optional  (DECIDED)
+### D-50  Break trades are optional, and retest-only  (DECIDED)
 Your point: the strategy is taking the trade off a pivot and trailing it to the target, so break
 entries do not really fit. Agreed. A level that price rips through is already handled by the target
 ladder, which keeps a running reversal trade alive through the level. A standalone break entry only
 matters when we happen to be flat, so it becomes a switch, OFF by default, built in M7 for backtest
-comparison. Everything in the plan that mentions BRK applies only when that switch is on.
+comparison. Round 6: entering straight off a breakout is bad, entering on the retest after a break
+is fine. So the switch means break, then retest, then enter; no immediate breakout entry is built.
+Everything in the plan that mentions BRK applies only when that switch is on.
 
 ### D-51  Untagged support and resistance levels  (DECIDED, revised from the transcripts)
 Your ask: places price has touched repeatedly that are not one of the labeled levels. The videos

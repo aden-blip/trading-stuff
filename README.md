@@ -3,7 +3,7 @@
 Level-to-Level (L2L): a key-level bounce-and-break strategy for NQ/MNQ futures (and other
 symbols), written for TradingView Pine Script v6.
 
-Status: **planning**. No code yet.
+Status: **building**. Milestone 1 (level engine indicator) is in `pine/l2l.pine`; test it with `docs/M1_CHECKLIST.md`.
 
 - `docs/PLAN.md` is the design: what gets built, module by module, with defaults and milestones.
 - `docs/DECISIONS.md` is the list of open questions, each with a recommended default and its current status.

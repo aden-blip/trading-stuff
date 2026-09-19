@@ -1,0 +1,392 @@
+//@version=6
+// ============================================================================
+//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)
+//
+//  docs/PLAN.md describes every module. This file holds only module [A].
+//  Module map for the finished script:
+//    [A] Level Engine      (this milestone)
+//    [B] Interaction       (M2)      [C] Stats & Ranking (M2)
+//    [D] Setup Detector    (M3)      [E] Score           (M3)
+//    [F] Filters           (M4)      [G] Trade Manager   (M5)
+//    [H] HTF Confluence    (M6)      [I] Bias Inputs     (M6)
+//    [J] Output            (M3 on)
+//
+//  Rules: no repainting (previous-period values use [1] with lookahead on,
+//  session levels come from completed sessions only), no NQ-specific numbers
+//  (distances are daily-ATR units with tick floors), all times read in the
+//  timezone input (default Central). Higher-timeframe requests used: 6 of 40.
+// ============================================================================
+indicator("L2L M1 - Level Engine", shorttitle = "L2L M1", overlay = true,
+     max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
+
+// ───────────────────────────── [A0] INPUTS ─────────────────────────────
+gG = "General"
+tz        = input.string("America/Chicago", "Timezone for sessions and times", options = ["America/Chicago", "America/New_York", "America/Denver", "America/Los_Angeles", "America/Phoenix", "UTC", "Europe/London"], group = gG, tooltip = "Every session input below is read in this zone.")
+profileIn = input.string("Auto", "Instrument profile", options = ["Auto", "Index", "Energy", "Metals", "Generic"], group = gG, tooltip = "Auto reads the symbol root: NQ MNQ ES MES = Index, CL MCL = Energy, SI SIL GC MGC = Metals, anything else = Generic. The profile picks the New York session window.")
+moAnchor  = input.string("New York midnight", "Midnight open anchor", options = ["New York midnight", "Local midnight"], group = gG, tooltip = "The midnight open is defined at 00:00 New York, which is 23:00 Central. Local midnight uses 00:00 in the timezone above instead.")
+
+gS = "Sessions (HHMM-HHMM in the timezone above)"
+sessAsia   = input.session("1900-2300", "Asia", group = gS)
+sessLondon = input.session("0100-0400", "London", group = gS)
+sessNYIdx  = input.session("0830-1500", "New York, Index profile", group = gS)
+sessNYEng  = input.session("0800-1330", "New York, Energy profile", group = gS)
+sessNYMet  = input.session("0720-1230", "New York, Metals profile", group = gS)
+
+gL = "Level families"
+onDaily   = input.bool(true, "Previous day high / low / mid, daily open, midnight open", group = gL)
+onWeekly  = input.bool(true, "Previous week high / low / mid, weekly open", group = gL)
+onMonthly = input.bool(true, "Previous month high / low / mid, monthly open", group = gL)
+onQY      = input.bool(true, "Quarterly open, yearly open, year high / low", group = gL)
+on4H      = input.bool(true, "Previous 4-hour high / low / open", group = gL)
+onMonday  = input.bool(true, "Monday range high / low / mid", group = gL)
+onAsia    = input.bool(true, "Asia session high / low / open", group = gL)
+onLondon  = input.bool(true, "London session high / low / open", group = gL)
+onNY      = input.bool(true, "New York session high / low / open", group = gL)
+onCustom  = input.bool(true, "Custom levels", group = gL)
+customTxt = input.string("", "Custom levels", group = gL, tooltip = "Comma separated. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
+
+gGeo = "Geometry (daily-ATR units with tick floors)"
+atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
+clusterUnit  = input.float(0.02, "Cluster tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Levels closer together than this merge into one zone.")
+clusterTicks = input.int(4, "Cluster tolerance floor, ticks", minval = 0, group = gGeo)
+touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Price within this distance counts as a touch, which ends a level's fresh state for the day.")
+touchTicks   = input.int(2, "Touch tolerance floor, ticks", minval = 0, group = gGeo)
+drawRange    = input.float(1.0, "Draw levels within this many daily ATRs of price", step = 0.1, minval = 0.1, group = gGeo)
+
+gD = "Display"
+lineLookback  = input.int(40, "Line start, bars back", minval = 1, maxval = 500, group = gD)
+labelOffset   = input.int(8, "Label offset, bars to the right", minval = 1, maxval = 100, group = gD)
+showFreshMark = input.bool(false, "Mark untouched levels with *", group = gD)
+showInfo      = input.bool(true, "Show info box", group = gD)
+showHist      = input.bool(false, "Plot level history (replay checks)", group = gD, tooltip = "Draws the main levels as step lines through history so you can verify nothing moves in bar replay.")
+colDaily   = input.color(color.rgb(66, 135, 245), "Daily", group = gD, inline = "c1")
+colWeekly  = input.color(color.rgb(156, 39, 176), "Weekly", group = gD, inline = "c1")
+colMonthly = input.color(color.rgb(255, 152, 0), "Monthly", group = gD, inline = "c1")
+colQY      = input.color(color.rgb(229, 57, 53), "Quarter/Year", group = gD, inline = "c2")
+col4H      = input.color(color.rgb(158, 158, 158), "4-hour", group = gD, inline = "c2")
+colMonday  = input.color(color.rgb(255, 235, 59), "Monday", group = gD, inline = "c2")
+colAsia    = input.color(color.rgb(0, 150, 136), "Asia", group = gD, inline = "c3")
+colLondon  = input.color(color.rgb(76, 175, 80), "London", group = gD, inline = "c3")
+colNY      = input.color(color.rgb(3, 169, 244), "New York", group = gD, inline = "c3")
+colCustom  = input.color(color.rgb(255, 255, 255), "Custom", group = gD, inline = "c4")
+
+// ───────────────────────────── [A1] PROFILE ─────────────────────────────
+string root   = syminfo.root
+bool   rootIdx = root == "NQ" or root == "MNQ" or root == "ES" or root == "MES" or root == "RTY" or root == "M2K" or root == "YM" or root == "MYM"
+bool   rootEng = root == "CL" or root == "MCL" or root == "NG" or root == "MNG" or root == "RB" or root == "HO"
+bool   rootMet = root == "SI" or root == "SIL" or root == "GC" or root == "MGC" or root == "HG" or root == "MHG" or root == "PL"
+string profile = profileIn != "Auto" ? profileIn : rootIdx ? "Index" : rootEng ? "Energy" : rootMet ? "Metals" : "Generic"
+string sessNY  = profile == "Energy" ? sessNYEng : profile == "Metals" ? sessNYMet : sessNYIdx
+bool   isFut   = syminfo.type == "futures"
+// The CME exchange day opens at 17:00 CT. Shifting the clock 7 hours maps every bar onto the
+// calendar day its session settles on, which is how Monday's range is identified.
+int    shiftMs = isFut ? 7 * 60 * 60 * 1000 : 0
+
+// ───────────────────── [A2] HIGHER-TIMEFRAME DATA (6 requests) ─────────────────────
+// Daily context: previous high / low, current open, previous day's ATR, and the running
+// year high / low as of the previous daily close.
+f_daily() =>
+    var float yh = na
+    var float yl = na
+    bool newYear = not na(year[1]) and year != year[1]
+    if na(yh) or newYear
+        yh := high
+        yl := low
+    else
+        yh := math.max(yh, high)
+        yl := math.min(yl, low)
+    [high[1], low[1], open, ta.atr(atrLen)[1], yh[1], yl[1]]
+
+[pdh, pdl, dOpen, dAtr, yHigh, yLow] = request.security(syminfo.tickerid, "D", f_daily(), lookahead = barmerge.lookahead_on)
+[pwh, pwl, wOpen] = request.security(syminfo.tickerid, "W",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+[pmh, pml, mOpen] = request.security(syminfo.tickerid, "M",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+qOpen             = request.security(syminfo.tickerid, "3M",  open, lookahead = barmerge.lookahead_on)
+yOpen             = request.security(syminfo.tickerid, "12M", open, lookahead = barmerge.lookahead_on)
+[p4h, p4l, p4o]   = request.security(syminfo.tickerid, "240", [high[1], low[1], open[1]], lookahead = barmerge.lookahead_on)
+
+// ───────────────────────── [A3] CHART-BASED LEVELS ─────────────────────────
+// Midnight open: the open of the first bar of a new calendar day in the anchor zone.
+string moTz = moAnchor == "New York midnight" ? "America/New_York" : tz
+var int   moDay = -1
+var float mo    = na
+int dmNow = dayofmonth(time, moTz)
+if dmNow != moDay
+    if moDay != -1
+        mo := open
+    moDay := dmNow
+
+// Session levels: track the running session, publish when it completes, so the level never moves while traded.
+f_sessionLevels(simple string sess) =>
+    bool inS = not na(time(timeframe.period, sess, tz))
+    var float runH  = na
+    var float runL  = na
+    var float runO  = na
+    var float doneH = na
+    var float doneL = na
+    var float doneO = na
+    bool starts = inS and not inS[1]
+    bool ends   = not inS and inS[1]
+    if starts
+        runH := high
+        runL := low
+        runO := open
+    else if inS
+        runH := math.max(runH, high)
+        runL := math.min(runL, low)
+    if ends
+        doneH := runH
+        doneL := runL
+        doneO := runO
+    [doneH, doneL, doneO]
+
+[ah, al, ao]   = f_sessionLevels(sessAsia)
+[lh, ll, lo]   = f_sessionLevels(sessLondon)
+[nh, nl, nyo]  = f_sessionLevels(sessNY)
+
+// Monday range: the full exchange session that settles on Monday (Sunday 17:00 CT to Monday 16:00 CT on CME).
+int  dowShift = dayofweek(time + shiftMs, tz)
+bool inMon    = dowShift == dayofweek.monday
+var float monRunH = na
+var float monRunL = na
+var float mnh = na
+var float mnl = na
+if inMon and not inMon[1]
+    monRunH := high
+    monRunL := low
+else if inMon
+    monRunH := math.max(monRunH, high)
+    monRunL := math.min(monRunL, low)
+if not inMon and inMon[1]
+    mnh := monRunH
+    mnl := monRunL
+
+// ───────────────────── [A4] LEVEL TABLE AND FRESH STATE ─────────────────────
+// Fixed slots so the touched flag survives from bar to bar. A new value in a slot is a new level instance.
+int NSLOT = 32
+var string[] lvCode    = array.from("PDH", "PDL", "PDM", "DO", "MO", "PWH", "PWL", "PWM", "WO", "PMH", "PML", "PMM", "MOO", "QO", "YO", "YH", "YL", "P4H", "P4L", "P4O", "MNH", "MNL", "MNM", "AH", "AL", "AO", "LH", "LL", "LO", "NH", "NL", "NO")
+var int[]    lvFam     = array.from(0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8)
+var float[]  lvVal     = array.new<float>(NSLOT, na)
+var bool[]   lvTouched = array.new<bool>(NSLOT, false)
+
+f_set(int i, float v) =>
+    float old = array.get(lvVal, i)
+    bool changed = na(old) != na(v) or (not na(old) and not na(v) and old != v)
+    if changed
+        array.set(lvTouched, i, false)
+    array.set(lvVal, i, v)
+
+f_set(0, pdh)
+f_set(1, pdl)
+f_set(2, (pdh + pdl) / 2)
+f_set(3, dOpen)
+f_set(4, mo)
+f_set(5, pwh)
+f_set(6, pwl)
+f_set(7, (pwh + pwl) / 2)
+f_set(8, wOpen)
+f_set(9, pmh)
+f_set(10, pml)
+f_set(11, (pmh + pml) / 2)
+f_set(12, mOpen)
+f_set(13, qOpen)
+f_set(14, yOpen)
+f_set(15, yHigh)
+f_set(16, yLow)
+f_set(17, p4h)
+f_set(18, p4l)
+f_set(19, p4o)
+f_set(20, mnh)
+f_set(21, mnl)
+f_set(22, (mnh + mnl) / 2)
+f_set(23, ah)
+f_set(24, al)
+f_set(25, ao)
+f_set(26, lh)
+f_set(27, ll)
+f_set(28, lo)
+f_set(29, nh)
+f_set(30, nl)
+f_set(31, nyo)
+
+// Custom levels, parsed once from the text input.
+var float[]  cuVal     = array.new<float>()
+var string[] cuCode    = array.new<string>()
+var bool[]   cuTouched = array.new<bool>()
+if barstate.isfirst and str.length(customTxt) > 0
+    string[] parts = str.split(customTxt, ",")
+    int np = array.size(parts)
+    if np > 0
+        for k = 0 to np - 1
+            string item = str.trim(array.get(parts, k))
+            if str.length(item) > 0
+                string[] kv = str.split(item, ":")
+                float p = str.tonumber(str.trim(array.get(kv, 0)))
+                string lab = array.size(kv) > 1 ? str.trim(array.get(kv, 1)) : "CUS"
+                if not na(p)
+                    array.push(cuVal, p)
+                    array.push(cuCode, lab)
+                    array.push(cuTouched, false)
+int ncu = array.size(cuVal)
+
+// Tolerances in daily-ATR units with tick floors. Early in history, before a daily ATR exists,
+// the last 50 bars' range stands in.
+float fallbackUnit = ta.highest(high, 50) - ta.lowest(low, 50)
+float unit       = na(dAtr) ? fallbackUnit : dAtr
+float clusterTol = math.max(clusterUnit * unit, clusterTicks * syminfo.mintick)
+float touchTol   = math.max(touchUnit * unit, touchTicks * syminfo.mintick)
+
+// Fresh state resets at the daily rollover; a touch inside the tolerance ends it.
+bool newDay = timeframe.change("D")
+if newDay
+    array.fill(lvTouched, false)
+    if ncu > 0
+        array.fill(cuTouched, false)
+for i = 0 to NSLOT - 1
+    float v = array.get(lvVal, i)
+    if not na(v) and high >= v - touchTol and low <= v + touchTol
+        array.set(lvTouched, i, true)
+if ncu > 0
+    for i = 0 to ncu - 1
+        float v = array.get(cuVal, i)
+        if high >= v - touchTol and low <= v + touchTol
+            array.set(cuTouched, i, true)
+
+// Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter/year, 4 four-hour,
+// 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom.
+f_famOn(int f) =>
+    f == 0 ? onDaily : f == 1 ? onWeekly : f == 2 ? onMonthly : f == 3 ? onQY : f == 4 ? on4H : f == 5 ? onMonday : f == 6 ? onAsia : f == 7 ? onLondon : f == 8 ? onNY : onCustom
+f_famColor(int f) =>
+    f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : colCustom
+// Which family names a mixed zone: the higher timeframe wins.
+f_famRank(int f) =>
+    f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 9 ? 6 : 7
+
+// ───────────────── [A5] CLUSTERING AND DRAWING (last bar only) ─────────────────
+var line[]  drawL = array.new<line>()
+var box[]   drawB = array.new<box>()
+var label[] drawT = array.new<label>()
+
+f_clearDrawings() =>
+    int nL = array.size(drawL)
+    if nL > 0
+        for i = 0 to nL - 1
+            line.delete(array.get(drawL, i))
+    array.clear(drawL)
+    int nB = array.size(drawB)
+    if nB > 0
+        for i = 0 to nB - 1
+            box.delete(array.get(drawB, i))
+    array.clear(drawB)
+    int nT = array.size(drawT)
+    if nT > 0
+        for i = 0 to nT - 1
+            label.delete(array.get(drawT, i))
+    array.clear(drawT)
+
+f_drawZone(float zMin, float zMax, string codes, int fam, int count, bool touched) =>
+    color col = f_famColor(fam)
+    int x1 = math.max(0, bar_index - lineLookback)
+    int x2 = bar_index + labelOffset
+    float mid = (zMin + zMax) / 2
+    if count > 1 and zMax - zMin >= syminfo.mintick
+        array.push(drawB, box.new(x1, zMax, x2, zMin, border_color = color.new(col, 30), bgcolor = color.new(col, 85), extend = extend.right))
+    else
+        array.push(drawL, line.new(x1, mid, x2, mid, color = color.new(col, 10), width = count > 1 ? 2 : 1, extend = extend.right))
+    string txt = codes + (showFreshMark and not touched ? " *" : "")
+    array.push(drawT, label.new(x2, mid, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = size.tiny))
+
+var int zonesDrawn = 0
+if barstate.islast
+    f_clearDrawings()
+    float[]  px = array.new<float>()
+    string[] cd = array.new<string>()
+    int[]    fm = array.new<int>()
+    bool[]   tc = array.new<bool>()
+    for i = 0 to NSLOT - 1
+        float v = array.get(lvVal, i)
+        int f = array.get(lvFam, i)
+        if not na(v) and f_famOn(f) and math.abs(v - close) <= drawRange * unit
+            array.push(px, v)
+            array.push(cd, array.get(lvCode, i))
+            array.push(fm, f)
+            array.push(tc, array.get(lvTouched, i))
+    if onCustom and ncu > 0
+        for i = 0 to ncu - 1
+            float v = array.get(cuVal, i)
+            if math.abs(v - close) <= drawRange * unit
+                array.push(px, v)
+                array.push(cd, array.get(cuCode, i))
+                array.push(fm, 9)
+                array.push(tc, array.get(cuTouched, i))
+    int n = array.size(px)
+    zonesDrawn := 0
+    if n > 0
+        int[] idx = array.sort_indices(px, order.ascending)
+        float  zMin = na
+        float  zMax = na
+        string zCodes = ""
+        int    zFam = 0
+        int    zCount = 0
+        bool   zTouched = false
+        for k = 0 to n - 1
+            int j = array.get(idx, k)
+            float p = array.get(px, j)
+            string c = array.get(cd, j)
+            int f = array.get(fm, j)
+            bool t = array.get(tc, j)
+            if zCount == 0
+                zMin := p
+                zMax := p
+                zCodes := c
+                zFam := f
+                zCount := 1
+                zTouched := t
+            else if p - zMax <= clusterTol
+                zMax := p
+                zCodes := zCodes + "+" + c
+                zFam := f_famRank(f) < f_famRank(zFam) ? f : zFam
+                zCount += 1
+                zTouched := zTouched or t
+            else
+                f_drawZone(zMin, zMax, zCodes, zFam, zCount, zTouched)
+                zonesDrawn += 1
+                zMin := p
+                zMax := p
+                zCodes := c
+                zFam := f
+                zCount := 1
+                zTouched := t
+        f_drawZone(zMin, zMax, zCodes, zFam, zCount, zTouched)
+        zonesDrawn += 1
+
+// ───────────────────────────── [A6] INFO BOX ─────────────────────────────
+var table info = table.new(position.top_right, 2, 7, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+f_cell(int r, string k, string v) =>
+    table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
+    table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
+if barstate.islast and showInfo
+    f_cell(0, "L2L M1", "Level Engine")
+    f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
+    f_cell(2, "Timezone", tz)
+    f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
+    f_cell(4, "Cluster tol", str.tostring(clusterTol, format.mintick) + " (" + str.tostring(math.round(clusterTol / syminfo.mintick)) + " ticks)")
+    f_cell(5, "Touch tol", str.tostring(touchTol, format.mintick) + " (" + str.tostring(math.round(touchTol / syminfo.mintick)) + " ticks)")
+    f_cell(6, "Zones drawn", str.tostring(zonesDrawn))
+
+// ───────────────────── [A7] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
+plot(showHist and onDaily  ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
+plot(showHist and onDaily  ? pdl   : na, "PDL", color = colDaily,  style = plot.style_linebr)
+plot(showHist and onDaily  ? dOpen : na, "DO",  color = color.new(colDaily, 40), style = plot.style_linebr)
+plot(showHist and onDaily  ? mo    : na, "MO",  color = color.new(colDaily, 40), style = plot.style_linebr)
+plot(showHist and on4H     ? p4h   : na, "P4H", color = col4H,     style = plot.style_linebr)
+plot(showHist and on4H     ? p4l   : na, "P4L", color = col4H,     style = plot.style_linebr)
+plot(showHist and onMonday ? mnh   : na, "MNH", color = colMonday, style = plot.style_linebr)
+plot(showHist and onMonday ? mnl   : na, "MNL", color = colMonday, style = plot.style_linebr)
+plot(showHist and onAsia   ? ah    : na, "AH",  color = colAsia,   style = plot.style_linebr)
+plot(showHist and onAsia   ? al    : na, "AL",  color = colAsia,   style = plot.style_linebr)
+plot(showHist and onLondon ? lh    : na, "LH",  color = colLondon, style = plot.style_linebr)
+plot(showHist and onLondon ? ll    : na, "LL",  color = colLondon, style = plot.style_linebr)
+plot(showHist and onNY     ? nh    : na, "NH",  color = colNY,     style = plot.style_linebr)
+plot(showHist and onNY     ? nl    : na, "NL",  color = colNY,     style = plot.style_linebr)
+plot(showHist and onWeekly ? pwh   : na, "PWH", color = colWeekly, style = plot.style_linebr)
+plot(showHist and onWeekly ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)

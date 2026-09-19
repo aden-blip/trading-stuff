@@ -1,6 +1,11 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: PLANNING. No code yet. Version 0.6, 2026-09-19.
+Status: BUILDING. Milestone 1 in progress. Version 0.7, 2026-09-19.
+
+Changes in 0.7, final planning round:
+- Volume confirmation applies to the **Index profile only** (NQ, MNQ, ES, MES). Off on energy, metals and generic.
+- The break switch means **break, then retest, then enter**. A straight breakout entry is not built.
+- Facebook reels closed as not needed. Planning is complete; M1 starts.
 
 Changes in 0.6, from the six Socrates transcripts (`reference/transcripts/`):
 - **Volume confirmation** on reversal entries, ON by default. His rule is "a key level with volume, that is it".
@@ -283,9 +288,10 @@ closed bar to act on, so it uses two bars:
    - Option `strongSkip` (default OFF): if the rejection bar's wick is at least 60 % of its range and
      it closes in the far third, enter at the rejection bar's close without waiting.
 3. The zone is REV-eligible ([C]) and the filters pass ([F]).
-4. **Volume confirmation** (D-52, ON by default): the follow-through bar's volume is at least
-   `volConfirmMult` (default 1.0) times the 20-bar average volume. Socrates enters at a key level
-   only with volume behind the move; this is the bot's version of that rule.
+4. **Volume confirmation** (D-52, ON by default on the Index profile, OFF elsewhere): the
+   follow-through bar's volume is at least `volConfirmMult` (default 1.0) times the 20-bar average
+   volume. Socrates enters at a key level only with volume behind the move; this is the bot's
+   version of that rule. Your call: it applies to NQ and MNQ only.
 
 Two more entry triggers are planned as options, not defaults:
 
@@ -306,18 +312,20 @@ Ladder: the next zones in the bounce direction, skipping any closer than `minTar
 the reversal off a pivot and the trail to the target. A level that price rips through is already
 handled by the ladder, which keeps a running trade alive through it. A standalone break entry only
 matters when we happen to be flat at that moment, so it is a switch for backtest comparison, not
-part of the base product. Socrates's own go-to at the daily open, daily high and daily low is a
-break followed by a retest, so if this switch ever goes on, retest mode at the daily levels is the
-version to test first (D-53). Rules, for when it is on:
+part of the base product. Your rule: entering straight off a breakout is bad, entering on the
+retest after a break is fine. So the switch means **break, then retest, then enter**; there is no
+immediate breakout entry. Socrates's own go-to at the daily open, daily high and daily low is
+exactly that (D-53). Rules, for when it is on:
 
 1. A bar closes beyond the zone's far side by at least `breakConfirm`. A wick through does not count.
 2. Optional momentum filter: bar body at least `minBreakBodyATR` execution ATRs.
 3. The zone is BRK-eligible and the filters pass.
 
-Entry: market at the next bar open (default), or *retest* mode: rest a limit at the zone for up to
-`retestBars` bars and cancel if unfilled. Stop: back inside the zone (zone edge plus buffer on the
-wrong side). Option "failed-break exit" (default ON): if a bar closes back through the zone before
-TP1, exit at that close instead of waiting for the stop. Ladder: the next zones beyond the broken one.
+Entry: after the confirmed close through, rest a limit at the zone edge for up to `retestBars` bars
+and cancel if unfilled; the retest must hold, meaning no close back through the zone while the
+limit rests. Stop: back inside the zone (zone edge plus buffer on the wrong side). Option
+"failed-break exit" (default ON): if a bar closes back through the zone before TP1, exit at that
+close instead of waiting for the stop. Ladder: the next zones beyond the broken one.
 
 Both setups require:
 
@@ -553,10 +561,10 @@ an offline study later if we want more (M8).
 | Interaction | verdictWindow | 30 | execution bars |
 | REV | wickRatio / minBarATR | 0.5 / 0.6 | ratio / exec ATR |
 | REV | strongSkip | OFF | |
-| REV | volConfirm / volConfirmMult | ON / 1.0 | switch / multiple of the 20-bar average |
+| REV | volConfirm / volConfirmMult | ON for Index, OFF elsewhere / 1.0 | switch / multiple of the 20-bar average |
 | REV | stopBuffer (off the level) | 0.03 / 4 | daily ATR / ticks |
 | REV | maxStopTicks | 0 (off) | ticks |
-| BRK | breakTrades | OFF | switch |
+| BRK | breakTrades (break, retest, enter) | OFF | switch |
 | BRK | minBreakBodyATR | 0.5 | exec ATR |
 | BRK | retestBars | 6 | execution bars |
 | Filters | minScore | 60 | points |
