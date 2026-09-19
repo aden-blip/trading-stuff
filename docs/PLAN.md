@@ -1,6 +1,16 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: PLANNING. No code yet. Version 0.5, 2026-09-19.
+Status: PLANNING. No code yet. Version 0.6, 2026-09-19.
+
+Changes in 0.6, from the six Socrates transcripts (`reference/transcripts/`):
+- **Volume confirmation** on reversal entries, ON by default. His rule is "a key level with volume, that is it".
+- **SR levels come from the 4-hour chart**, where he marks places that pivoted "a bunch of times, not
+  just once", then checks which of those lines sit on a labeled key level. That alignment is our stack score.
+- Ladder promotion can require volume behind the close-through, ON by default.
+- His go-to at the daily open, daily high and daily low is **break, then retest**. Noted under the
+  break-trade switch as the first variant to test if that switch ever goes on.
+- VIX agreement means the VIX turning the opposite way at the same moment, not a slow average.
+- Asia-open continuation for gold-type assets noted as a later bias option for SI and CL.
 
 Changes in 0.5, after the fourth review round:
 - **Break trades are optional and OFF.** The core is the reversal off a pivot and the trail to the
@@ -162,7 +172,7 @@ Level types. Each has a short code used on labels and in the stats table.
 | LH / LL / LO | London session high / low / open | chart bars + session window | per session |
 | NH / NL / NO | New York (main) session high / low / open, per instrument profile | chart bars + session window | per session |
 | CUS | Custom levels typed in (options levels, POC, VAH, VAL, anything) | text input | manual |
-| SR | Untagged support / resistance: a price where 15-minute swing highs and lows have clustered `srMinTouches` or more times within the last `srLookbackDays` days. Entry-eligible like any labeled level; the touch count feeds the stack score. | 15m pivots, clustered | rolling |
+| SR | Untagged support / resistance: a price where swing highs and lows on the `srPivotTF` chart (default 4-hour, where Socrates draws his "blue lines") have clustered `srMinTouches` or more times within the last `srLookbackDays` days. Entry-eligible like any labeled level; the touch count feeds the stack score, and an SR line that sits on a labeled level makes a stronger zone, which is exactly the alignment he checks on the 1-hour. | 4h pivots, clustered | rolling |
 | STR | Structure swing high / low from 15m pivots. **Targets only**, never entries. | pivots | rolling |
 | HOD / LOD | Today's developing high / low. **Targets only**, never entries. | chart bars | live |
 
@@ -273,6 +283,9 @@ closed bar to act on, so it uses two bars:
    - Option `strongSkip` (default OFF): if the rejection bar's wick is at least 60 % of its range and
      it closes in the far third, enter at the rejection bar's close without waiting.
 3. The zone is REV-eligible ([C]) and the filters pass ([F]).
+4. **Volume confirmation** (D-52, ON by default): the follow-through bar's volume is at least
+   `volConfirmMult` (default 1.0) times the 20-bar average volume. Socrates enters at a key level
+   only with volume behind the move; this is the bot's version of that rule.
 
 Two more entry triggers are planned as options, not defaults:
 
@@ -293,7 +306,9 @@ Ladder: the next zones in the bounce direction, skipping any closer than `minTar
 the reversal off a pivot and the trail to the target. A level that price rips through is already
 handled by the ladder, which keeps a running trade alive through it. A standalone break entry only
 matters when we happen to be flat at that moment, so it is a switch for backtest comparison, not
-part of the base product. Rules, for when it is on:
+part of the base product. Socrates's own go-to at the daily open, daily high and daily low is a
+break followed by a retest, so if this switch ever goes on, retest mode at the daily levels is the
+version to test first (D-53). Rules, for when it is on:
 
 1. A bar closes beyond the zone's far side by at least `breakConfirm`. A wick through does not count.
 2. Optional momentum filter: bar body at least `minBreakBodyATR` execution ATRs.
@@ -378,7 +393,10 @@ with a right-side lookback, so they are confirmed and do not repaint.
 **Target ladder.** At entry the manager stores the next zones in the trade direction (up to
 `maxLadder`, default 4). On every bar close, if the bar's extreme reached `ladder[tpIdx]`:
 
-- The bar closed beyond the target by at least `contConfirm` (default 0.03 daily ATR): **promote**.
+- The bar closed beyond the target by at least `contConfirm` (default 0.03 daily ATR), and, with
+  `promoteNeedsVolume` ON (default), its volume is at least the 20-bar average: **promote**. His
+  hold rule is "if the volume is following suit we can play the game"; without volume the level is
+  treated as reached and the trade exits.
   `tpIdx += 1`, `curStop = max(curStop, target - stopBuffer)` so the broken level becomes the floor,
   stage becomes 3.
 - Otherwise: **soft-target exit** at this bar's close. Price reached the level and did not accept it.
@@ -445,7 +463,9 @@ All optional. Score-only unless the bias gate is on (D-29).
 - **Mag 7 breadth**: AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA above today's open. 5 or more
   bullish, 2 or fewer bearish. **NQ and MNQ only**, detected from the symbol root, overridable.
   Valid only while US stocks trade (08:30 to 15:00 CT by default), neutral otherwise.
-- **VIX**: below its session open, or falling against its 20-bar EMA, is risk-on. **NQ and MNQ only.**
+- **VIX**: the VIX moving the opposite way to NQ over the last `vixBars` 5-minute bars (default 3)
+  counts as agreement, the same way counts as against, flat is neutral. Socrates shorts NQ at a
+  level when the VIX is turning up off its own level at that moment. **NQ and MNQ only.**
 - **Sector breadth**: the 11 SPDR sector ETFs above their open. OFF by default.
 - **Heatmap**: not readable from Pine. Mag 7 breadth plus QQQ-versus-open is the stand-in.
 
@@ -527,12 +547,13 @@ an offline study later if we want more (M8).
 | Levels | clusterUnit / clusterTicks | 0.02 / 4 | daily ATR / ticks |
 | Levels | touchTol | 0.01 / 2 | daily ATR / ticks |
 | Levels | drawRange | 1.0 | daily ATR |
-| Levels | srLevels / srMinTouches / srLookbackDays / srPivotTF | ON / 3 / 5 / 15 | switch / touches / days / minutes |
+| Levels | srLevels / srMinTouches / srLookbackDays / srPivotTF | ON / 3 / 10 / 240 | switch / touches / days / minutes |
 | Interaction | breakConfirm | 0.03 / 4 | daily ATR / ticks |
 | Interaction | holdConfirm | 0.10 | daily ATR |
 | Interaction | verdictWindow | 30 | execution bars |
 | REV | wickRatio / minBarATR | 0.5 / 0.6 | ratio / exec ATR |
 | REV | strongSkip | OFF | |
+| REV | volConfirm / volConfirmMult | ON / 1.0 | switch / multiple of the 20-bar average |
 | REV | stopBuffer (off the level) | 0.03 / 4 | daily ATR / ticks |
 | REV | maxStopTicks | 0 (off) | ticks |
 | BRK | breakTrades | OFF | switch |
@@ -555,6 +576,8 @@ an offline study later if we want more (M8).
 | Manager | beTicks / beATR | 2 / 0.02 | ticks / exec ATR |
 | Manager | structLookback / structATR / chaseATR | 5 / 0.5 / 2.0 | bars / exec ATR |
 | Manager | maxLadder / contConfirm | 4 / 0.03 | levels / daily ATR |
+| Manager | promoteNeedsVolume | ON | switch |
+| Bias | vixBars | 3 | 5-minute bars |
 | Manager | partials / partialPct | OFF / 50 | percent |
 | Manager | flip / flipQty / flipConfirmed | OFF / base size / OFF | contracts |
 | Sizing | baseQty | 2 | contracts |

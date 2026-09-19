@@ -6,7 +6,7 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Rounds 1 to 4 answered 2026-09-19. Nothing is waiting on you except the optional beta script in D-39.
+Rounds 1 to 5 answered 2026-09-19. Waiting on you: the Facebook reels (D-39) if you want them in, and the optional beta script.
 
 ---
 
@@ -202,12 +202,12 @@ has been relevant. The statistics box sits in the top-right corner and can be hi
 ### D-38  Working loop  (DEFAULT)
 **Answer:** implied yes.
 
-### D-39  Reference material  (DECIDED, partly)
-**Answer:** Six Socrates YouTube links received and saved in `reference/links.md`. Transcripts
-cannot be pulled from this environment, so the plan relies on the titles, the site, and a
-third-party write-up of the method. If a video states a rule that differs from the plan, tell me
-or paste the transcript (YouTube's "Show transcript" button, copy all) into `reference/`.
-Facebook posts: paste text or screenshots into `reference/` too. Still wanted: the beta script.
+### D-39  Reference material  (DECIDED)
+**Answer:** All six YouTube transcripts received on 2026-09-19 and saved under
+`reference/transcripts/`. The rules they contain are folded into the plan (D-51 to D-55) and listed
+in `docs/RESEARCH.md` section 5. The three Facebook reels cannot be read from this session and there
+is no browser here to sign into; a screen recording with sound, uploaded to Google Drive or Dropbox,
+can be transcribed from here. The beta script remains optional.
 
 ---
 
@@ -241,6 +241,39 @@ when the last 20 candles' volume is under 40 % of that window's 20-day average.
 
 ---
 
+## M. New from the Socrates transcripts
+
+### D-52  Volume confirmation  (DECIDED, from the transcripts)
+His most repeated rule: "all I need is volume once we hit a key level"; "the volume's there it's
+going to move, the volume's not there it's not going to move"; holding through the next level only
+"if the volume is following suit". The plan had no volume check. Added: a reversal entry needs the
+follow-through bar's volume at or above the 20-bar average (multiplier input), and ladder promotion
+needs the close-through bar's volume at or above the same average.
+**Default:** both ON, multiplier 1.0. Turn off to compare in backtests.
+
+### D-53  Break then retest at daily levels  (NOTED)
+He says his go-to is "waiting for a daily high or a daily open, we would retest that, and then we
+would distribute", and on the live recap: "every time we reach our daily open I like to break it
+first; I made a mistake by not waiting for the break". That is a break trade with a retest entry at
+the daily open, daily high or daily low. You decided break trades are off (D-50), which stands.
+Recorded so that if the switch ever goes on, retest mode at the daily levels is the first variant to test.
+
+### D-54  Asia-open continuation for gold-type assets  (LATER)
+On gold he says the move around 20:15 to 20:45 CT (21:15 to 21:45 New York) "will follow the trend
+within the entirety of the New York session" and calls it high accuracy. Untested. Recorded as a
+later optional bias for the metals and energy profiles: during the Asia session, bias = direction
+of the prior New York session. It also connects to your own feeling that SI and CL trade well at the Asia open.
+**Default:** not built until backtests of the base product are done.
+
+### D-55  His daily risk rules  (NOTED)
+One to four trades a day; two losing trades in a row ends the day; a hard account lockout; a
+dollar target that he raises when winning and lowers after a rough first trade. Our caps already
+cover these as settings (all OFF for backtesting per D-30). One addition: `maxConsecLosses` as a
+separate input from `maxLossesPerDay`, since his rule is consecutive.
+**Default:** OFF.
+
+---
+
 ## L. New in round 4
 
 ### D-50  Break trades are optional  (DECIDED)
@@ -250,13 +283,17 @@ ladder, which keeps a running reversal trade alive through the level. A standalo
 matters when we happen to be flat, so it becomes a switch, OFF by default, built in M7 for backtest
 comparison. Everything in the plan that mentions BRK applies only when that switch is on.
 
-### D-51  Untagged support and resistance levels  (DECIDED)
-Your ask: places price has touched repeatedly that are not one of the labeled levels, as a
-confluence beside the 4-hour highs and lows. Added as level type SR: 15-minute swing highs and lows
-clustered within the normal cluster tolerance, kept when 3 or more touches fall within the last 5
-days. They join zones like any level, their touch count feeds the stack score, they get their own
-hold-rate statistics, and they can trigger reversal trades. Built in M2.
-**Default:** ON, 3 touches, 5 days, 15-minute pivots. All four are inputs.
+### D-51  Untagged support and resistance levels  (DECIDED, revised from the transcripts)
+Your ask: places price has touched repeatedly that are not one of the labeled levels. The videos
+show exactly how Socrates does it: on the 4-hour chart he draws a line wherever price "kept coming
+to a certain number", only where it "pivoted a bunch of times, not just once"; on the 1-hour he
+checks which of those lines sit on a key level from the indicator; on the 5-minute he trades the
+ranges between them. Added as level type SR: swing highs and lows on the 4-hour chart clustered
+within the normal cluster tolerance, kept when 3 or more touches fall within the last 10 days. They
+join zones like any level, their touch count feeds the stack score, an SR line on a labeled level
+makes a stronger zone, they get their own hold-rate statistics, and they can trigger reversal
+trades. Built in M2.
+**Default:** ON, 3 touches, 10 days, 4-hour pivots. All four are inputs.
 
 ---
 

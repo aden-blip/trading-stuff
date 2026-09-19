@@ -23,9 +23,8 @@ Facebook shows a login wall to anything automated, so these cannot be read from 
 environment. To get a reel's content into the plan, paste the caption text and a short note of
 what he says or shows, or a screenshot, into this folder as `fb_<number>.md` or `fb_<number>.png`.
 
-Transcripts could not be downloaded from the build environment (YouTube blocks it). To get a
-video's rules into the plan: open the video, click "...more" under it, click "Show transcript",
-select all, and paste into a file here named `transcript_<number>.txt`.
+Transcripts for all six were pasted by the owner on 2026-09-19 and saved under `transcripts/` as
+`transcript_1.txt` to `transcript_6.txt`, numbered as above.
 
 ## Other references
 

@@ -146,12 +146,43 @@ description uses supply and demand, pivots and daily levels, with stop-loss and 
 discipline. YouTube: [@Socrates_Investments](https://www.youtube.com/@Socrates_Investments).
 Site: [socratesinvestments.com](https://socratesinvestments.com/).
 
-The six videos you pointed at are listed in `reference/links.md`. Their titles: scalping the
-Nasdaq using the VIX for entries; how he sees pivots for entries and exits; charting pivots on the
-4-hour; a live trading recap; a breakdown of the key-level pivot system; and charting the
-methodology for entry and exit points. Transcripts are blocked from this environment, so the
-rules below come from the site and the third-party write-up; the videos can correct them once you
-paste a transcript.
+Transcripts of all six videos are in `reference/transcripts/`. What he actually says, in his words
+where it matters:
+
+- **Indicators, always up:** Supply and Demand by LuxAlgo, Key Levels, ICT Kill Zones, SpacemanBTC
+  Key Levels, and a bull-versus-bear volume indicator by DGT. All free, default settings.
+- **The whole system:** "we reach a key level, we wait for a change of direction, and we enter";
+  "all I need is volume once we hit a key level"; "I don't wait for order blocks, I don't wait for
+  liquidity, I don't wait for FVGs".
+- **Charting routine:** weekly, daily, 4-hour, 1-hour, 30-minute, 5-minute. On the 4-hour he draws
+  "blue lines" only where price "pivoted a bunch of times, not just once". On the 1-hour he checks
+  which blue lines align with the indicator's key levels: "a key level is going to create a major
+  pivot". On the 5-minute he takes entries and exits; lately also entries on the 1-hour.
+- **Favorite levels:** daily open, daily high, daily low. Also monthly and weekly levels, Asia high,
+  London low, previous week low, Monday high and low, quarterly open. "My main areas are daily lows,
+  daily highs and previous, and that's it."
+- **Entry at a level:** a wick forming at the level with buying subsiding ("we're starting to
+  create a wick on that Monday low, for me this is a good entry for a long"), or a level that has
+  rejected several times ("we had rejected this once, twice, three times"), with volume.
+- **Daily open and daily high:** "waiting for a daily high or a daily open, we would retest that
+  and then we would distribute"; "every time we reach our daily open I like to break it first".
+- **Exits:** the next previous pivot or key level; "my exit would be based off these previous
+  areas where price kind of changed direction"; "between here and here is anywhere I would look to
+  take profits". Holding through a level needs volume: "if the volume is following suit then we can
+  play the game". Big wicks on top after a push with fading pushes means "price is going to die".
+- **Stops:** for a scalp, just above the level being faded ("right above this Monday area").
+- **VIX with NQ:** he watches the VIX on the 5-minute beside NQ; NQ rejecting a level while the VIX
+  "is starting to get some buying power up" off its own demand level is his short; the two "moving
+  in complete opposite ways" is where he trades.
+- **Correlations:** for NQ, NVDA, SPY, the VIX and the Magnificent 7; for gold, the dollar and other metals.
+- **Ranging days:** "if we are ranging between key levels I don't have a trade"; "I like to call it chop".
+- **Gold at the Asia open:** the move around 21:15 to 21:45 New York time "will follow the trend
+  within the entirety of the New York session".
+- **Risk rules:** one to four trades a day; two losses in a row ends the day; account lockout at a
+  fixed loss; a daily target he raises when winning and lowers after a rough start.
+
+How the plan uses it: D-52 volume confirmation, D-51 SR levels from the 4-hour, D-53 daily-level
+break and retest under the break switch, D-54 Asia-open continuation for later, D-55 consecutive-loss cap.
 
 A third-party NinjaTrader implementation of the method
 ([repository](https://github.com/izacturner95-sketch/Anthropic-claude-code-ninjatrader-SOCRATES))
