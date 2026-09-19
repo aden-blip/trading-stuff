@@ -112,7 +112,7 @@ Level types. Each has a short code used on labels and in the stats table.
 | STR | Structure swing high / low, fallback targets when no key level is beyond | pivots on 15m | rolling |
 
 **Request budget.** D 1, W 1, M 1, 3M 1, 12M 1, 240 1 = 6. MTF votes 5 / 15 / 60 = 3 (the 240
-call is shared). Mag 7 = 7. VIX = 1. Sectors = 11 (off by default). Total 29 of 40 with everything
+call is shared). Mag 7 = 7. QQQ = 1. VIX = 1. Sectors = 11 (off by default). Total 29 of 40 with everything
 on, 18 with sectors off. Each HTF call returns a tuple such as `[high[1], low[1], open, atr[1]]` so
 one call serves several levels.
 
