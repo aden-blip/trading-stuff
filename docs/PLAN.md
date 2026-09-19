@@ -1,6 +1,14 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: PLANNING. No code yet. Version 0.4, 2026-09-19.
+Status: PLANNING. No code yet. Version 0.5, 2026-09-19.
+
+Changes in 0.5, after the fourth review round:
+- **Break trades are optional and OFF.** The core is the reversal off a pivot and the trail to the
+  target; the ladder already carries a trade through a level that rips. Break entries move to M7 as a switch.
+- New level type **SR**: untagged support and resistance where price has touched repeatedly, built
+  from clustered 15-minute swing points. Entry-eligible, built in M2.
+- Levels are drawn the same whether touched or not; the signal score carries that information.
+- The TradeZella journal is not needed; statistics come from the bot's own backtests.
 
 Changes in 0.4, after the third review round:
 - Daily caps are all **off for backtesting** and stay available as settings: signal count, loss count,
@@ -61,7 +69,7 @@ One TradingView Pine Script v6 **strategy** that:
 
 - draws the key horizontal levels from higher-timeframe data and clusters the ones that overlap,
 - measures how often each level type holds versus breaks and ranks the types against each other,
-- fires REV signals when a level holds and BRK signals when a level fails on a closed candle,
+- fires REV signals when a level holds; break trades on a closed candle through a level exist as a switch, OFF by default,
 - scores every signal 0 to 100 and only trades above a minimum,
 - targets the next key level and, if price closes through it, promotes to the level after that,
 - protects the trade in stages (half risk, then break-even plus cushion, then structure trail),
@@ -103,7 +111,7 @@ One script, ten modules, in this order so that an error points at one module:
 [A] Level Engine      -> level list (type, price, zone, fresh/touched state)
 [B] Interaction       -> each touch classified HOLD / BREAK / NEUTRAL, feeds [C]
 [C] Stats & Ranking   -> hold rate per type, rank, REV/BRK eligibility
-[D] Setup Detector    -> REV and BRK candidates on the execution bar close
+[D] Setup Detector    -> REV candidates on the execution bar close (BRK only when switched on)
 [E] Score             -> 0-100 from reliability, stack, first test, HTF rejection, bias
 [F] Filters           -> chop, time window, news blackout, daily caps, min R:R, min distance, max risk
 [G] Trade Manager     -> ladder, staged stops, trailing, soft targets, partials, flatten, flip
@@ -154,6 +162,7 @@ Level types. Each has a short code used on labels and in the stats table.
 | LH / LL / LO | London session high / low / open | chart bars + session window | per session |
 | NH / NL / NO | New York (main) session high / low / open, per instrument profile | chart bars + session window | per session |
 | CUS | Custom levels typed in (options levels, POC, VAH, VAL, anything) | text input | manual |
+| SR | Untagged support / resistance: a price where 15-minute swing highs and lows have clustered `srMinTouches` or more times within the last `srLookbackDays` days. Entry-eligible like any labeled level; the touch count feeds the stack score. | 15m pivots, clustered | rolling |
 | STR | Structure swing high / low from 15m pivots. **Targets only**, never entries. | pivots | rolling |
 | HOD / LOD | Today's developing high / low. **Targets only**, never entries. | chart bars | live |
 
@@ -192,8 +201,9 @@ still credit every member type.
 
 **Drawing.** Only zones within `drawRange` daily ATRs of the current price are drawn (default 1.0
 above and below). Lines extend to the right with a small code label at the right edge. A zone with
-two or more members draws as a thin box with the codes joined ("PDH+P4H"). Touched zones draw
-dimmer. Everything else is off by default so the chart stays clean.
+two or more members draws as a thin box with the codes joined ("PDH+P4H"). Touched and fresh zones
+look the same; the score carries that information (D-36). Everything else is off by default so the
+chart stays clean.
 
 ### 4.2 [B] Interaction Classifier
 
@@ -238,8 +248,8 @@ ranking only moves the score, so a type that keeps breaking scores low for rever
 breaks without being banned. `rankGate = ON` is the switch for after the research: top half by hold
 rate may be traded as reversals only, bottom half as breaks only, types with fewer than
 `minSamples` interactions allowed both ways. Your starting belief that 4-hour highs and lows are the
-strongest becomes the seed for the priors once we have measured it (Deep Backtesting run, then the
-TradeZella export if it arrives).
+strongest becomes the seed for the priors once we have measured it in the Deep Backtesting run.
+With break trades off (D-50) the ranking simply favors the strongest types for reversals.
 
 Table (toggle): type, N, hold %, break %, rank, preferred (REV / BRK), trades, win %, net P&L.
 Footer: REV versus BRK totals.
@@ -279,7 +289,11 @@ wider than that many ticks. Your manual habit is a 50-tick stop on MNQ; a bot th
 later than you do needs more room, so the right number comes out of the backtests (D-45).
 Ladder: the next zones in the bounce direction, skipping any closer than `minTargetDist`.
 
-**BRK (zone fails).**
+**BRK (zone fails). Optional, OFF by default, built in M7 (D-50).** The core of this strategy is
+the reversal off a pivot and the trail to the target. A level that price rips through is already
+handled by the ladder, which keeps a running trade alive through it. A standalone break entry only
+matters when we happen to be flat at that moment, so it is a switch for backtest comparison, not
+part of the base product. Rules, for when it is on:
 
 1. A bar closes beyond the zone's far side by at least `breakConfirm`. A wick through does not count.
 2. Optional momentum filter: bar body at least `minBreakBodyATR` execution ATRs.
@@ -482,9 +496,9 @@ Detected from the symbol root, overridable with an input. Times in CT (NY in bra
 | Generic | anything else | 08:30 to 15:00 | New York | 15:00 | 15:55 | off | Crypto: sessions and flatten off |
 
 Your May rules said no Asia trading on NQ, which is why the index profile defaults to New York only.
-Your best-hours claim for CL and SIL at the 19:00 CT Asia open could not be confirmed (D-47), so the
-energy and metals profiles allow every session until we have numbers. The stats table reports P&L
-per session so the bot's own results can settle it.
+Your best-hours claim for CL and SIL at the 19:00 CT Asia open stays unmeasured, and you decided the
+old journal would only show personal tendencies (D-47), so the energy and metals profiles allow every
+session. The stats table reports P&L per session so the bot's own backtests settle it.
 
 Cost defaults per profile are in `docs/RESEARCH.md`; they go into the strategy Properties, which
 Pine cannot set per symbol from an input.
@@ -513,6 +527,7 @@ an offline study later if we want more (M8).
 | Levels | clusterUnit / clusterTicks | 0.02 / 4 | daily ATR / ticks |
 | Levels | touchTol | 0.01 / 2 | daily ATR / ticks |
 | Levels | drawRange | 1.0 | daily ATR |
+| Levels | srLevels / srMinTouches / srLookbackDays / srPivotTF | ON / 3 / 5 / 15 | switch / touches / days / minutes |
 | Interaction | breakConfirm | 0.03 / 4 | daily ATR / ticks |
 | Interaction | holdConfirm | 0.10 | daily ATR |
 | Interaction | verdictWindow | 30 | execution bars |
@@ -520,6 +535,7 @@ an offline study later if we want more (M8).
 | REV | strongSkip | OFF | |
 | REV | stopBuffer (off the level) | 0.03 / 4 | daily ATR / ticks |
 | REV | maxStopTicks | 0 (off) | ticks |
+| BRK | breakTrades | OFF | switch |
 | BRK | minBreakBodyATR | 0.5 | exec ATR |
 | BRK | retestBars | 6 | execution bars |
 | Filters | minScore | 60 | points |
@@ -560,13 +576,13 @@ its acceptance list before we move on. Nothing from a later milestone leaks into
 | # | Deliverable | You verify |
 |---|---|---|
 | M0 | This plan, decisions recorded | Answer `docs/DECISIONS.md` |
-| M1 | Level engine as an **indicator**: all level types, clusters, labels, fresh / touched state, timezone, profiles | Levels match what you would draw by hand on NQ for 3 sessions. The same script on CL and SI draws sensible levels. No level moves on bar replay. |
-| M2 | Interaction classifier and stats table | Table counts change only on bar close. Spot-check 10 touches by eye. |
-| M3 | Setup detector, score, labels, signal alerts (still an indicator) | Signals appear where you would expect REV and BRK. Scores read right. One alert per signal. |
+| M1 | Level engine as an **indicator**: all labeled level types, custom levels, clusters, labels, fresh / touched state, timezone, profiles | Levels match what you would draw by hand on NQ for 3 sessions. The same script on CL and SI draws sensible levels. No level moves on bar replay. |
+| M2 | SR touch-cluster levels, interaction classifier, stats table | SR levels land where you would draw untagged support and resistance. Table counts change only on bar close. Spot-check 10 touches by eye. |
+| M3 | Reversal setup detector, score, labels, signal alerts (still an indicator) | Signals appear where you would expect reversal trades. Scores read right. One alert per signal. |
 | M4 | Strategy v1: entries, initial stop, hard TP1, filters, caps, flatten, costs, bridge JSON checked on a sim account | Backtest runs. Trade list matches the labels. Flat at the profile's flatten time every day. |
 | M5 | Trade manager: staged stops, ladder, soft targets, trailing, partials | Replay 5 trades and confirm every stop move and promotion by hand. |
 | M6 | HTF rejection, bias inputs, score integration, 1-minute trigger mode | Labels show HTF x/4. Bias toggles change scores as expected. |
-| M7 | Flip, custom levels input, VWAP / 200 EMA confluence, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. |
+| M7 | Flip, break trades as a switch, VWAP / 200 EMA confluence, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. Break trades stay off unless switched on. |
 | M8 | Python study for priors (optional) | A priors table produced from real data. |
 
 Repo layout once code starts: `pine/l2l.pine` (the script), `pine/CHANGELOG.md`, `docs/`

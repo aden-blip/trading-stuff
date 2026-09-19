@@ -202,4 +202,5 @@ The claim that CL and SIL trade best at the 19:00 CT Asia open could not be conf
 searches on 2026-09-19 covered Drive, Dropbox, Gmail attachments, Wispr notes, Claude artifacts and
 docs, and the Claude Code session list. The only trade log found, "Copy of Daryl's Trades" in Drive,
 is another trader's journal template, not your data. The chat where the trades were uploaded is a
-claude.ai conversation, which is not readable from a Claude Code session. D-47 asks for the export.
+claude.ai conversation, which is not readable from a Claude Code session. D-47 is closed: you decided
+the journal predates this strategy and would only show personal tendencies.

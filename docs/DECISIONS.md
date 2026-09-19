@@ -6,8 +6,7 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Rounds 1 to 3 answered 2026-09-19. Waiting on you: only D-47 (the TradeZella export) and the
-beta script in D-39. Everything else is decided or at a default you have accepted.
+Rounds 1 to 4 answered 2026-09-19. Nothing is waiting on you except the optional beta script in D-39.
 
 ---
 
@@ -129,8 +128,8 @@ the failed-break exit on; retest is a switch.
 bot leans on those for reversals and trades the weaker ones as breaks. You believe 4-hour highs and
 lows are the strongest and want research before anything is locked. Recorded as `rankGate = OFF`
 by default: every level type may be traded both ways and the measured ranking only moves the score.
-The hard split becomes a switch to turn on after the Deep Backtesting run and, if it arrives, the
-TradeZella export. Your 4-hour belief seeds the priors once measured.
+The hard split becomes a switch to turn on after the Deep Backtesting run. Your 4-hour belief seeds
+the priors once measured. With break trades off (D-50), the ranking simply favors the strongest types for reversals.
 
 ### D-25  Score weights and minimum  (DECIDED, revised)
 **Answer:** Reliability 40, stack 20, level history 15, HTF rejection 10, bias 15, minimum 60.
@@ -193,9 +192,9 @@ long and leaves a 2 MNQ short from the level. Inputs `flipEnabled` (OFF by defau
 ### D-36  Chart cleanliness  (DECIDED at default, explained in chat)
 **Answer:** In plain words: the script only draws levels that are near the current price, roughly
 one average day's range above and below, so the chart is not covered in lines. Each line gets a
-two- or three-letter tag at its right end, such as PDH or MO, instead of long text. A level price
-has already touched today is drawn fainter. The statistics box sits in the top-right corner and can
-be hidden. Small triangles and diamonds mark stop moves and target promotions. All of it has toggles.
+two- or three-letter tag at its right end, such as PDH or MO, instead of long text. Levels look the
+same whether touched or not; you asked that the signal score, not the drawing, reflect whether a level
+has been relevant. The statistics box sits in the top-right corner and can be hidden. Small triangles and diamonds mark stop moves and target promotions. All of it has toggles.
 
 ### D-37  Alert content  (DEFAULT)
 **Default:** PickMyTrade field names plus our own logging fields (plan 4.10).
@@ -242,6 +241,25 @@ when the last 20 candles' volume is under 40 % of that window's 20-day average.
 
 ---
 
+## L. New in round 4
+
+### D-50  Break trades are optional  (DECIDED)
+Your point: the strategy is taking the trade off a pivot and trailing it to the target, so break
+entries do not really fit. Agreed. A level that price rips through is already handled by the target
+ladder, which keeps a running reversal trade alive through the level. A standalone break entry only
+matters when we happen to be flat, so it becomes a switch, OFF by default, built in M7 for backtest
+comparison. Everything in the plan that mentions BRK applies only when that switch is on.
+
+### D-51  Untagged support and resistance levels  (DECIDED)
+Your ask: places price has touched repeatedly that are not one of the labeled levels, as a
+confluence beside the 4-hour highs and lows. Added as level type SR: 15-minute swing highs and lows
+clustered within the normal cluster tolerance, kept when 3 or more touches fall within the last 5
+days. They join zones like any level, their touch count feeds the stack score, they get their own
+hold-rate statistics, and they can trigger reversal trades. Built in M2.
+**Default:** ON, 3 touches, 5 days, 15-minute pivots. All four are inputs.
+
+---
+
 ## J. New in round 2, from your May rules document
 
 ### D-43  Opening blackout  (DECIDED)
@@ -262,13 +280,7 @@ what stop sizes pay; nothing is set in stone before that.
 **Answer:** You like the idea. Standard fixed sizing for now, size-by-score stays in the settings
 to experiment with during backtesting.
 
-### D-47  TradeZella export  (OPEN)
-Second search 2026-09-19: checked Gmail attachments, Dropbox, Google Drive spreadsheets, your Claude
-artifacts and docs, and your Claude Code session list. Nothing holds your TradeZella trades. The
-only trade log in Drive is "Copy of Daryl's Trades", which is another trader's journal template.
-The chat where you uploaded the trades is a claude.ai conversation, and those are not reachable
-from a Claude Code session. Two ways forward: export again from TradeZella (Trades, then Export CSV)
-and add the file to `reference/` through GitHub's upload button, or paste the stats that chat
-produced here as text. Either way I compute win rate and P&L by symbol, session and hour.
-**Default:** none; profiles stay as proposed.
-**Answer:**
+### D-47  TradeZella export  (CLOSED, not needed)
+**Answer:** Your call: the journal predates this strategy and would only show personal tendencies.
+Session and level statistics come from the bot's own backtests instead. The search for the file is
+over. Profiles stay as proposed.
