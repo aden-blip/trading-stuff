@@ -449,6 +449,13 @@ red are reversal trades, blue and orange are break trades. Hovering shows the se
 level, entry, stop, targets, hook letters and the score breakdown. "Compact" and "Full" remain
 as options.
 
+### D-73  Score shown out of 10  (DECIDED)
+Your ask: "X/10". The tag now reads `▲ 8/10` or `▼ 7/10`. The engine still scores 0 to 100 so the
+breakdown and the minimum-score setting keep their precision; the tag rounds to the nearest whole
+point (76 becomes 8/10, 64 becomes 6/10). The hover box shows both, for example
+`LONG REV PDH  8/10 (76 of 100)`. The alert message keeps the 0 to 100 number for the bridge.
+With the minimum at 60, tags read 6/10 to 10/10.
+
 ---
 
 ## L. New in round 4

@@ -1,6 +1,10 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.15, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.16, 2026-09-20.
+
+Changes in 0.16, score display (D-73):
+- Signal tags show the score out of 10, for example `▲ 8/10`; the hover box adds the exact 0 to
+  100 number. The engine, the minimum-score setting and the alert message stay on 0 to 100.
 
 Changes in 0.15, first M3 chart (D-70):
 - Break trades score a first break of a level like a first test; a signal cooldown of 12 minutes
@@ -420,7 +424,9 @@ TP1 distance  >= minTargetDist
 
 `minScore` default 60. Weights are inputs. A fresh level of a top-ranked type with no
 higher-timeframe help and neutral bias scores 40 + 5 + 12 + 0 + 7 = 64, so first tests trade on
-their own. The label shows the total and the HTF count, for example `REV PDL+AL  S 78  HTF 1/4`.
+their own. The tag shows the direction and the score out of 10, for example `▲ 8/10`; the hover
+box shows the setup, the level, the exact 0 to 100 number, entry, stop, targets and the
+breakdown (D-72, D-73).
 
 ### 4.6 [F] Filters
 

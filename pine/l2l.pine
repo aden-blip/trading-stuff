@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.5
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.6
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -140,7 +140,7 @@ wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline 
 wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wHTF     = input.int(10, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
-minScore = input.int(60, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3")
+minScore = input.int(60, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "Scored 0 to 100 inside; the tag shows it out of 10, so 60 here means 6/10 on the chart.")
 rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
 minSamples = input.int(30, "Samples before the gate applies", minval = 1, group = gSc)
 
@@ -1163,6 +1163,9 @@ f_score(float rankPct, bool isRev, int stack, int hist, int hooks) =>
     int sBias  = math.round(wBias * 7 / 15.0)
     [sRel + sStack + sHist + sBias + hooks, sRel, sStack, sHist, sBias]
 
+f_score10(int sc) =>
+    str.tostring(math.round(sc / 10.0)) + "/10"
+
 f_tip(int sRel, int sStack, int sHist, int sBias, int hk) =>
     "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF 0 (M6)  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk)
 
@@ -1336,12 +1339,12 @@ if barstate.isconfirmed and array.size(zLo) > 0
             details := details + "  T2 " + str.tostring(bestTp2, format.mintick)
         if showHooks
             details := details + "  " + f_hookText()
-        string head = dirTxt + " " + setupTxt + " " + bestCode + "  " + str.tostring(bestScore)
-        string mini = (bestDir > 0 ? "▲ " : "▼ ") + str.tostring(bestScore)
+        string head = dirTxt + " " + setupTxt + " " + bestCode + "  " + f_score10(bestScore)
+        string mini = (bestDir > 0 ? "▲ " : "▼ ") + f_score10(bestScore)
         string txt = sigDetail == "Full" ? head + "  " + details : sigDetail == "Compact" ? head : mini
         if sigLabelsOn
             color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
-            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + "\n" + details + "\n" + bestTip))
+            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + " (" + str.tostring(bestScore) + " of 100)\n" + details + "\n" + bestTip))
             if array.size(sigLabels) > sigKeep
                 label.delete(array.shift(sigLabels))
         if alertsOn
@@ -1553,7 +1556,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.5")
+    f_cell(0, "L2L M3", "v0.6")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1584,5 +1587,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.5). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.6). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

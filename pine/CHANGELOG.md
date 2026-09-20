@@ -1,5 +1,10 @@
 # Changelog
 
+## M3 v0.6, 2026-09-20
+
+- Signal tags show the score out of 10, for example `▲ 8/10` (D-73). The hover box adds the exact
+  0 to 100 number; the alert message and the minimum-score setting stay on the 0 to 100 scale.
+
 ## M3 v0.5, 2026-09-20
 
 - Signal tags show an arrow and the score only, size normal; setup, level, entry, stop, targets

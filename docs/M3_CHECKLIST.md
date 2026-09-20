@@ -1,12 +1,12 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.5`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.6`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
 1. **Compiles.** Everything from M2 still shows. New: signal tags under or over candles, an arrow
-   and a score such as `▲ 64`. Green and red are reversal trades, blue and orange are break
+   and a score out of 10 such as `▲ 6/10`. Green and red are reversal trades, blue and orange are break
    trades. Hover one for the setup, the level, entry, stop, targets and the score breakdown.
 2. **Signals sit where you would take reversal trades.** On MNQ 5-minute, scroll back a few days.
    A REV long should follow a wick, a poke-and-close-back or an engulfing candle at a level,
@@ -14,7 +14,8 @@ comes in M6. The info box must read `L2L M3 v0.5`. Verdict distances are 0.05 an
 3. **Break trades read right.** A BRK label appears on the retest bar, not on the breakout bar,
    with the entry at the broken edge and the stop back inside the zone.
 4. **Scores read right.** Hover a label: the tooltip shows Reliability, Stack, History, HTF (0),
-   Bias (7) and Hooks (0). A fresh, top-ranked, single level should read about 64.
+   Bias (7) and Hooks (0). A fresh, top-ranked, single level should read about 6/10, with
+   "64 of 100" beside it.
 5. **One signal per bar, none repeating on the same test.** Two labels on consecutive bars at the
    same level means a bug; tell me.
 6. **Alerts.** Create one alert on the indicator, condition "Any alert() function call", and let it
