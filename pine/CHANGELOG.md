@@ -1,5 +1,13 @@
 # Changelog
 
+## M1 v0.7, 2026-09-20
+
+- Boxed bookmark tags are the default label style again; text only stays as an option (D-62).
+- Stagger distance is a share of the daily ATR with a tick floor, scaled by the square root of the
+  chart timeframe. Step widened to 40 bars, three columns, and each label takes the first column
+  with room below it. A level's line now runs to its own tag, so staggered tags stay attached.
+- Label positions are capped 480 bars past the last candle, inside TradingView's drawing limit.
+
 ## M1 v0.6, 2026-09-20
 
 - Labels that would sit within a set distance of each other step right into up to four columns

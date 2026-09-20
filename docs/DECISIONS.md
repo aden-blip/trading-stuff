@@ -320,6 +320,16 @@ Your note: levels too far apart to merge still had labels on top of each other. 
 than a set number of ticks now step right into successive columns, up to four, so every name
 stays readable. Distance, step and column count are inputs. Lines are unaffected.
 
+### D-62  Bookmark tags are back, and the stagger has to actually separate  (DECIDED)
+Your note on v0.6: the stagger was needed but did not separate the names, and you preferred the
+earlier filled tags that looked like bookmarks. So: "Boxed" is the default label style again (a
+filled tag with its point on the line end; "Text only" stays as the option). The stagger distance
+is now a share of the daily ATR with a tick floor, and it grows with the square root of the chart
+timeframe so one setting fits 1-minute and 5-minute charts. The step between columns is 40 bars
+by default, wider than a full-name tag, and a level's line now runs all the way to its own tag,
+so a staggered tag still hangs off its line. A label takes the first column whose previous label
+is far enough below it, and the tag count per column is not limited.
+
 ---
 
 ## L. New in round 4
