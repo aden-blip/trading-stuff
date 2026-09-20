@@ -23,17 +23,16 @@ What to do with `pine/l2l.pine` and what to report back. Stop at the first failu
    - DO: the 17:00 Central open. MO: the open of the 23:00 Central candle.
    - P4H / P4L: the high and low of the last **completed** 4-hour candle on the chart.
    - MNH / MNL: this week's Monday session high and low.
-   - AH / AL, LH / LL, NH / NL: the last completed Asia, London and New York session. New York
-     runs 08:30 to 16:00 Central, so the NY high includes late-afternoon prints.
+   - AH / AL, LH / LL, NH / NL: the Asia, London and New York session, live while the session runs
+     and frozen after it ends. New York runs 08:30 to 16:00 Central.
    Every level is drawn by default; the quarter, year, weekly and Monday levels may sit far from price.
 3. **Same on 1-minute.** Switch the chart to 1-minute at the same moment. Every code and price in
    the labels should match the 5-minute chart. Report any that differ.
 4. **Replay.** Turn on "Plot level history", open bar replay, jump back a day or two. The step
    lines should show the levels as they were then, with no jumps mid-day except at their own rollover
    (daily levels change at 17:00 Central, 4-hour levels every 4 hours, session levels when a session closes).
-5. **Clusters.** Find a spot where two levels sit close together. They should show as one box with
-   the codes joined, for example `PDH+P4H`. If two levels that clearly should merge are drawn apart,
-   or two far-apart levels are merged, say which and how far apart they are in ticks.
+5. **Separate lines.** Levels close to each other draw as separate lines. Only levels at the same
+   price share a label, joined with a plus sign.
 6. **Crude and silver.** Put it on CL1! and SI1! 5-minute. Profile should read Energy and Metals,
    the New York session should use 08:00 to 13:30 and 07:20 to 12:30 Central, and the levels should
    look sensible. Also try it on any stock or BTC to make sure it does not error.

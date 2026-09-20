@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.3
+//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.4
 //
 //  docs/PLAN.md describes every module. This file holds only module [A].
 //  Module map for the finished script:
@@ -37,6 +37,7 @@ sessLondon = input.session("0100-0400", "London", group = gS)
 sessNYIdx  = input.session("0830-1600", "New York, Index profile", group = gS, tooltip = "Cash open to the futures close. The NY high and low come from this window.")
 sessNYEng  = input.session("0830-1600", "New York, Energy profile", group = gS, tooltip = "Crude pit hours would be 0800-1330.")
 sessNYMet  = input.session("0830-1600", "New York, Metals profile", group = gS, tooltip = "Silver and gold pit hours would be 0720-1230.")
+sessMode   = input.string("Developing", "Session levels", options = ["Developing", "Completed only"], group = gS, tooltip = "Developing: while a session is running its high, low and open update live, then freeze when it ends. Completed only: always the last finished session.")
 
 gL = "Level families"
 onDaily   = input.bool(true, "Previous day high / low / mid, daily open, midnight open", group = gL)
@@ -60,13 +61,14 @@ touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, min
 touchTicks   = input.int(2, "Touch tolerance floor, ticks", minval = 0, group = gGeo)
 limitRange   = input.bool(false, "Only draw levels near price", group = gGeo, tooltip = "Off draws every level, like the Spaceman indicator. On draws only levels within the distance below.")
 drawRange    = input.float(1.0, "Near means within this many daily ATRs", step = 0.1, minval = 0.1, group = gGeo)
+mergeTicks   = input.int(1, "Share one label when levels are within, ticks", minval = 0, maxval = 100, group = gGeo, tooltip = "Every level is drawn on its own line. Levels this close share a label so the names do not overlap.")
 
 gD = "Display"
 anchorMode  = input.string("Candle", "Line start", options = ["Candle", "Right anchored"], group = gD, tooltip = "Candle: each line starts at the candle that made the level. Right anchored: every line has the same length, measured back from the current candle.")
 rightLen    = input.int(40, "Right-anchored length, bars", minval = 5, maxval = 2000, group = gD)
 maxLineBars = input.int(3000, "Longest line, bars", minval = 100, maxval = 9000, group = gD, tooltip = "A line that would start further back than this is cut here.")
-labelOffset = input.int(6, "Label offset, bars right of price", minval = 1, maxval = 100, group = gD)
-labelMode   = input.string("Short codes", "Label text", options = ["Short codes", "Full names"], group = gD)
+labelOffset = input.int(20, "Label offset, bars right of price", minval = 1, maxval = 200, group = gD, tooltip = "If labels are cut off, widen the chart's right margin in chart settings.")
+labelMode   = input.string("Full names", "Label text", options = ["Full names", "Short codes"], group = gD)
 labelSizeIn = input.string("small", "Label size", options = ["tiny", "small", "normal", "large"], group = gD)
 showPrice   = input.bool(false, "Show price in label", group = gD)
 lineWidth   = input.int(1, "Line width", minval = 1, maxval = 4, group = gD)
@@ -113,7 +115,7 @@ f_period(bool newP) =>
     var int   pLb = 0
     var int   pOb = 0
     var bool  seen = false
-    if newP
+    if newP and not barstate.isfirst
         if seen
             pH  := rH
             pL  := rL
@@ -256,7 +258,8 @@ f_sessionLevels(simple string sess) =>
         doneHb := runHb
         doneLb := runLb
         doneOb := runOb
-    [doneH, doneL, doneO, doneHb, doneLb, doneOb]
+    bool live = sessMode == "Developing" and inS
+    [live ? runH : doneH, live ? runL : doneL, live ? runO : doneO, live ? runHb : doneHb, live ? runLb : doneLb, live ? runOb : doneOb]
 
 [ah, al, ao, ahB, alB, aoB]    = f_sessionLevels(sessAsia)
 [lh, ll, lo, lhB, llB, loB]    = f_sessionLevels(sessLondon)
@@ -411,9 +414,11 @@ f_famRank(int f) =>
 f_labelSize() =>
     labelSizeIn == "tiny" ? size.tiny : labelSizeIn == "small" ? size.small : labelSizeIn == "normal" ? size.normal : size.large
 
-// ───────────────── [A6] CLUSTERING AND DRAWING (last bar only) ─────────────────
+// ───────────────── [A6] DRAWING (last bar only) ─────────────────
+// Every level is its own line, starting at the candle that made it. Levels within mergeTicks of
+// each other share one label so the names stay readable. Zones for trading are built in M2 from
+// the cluster tolerance; drawing does not merge them.
 var line[]  drawL = array.new<line>()
-var box[]   drawB = array.new<box>()
 var label[] drawT = array.new<label>()
 
 f_clearDrawings() =>
@@ -422,39 +427,34 @@ f_clearDrawings() =>
         for i = 0 to nL - 1
             line.delete(array.get(drawL, i))
     array.clear(drawL)
-    int nB = array.size(drawB)
-    if nB > 0
-        for i = 0 to nB - 1
-            box.delete(array.get(drawB, i))
-    array.clear(drawB)
     int nT = array.size(drawT)
     if nT > 0
         for i = 0 to nT - 1
             label.delete(array.get(drawT, i))
     array.clear(drawT)
 
-f_drawZone(float zMin, float zMax, string txtIn, int fam, int count, bool touched, int anchor) =>
-    color col = f_famColor(fam)
+f_lineStart(int anchor) =>
     int xa = anchorMode == "Candle" and anchor > 0 ? anchor : bar_index - rightLen
     int x1 = math.max(xa, bar_index - maxLineBars)
-    x1 := math.max(x1, 0)
+    math.max(x1, 0)
+
+f_drawLine(float price, int fam, int anchor) =>
+    color col = f_famColor(fam)
+    int x1 = f_lineStart(anchor)
     int x2 = bar_index + labelOffset
-    float mid = (zMin + zMax) / 2
-    bool asBox = count > 1 and zMax - zMin >= syminfo.mintick
-    if asBox
-        box b = box.new(x1, zMax, x2, zMin, border_color = color.new(col, 30), border_width = lineWidth, bgcolor = color.new(col, 85))
-        array.push(drawB, b)
-    if not asBox
-        line l = line.new(x1, mid, x2, mid, color = color.new(col, 10), width = lineWidth)
-        array.push(drawL, l)
+    array.push(drawL, line.new(x1, price, x2, price, color = color.new(col, 10), width = lineWidth))
+
+f_drawLabel(float price, string txtIn, int fam, bool touched) =>
+    color col = f_famColor(fam)
+    int x2 = bar_index + labelOffset
     string txt = txtIn
     if showPrice
-        txt := asBox ? txt + "  " + str.tostring(zMin, format.mintick) + " - " + str.tostring(zMax, format.mintick) : txt + "  " + str.tostring(mid, format.mintick)
+        txt := txt + "  " + str.tostring(price, format.mintick)
     if showFreshMark and not touched
         txt := txt + " *"
-    array.push(drawT, label.new(x2, mid, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
+    array.push(drawT, label.new(x2, price, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
 
-var int zonesDrawn = 0
+var int levelsDrawn = 0
 if barstate.islast
     f_clearDrawings()
     float[]  px = array.new<float>()
@@ -484,17 +484,16 @@ if barstate.islast
                 array.push(tc, array.get(cuTouched, i))
                 array.push(an, dOpenB)
     int n = array.size(px)
-    zonesDrawn := 0
+    levelsDrawn := n
     if n > 0
         int[] idx = array.sort_indices(px, order.ascending)
         string sep = useShort ? "+" : " + "
-        float  zMin = na
-        float  zMax = na
-        string zText = ""
-        int    zFam = 0
-        int    zCount = 0
-        bool   zTouched = false
-        int    zAnchor = 0
+        float mergeTol = mergeTicks * syminfo.mintick
+        float  gPrice = na
+        string gText = ""
+        int    gFam = 0
+        bool   gTouched = false
+        int    gCount = 0
         for k = 0 to n - 1
             int j = array.get(idx, k)
             float p = array.get(px, j)
@@ -502,33 +501,21 @@ if barstate.islast
             int f = array.get(fm, j)
             bool t = array.get(tc, j)
             int a = array.get(an, j)
-            if zCount == 0
-                zMin := p
-                zMax := p
-                zText := c
-                zFam := f
-                zCount := 1
-                zTouched := t
-                zAnchor := a
-            else if p - zMax <= clusterTol
-                zMax := p
-                zText := zText + sep + c
-                zFam := f_famRank(f) < f_famRank(zFam) ? f : zFam
-                zCount += 1
-                zTouched := zTouched or t
-                zAnchor := zAnchor == 0 or a == 0 ? 0 : math.min(zAnchor, a)
+            f_drawLine(p, f, a)
+            if gCount > 0 and p - gPrice <= mergeTol
+                gText := gText + sep + c
+                gFam := f_famRank(f) < f_famRank(gFam) ? f : gFam
+                gTouched := gTouched or t
+                gCount += 1
             else
-                f_drawZone(zMin, zMax, zText, zFam, zCount, zTouched, zAnchor)
-                zonesDrawn += 1
-                zMin := p
-                zMax := p
-                zText := c
-                zFam := f
-                zCount := 1
-                zTouched := t
-                zAnchor := a
-        f_drawZone(zMin, zMax, zText, zFam, zCount, zTouched, zAnchor)
-        zonesDrawn += 1
+                if gCount > 0
+                    f_drawLabel(gPrice, gText, gFam, gTouched)
+                gPrice := p
+                gText := c
+                gFam := f
+                gTouched := t
+                gCount := 1
+        f_drawLabel(gPrice, gText, gFam, gTouched)
 
 // ───────────────────────────── [A7] INFO BOX ─────────────────────────────
 var table info = table.new(position.top_right, 2, 7, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
@@ -536,13 +523,13 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M1", "v0.3")
+    f_cell(0, "L2L M1", "v0.4")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
     f_cell(4, "Cluster tol", str.tostring(clusterTol, format.mintick) + " (" + str.tostring(math.round(clusterTol / syminfo.mintick)) + " ticks)")
     f_cell(5, "Touch tol", str.tostring(touchTol, format.mintick) + " (" + str.tostring(math.round(touchTol / syminfo.mintick)) + " ticks)")
-    f_cell(6, "Zones drawn", str.tostring(zonesDrawn))
+    f_cell(6, "Levels drawn", str.tostring(levelsDrawn))
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and onDaily  ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
@@ -563,5 +550,5 @@ plot(showHist and onWeekly ? pwh   : na, "PWH", color = colWeekly, style = plot.
 plot(showHist and onWeekly ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M1 v0.3). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M1 v0.4). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

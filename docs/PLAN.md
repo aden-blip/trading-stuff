@@ -1,6 +1,14 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 1 in review. Version 0.8, 2026-09-20.
+Status: BUILDING. Milestone 1 in review. Version 0.9, 2026-09-20.
+
+Changes in 0.9, from the second M1 chart review:
+- **Session levels develop live.** While a session runs, its high, low and open update as new
+  extremes print, then freeze when the session ends. "Completed only" remains as a switch, and the
+  trading logic in M3 will treat a developing session extreme as a target, not an entry level.
+- **One line per level.** Drawing no longer merges nearby levels into boxes; only levels at the same
+  price within one tick share a label. Zones for trading are still built in M2 from the cluster tolerance.
+- Labels default to full names with short codes as the option, placed 20 bars right of price.
 
 Changes in 0.8, from the first M1 chart review:
 - **New York session runs to the 16:00 CT futures close** on every futures profile. The cash-close
@@ -204,7 +212,9 @@ STR, HOD and LOD are not drawn unless one of them is the active TP1 or TP2 of an
 | New York, all futures profiles | 08:30 to 16:00 CT (09:30 to 17:00 NY), cash open to futures close | NQ, MNQ, ES, MES, CL, MCL, SI, SIL, GC, MGC |
 | New York, pit-hour alternatives | 08:00 to 13:30 CT for crude, 07:20 to 12:30 CT for metals, available in the inputs | CL, MCL, SI, SIL |
 
-Session levels always use the most recently *completed* session, so they never move while being traded.
+Session levels **develop live** while their session runs and freeze when it ends (D-59). For
+trading, a developing session extreme is a target only; it becomes an entry level once the
+session has completed. A "Completed only" switch shows the last finished session instead.
 
 **Request budget.** Day, week, month and 4-hour levels are measured from the chart's own candles,
 which is what gives each line its origin candle. Requests: D 1 (daily ATR, year high and low),
@@ -227,13 +237,14 @@ still credit every member type.
 
 **Fresh state.** A zone is fresh until price trades within `touchTol` of it after the daily rollover (D-11).
 
-**Drawing** (D-57). Every level is drawn by default, like the Spaceman indicator; a switch limits
-drawing to levels within `drawRange` daily ATRs of price. Each line starts at the candle that made
-the level and ends a few bars to the right of the current candle, where its label sits; a
-right-anchored fixed-length mode is the alternative. Labels use short codes or full names, a chosen
-text size, and optionally the price. A zone with two or more members draws as a thin box with the
-names joined ("PDH+P4H"). Touched and fresh zones look the same; the score carries that
-information (D-36).
+**Drawing** (D-57, D-58). Every level is drawn by default, like the Spaceman indicator; a switch
+limits drawing to levels within `drawRange` daily ATRs of price. **Every level is its own line**,
+starting at the candle that made it and ending some bars to the right of the current candle, where
+its label sits; a right-anchored fixed-length mode is the alternative. Labels default to full names
+with short codes as the option, in a chosen text size, optionally with the price. Levels at the
+same price within `mergeTicks` share one label so names do not overlap. Zones for trading are
+built from the cluster tolerance in M2 and are not drawn as boxes. Touched and fresh levels look
+the same; the score carries that information (D-36).
 
 ### 4.2 [B] Interaction Classifier
 

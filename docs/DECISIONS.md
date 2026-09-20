@@ -6,7 +6,7 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Rounds 1 to 6 answered 2026-09-19. M1 chart review recorded 2026-09-20 (D-56, D-57). Nothing is
+Rounds 1 to 6 answered 2026-09-19. M1 chart reviews recorded 2026-09-20 (D-56 to D-59). Nothing is
 waiting on you; the beta script stays optional.
 
 ---
@@ -290,6 +290,21 @@ and year ones. Recorded and built in M1 v0.3: candle-anchored lines with a right
 fixed-length alternative, label size input, short codes or full names, optional price in the label,
 all levels drawn by default with a switch to limit to nearby ones. Spaceman parity levels added:
 previous quarter high, low and mid, year mid, previous 4-hour mid, current 4-hour open.
+
+### D-58  One line per level, full names, labels further out  (DECIDED)
+Second review: you did not want nearby levels combined into one box, wanted full names as the
+default with short codes as the option, and wanted labels pushed further right of price. Built in
+M1 v0.4: every level draws on its own line; only levels at the same price within one tick share a
+label; full names by default; label offset 20 bars. The cluster tolerance still exists for the
+trading zones in M2; it no longer affects drawing.
+
+### D-59  Session levels develop live  (DECIDED)
+Second review: your chart's last candle was Friday 15:59, one minute before the New York window
+closed, and the script only published a session after it completed, so the NY high shown was
+Thursday's. You expect the running session's high to show while the session is live. Session
+levels now update live and freeze when the session ends; "Completed only" is a switch. For the
+trading logic, a developing session extreme counts as a target, not an entry level, until the
+session completes.
 
 ---
 

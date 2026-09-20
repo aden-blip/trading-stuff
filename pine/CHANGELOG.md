@@ -1,5 +1,12 @@
 # Changelog
 
+## M1 v0.4, 2026-09-20
+
+- Session levels develop live while the session runs and freeze when it ends; "Completed only" switch.
+- One line per level; labels merge only within one tick; boxes removed. Full names by default,
+  short codes as the option, label offset 20 bars.
+- Period tracker ignores a boundary on the very first bar of history.
+
 ## M1 v0.3, 2026-09-20
 
 - New York session default 08:30 to 16:00 CT on every profile (D-56).
