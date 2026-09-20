@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.12
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.13
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -184,6 +184,8 @@ entryCutoff = input.int(1500, "No new trades from (HHMM, timezone above; 0 = off
 flattenAt   = input.int(1555, "Close the trade at (HHMM; 0 = off)", minval = 0, maxval = 2359, group = gPa)
 showExits   = input.bool(true, "Mark exits", group = gPa, tooltip = "A small tag at each exit: T1, stop or flat, with the points made or lost. Teal is a gain, maroon a loss.")
 exitKeep    = input.int(100, "Exit marks kept", minval = 10, maxval = 300, group = gPa)
+showBreak   = input.bool(true, "Show paper breakdown table", group = gPa, tooltip = "A table of the paper trades split by score, by setup (REV or BRK) and by session window: how many, the share that reached the first target, the average gain of those, the average loss of the stopped ones, and the net points. Only shows while the trade switch above is on.")
+breakPos    = input.string("Middle right", "Breakdown position", options = ["Middle right", "Middle left", "Top left", "Bottom left"], group = gPa)
 
 gRg = "Range filter (test, D-81)"
 rangeOn     = input.bool(false, "No reversal at a level inside a range, edges only", group = gRg, tooltip = "Your read: in a range, trade the edges, not the middle. The script looks back over the window below. If that stretch is narrower than the limit and the level sits in the middle of it, away from both edges by the edge share, reversal entries at that level are skipped. Breaks are not affected. Off until the M4 backtest measures it.")
@@ -1282,6 +1284,32 @@ var int     ptLoss   = 0
 var int     ptFlat   = 0
 var float   ptNet    = 0.0
 var label[] exitLabels = array.new<label>()
+// Breakdown tallies (D-82). Rows 0 to 3: score 5/10 or less, 6/10, 7/10, 8/10 or more.
+// Rows 4 and 5: REV, BRK. Rows 6 to 9: Asia window, London window, New York window, other
+// hours. Every closed trade lands in one row of each group; the exit block adds it.
+var int[]   pbN    = array.new<int>(10, 0)
+var int[]   pbW    = array.new<int>(10, 0)
+var int[]   pbL    = array.new<int>(10, 0)
+var float[] pbWin  = array.new<float>(10, 0.0)
+var float[] pbLoss = array.new<float>(10, 0.0)
+var float[] pbNet  = array.new<float>(10, 0.0)
+var int     posRowS  = 0
+var int     posRowT  = 4
+var int     posRowH  = 9
+var int     ptFirstT = na
+var int     ptDays   = 0
+f_pbAdd(int r, float pts, bool win, bool loss) =>
+    array.set(pbN, r, array.get(pbN, r) + 1)
+    array.set(pbNet, r, array.get(pbNet, r) + pts)
+    if win
+        array.set(pbW, r, array.get(pbW, r) + 1)
+        array.set(pbWin, r, array.get(pbWin, r) + pts)
+    if loss
+        array.set(pbL, r, array.get(pbL, r) + 1)
+        array.set(pbLoss, r, array.get(pbLoss, r) + pts)
+bool newTradingDay = timeframe.change("1D")
+if paperOn and not na(ptFirstT) and newTradingDay
+    ptDays += 1
 string sym = str.length(syminfo.root) > 0 ? syminfo.root : syminfo.ticker
 int cutMin  = math.floor(entryCutoff / 100) * 60 + entryCutoff % 100
 int flatMin = math.floor(flattenAt / 100) * 60 + flattenAt % 100
@@ -1307,6 +1335,9 @@ if barstate.isconfirmed and paperOn and posDir != 0
         else
             ptFlat += 1
         ptNet += pts
+        f_pbAdd(posRowS, pts, tpHit and not stopHit, stopHit)
+        f_pbAdd(posRowT, pts, tpHit and not stopHit, stopHit)
+        f_pbAdd(posRowH, pts, tpHit and not stopHit, stopHit)
         f_exitMark(px, why + " " + (pts >= 0 ? "+" : "") + str.tostring(pts, format.mintick), pts >= 0)
         if alertsOn
             alert('{"symbol":"' + sym + '","data":"close","event":"EXIT","reason":"' + why + '","level":"' + posCode + '","price":' + str.tostring(px, format.mintick) + ',"points":' + str.tostring(pts, format.mintick) + '}', alert.freq_once_per_bar_close)
@@ -1521,6 +1552,12 @@ if barstate.isconfirmed and array.size(zLo) > 0
                 posStop  := bestStop
                 posTp    := bestTp1
                 posCode  := bestCode
+                posRowS  := math.min(3, math.max(0, math.round(bestScore / 10.0) - 5))
+                posRowT  := bestSetup == 1 ? 4 : 5
+                posRowH  := inNYS ? 8 : inLondonS ? 7 : inAsiaS ? 6 : 9
+                if na(ptFirstT)
+                    ptFirstT := time
+                    ptDays   := 1
             int bz = bestZone
             if bz < 0
                 for z = 0 to nz - 1
@@ -1730,7 +1767,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.12")
+    f_cell(0, "L2L M3", "v0.13")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1749,6 +1786,45 @@ if barstate.islast and showInfo
     if paperOn
         f_cell(12, "Paper trades", str.tostring(ptCount) + ": " + str.tostring(ptWin) + " T1, " + str.tostring(ptLoss) + " stop, " + str.tostring(ptFlat) + " flat")
         f_cell(13, "Paper points", (ptNet >= 0 ? "+" : "") + str.tostring(ptNet, format.mintick) + (posDir != 0 ? "  (in a " + (posDir > 0 ? "long" : "short") + ")" : ""))
+
+// ───────────────────── [A7b] PAPER BREAKDOWN TABLE (D-82) ─────────────────────
+// The paper trades split by score, by setup and by session window: trades, the share that
+// reached the first target, the average gain of those, the average loss of the stopped ones,
+// and the net points. The header shows the first trade's date and the trading days since.
+f_breakPos() =>
+    breakPos == "Middle left" ? position.middle_left : breakPos == "Top left" ? position.top_left : breakPos == "Bottom left" ? position.bottom_left : position.middle_right
+var table pbT = table.new(f_breakPos(), 6, 13, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+f_pcell(int c, int r, string txt, color tc, color bg) =>
+    table.cell(pbT, c, r, txt, text_color = tc, text_size = size.small, bgcolor = bg, text_halign = c == 0 ? text.align_left : text.align_right)
+f_pbRow(int r, string name, int n, int nW, int nL, float winPts, float lossPts, float net) =>
+    color bgc = color.new(color.black, 100)
+    f_pcell(0, r, name, color.white, bgc)
+    f_pcell(1, r, str.tostring(n), color.white, bgc)
+    f_pcell(2, r, n > 0 ? str.tostring(100.0 * nW / n, "#") : "", color.white, bgc)
+    f_pcell(3, r, nW > 0 ? "+" + str.tostring(winPts / nW, format.mintick) : "", color.white, bgc)
+    f_pcell(4, r, nL > 0 ? str.tostring(lossPts / nL, format.mintick) : "", color.white, bgc)
+    f_pcell(5, r, n > 0 ? (net >= 0 ? "+" : "") + str.tostring(net, format.mintick) : "", net > 0 ? color.lime : net < 0 ? color.orange : color.white, bgc)
+if barstate.islast and paperOn and showBreak
+    color hdrB = color.new(color.gray, 70)
+    color dimB = color.new(color.white, 20)
+    string since = na(ptFirstT) ? "no trades yet" : "since " + str.format_time(ptFirstT, "d MMM yyyy", tz) + ", " + str.tostring(ptDays) + " trading days"
+    f_pcell(0, 0, "Paper trades " + since, dimB, hdrB)
+    table.merge_cells(pbT, 0, 0, 5, 0)
+    f_pcell(0, 1, "Group", dimB, hdrB)
+    f_pcell(1, 1, "Trades", dimB, hdrB)
+    f_pcell(2, 1, "T1 %", dimB, hdrB)
+    f_pcell(3, 1, "Avg T1", dimB, hdrB)
+    f_pcell(4, 1, "Avg stop", dimB, hdrB)
+    f_pcell(5, 1, "Points", dimB, hdrB)
+    float aWin  = 0.0
+    float aLoss = 0.0
+    for r = 0 to 3
+        aWin  += array.get(pbWin, r)
+        aLoss += array.get(pbLoss, r)
+    f_pbRow(2, "All", ptCount, ptWin, ptLoss, aWin, aLoss, ptNet)
+    string[] pbName = array.from("Score 5/10 or less", "Score 6/10", "Score 7/10", "Score 8/10 or more", "REV", "BRK", "Asia window", "London window", "New York window", "Other hours")
+    for r = 0 to 9
+        f_pbRow(r + 3, array.get(pbName, r), array.get(pbN, r), array.get(pbW, r), array.get(pbL, r), array.get(pbWin, r), array.get(pbLoss, r), array.get(pbNet, r))
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
@@ -1769,5 +1845,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.12). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.13). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

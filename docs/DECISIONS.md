@@ -611,6 +611,37 @@ also skips the 12:28 and 13:00 longs that paid, which were the first legs of the
 the range. The M4 backtest measures it next to the plan's band rule; the M7 sweep-reclaim entry
 is the "manipulation, then distribution" trade you describe. Built in M3 v0.12.
 
+### D-82  Paper trade breakdown, and what the first full tally says  (DECIDED)
+Your v0.12 screenshot, MNQ 5-minute, defaults (minimum score 50, volume rule off, one trade at
+a time, range filter off): Paper trades 807: 176 T1, 592 stop, 39 flat; Paper points −1280.75;
+Signals 569 REV, 238 BRK. About one trade in five reached its first target and the net is a
+small loss before commissions and slippage (about −$2,560 on one MNQ; costs would take roughly
+another 1 to 2 points a trade, 800 to 1,500 points over 807 trades). Per trade the loss is
+small, −1.6 points on average. So this is not a broken bot; it is a coin that lands slightly
+against us under the crudest possible trade: in at the close of the follow-through candle, stop
+under the whole zone plus the buffer, out only at the first target or the stop, nothing in
+between. Recorded as Session 1 in `docs/BACKTEST_LOG.md`.
+1. **Why one in five.** The entry candle has already moved away from the level, so the stop
+   (beyond the far side of the zone) is wide, while the first target (the next zone, at least
+   0.15 daily ATR away) is not proportionally farther. The reward is about two to three times
+   the risk, and at that payoff you need one winner in three or four just to break even.
+   Entering nearer the level (a limit at the level, or the 1-minute trigger in M6) shrinks the
+   risk without moving the target; that is the whole reason the plan has the 1-minute trigger,
+   and it is your Asia Open example (wick, quick return, entry on the 1-minute).
+2. **What the tally cannot say yet.** Whether the 7/10 and 8/10 trades pay while the 5/10 ones
+   lose; whether REV pays and BRK drags; whether New York hours pay and the overnight hours
+   lose; and what partials, a breakeven stop and trailing (M5) turn the 592 stops into. Also,
+   the ranks were built on the same candles the trades ran on, so live results would if
+   anything be a little worse than this tally, not better.
+3. **Decision.** No rule changes on one number. First split the tally so the next screenshot
+   answers the first three questions: a breakdown table by score (5/10 or less, 6, 7, 8 or
+   more), by setup (REV, BRK) and by session window (Asia, London, New York, other hours), each
+   with the trade count, the share that reached T1, the average gain, the average loss and the
+   net points, plus the first trade's date and the trading days covered. Built in M3 v0.13, on
+   by default, with a position setting. Rule changes come from the M4 strategy tester, which
+   runs the same splits with costs; the entry style (close of the follow-through candle, a
+   limit at the level, the 1-minute trigger) is the first thing it compares.
+
 ---
 
 ## L. New in round 4

@@ -1,6 +1,13 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.22, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.23, 2026-09-20.
+
+Changes in 0.23, paper breakdown table (D-82):
+- The first full tally of the one-trade-at-a-time view (807 trades, one in five reaching the
+  first target, a small net loss before costs) is recorded in `docs/BACKTEST_LOG.md`. Before
+  any rule changes, the indicator splits the tally by score, setup and session window so the
+  next screenshot shows where the edge sits. Rule changes wait for the M4 strategy tester,
+  which compares the entry styles first.
 
 Changes in 0.22, range filter as a test switch (D-81):
 - Range-edges rule from the owner's AMD read: inside a narrow 120-minute range, no reversal at

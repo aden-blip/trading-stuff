@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.12`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.13`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -34,6 +34,10 @@ comes in M6. The info box must read `L2L M3 v0.12`. Verdict distances are 0.05 a
     the next arrow comes only after a small teal or maroon exit tag (T1, stop or flat with the
     points). The info box shows Paper trades and Paper points. Turn the switch off and every
     setup shows again, as in v0.10.
+13. **Paper breakdown.** With the paper trade on, a second table (middle right by default) lists
+    the paper trades by score, by REV or BRK and by session window, with the share that reached
+    T1, the average gain, the average loss and the net points. Its header shows the date of the
+    first trade and the trading days covered. The All row must match the info box rows.
 
 ## Report back
 
@@ -41,3 +45,5 @@ comes in M6. The info box must read `L2L M3 v0.12`. Verdict distances are 0.05 a
 - Any signal that reads wrong, with the level name and time.
 - How many signals per day it produces at the review minimum score of 50, and how many of
   those read 7/10 or better.
+- A screenshot of the paper breakdown table with the defaults, and one with the range filter
+  switched on.

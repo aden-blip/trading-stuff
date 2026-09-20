@@ -1,5 +1,14 @@
 # Changelog
 
+## M3 v0.13, 2026-09-20
+
+- Paper breakdown table (D-82): the paper trades split by score (5/10 or less, 6, 7, 8 or
+  more), by setup (REV, BRK) and by session window (Asia, London, New York, other hours), each
+  row with the trade count, the share that reached the first target, the average gain of those,
+  the average loss of the stopped ones and the net points. The header shows the first trade's
+  date and the trading days covered. On by default while the paper trade is on; a position
+  setting (middle right by default). No trading rule changed.
+
 ## M3 v0.12, 2026-09-20
 
 - Range filter as a test switch, off by default (D-81, your AMD read): inside a narrow range
