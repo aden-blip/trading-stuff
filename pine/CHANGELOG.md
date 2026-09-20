@@ -1,5 +1,21 @@
 # Changelog
 
+## M3 v0.1, 2026-09-20
+
+- Hidden zone list every bar: members, stack, freshness, today's verdicts, best rank; today's
+  high and low as target-only members.
+- REV detector: rejection bar (wick, poke and close back, engulfing) plus follow-through bar,
+  volume confirmation on the Index profile, strong-rejection skip as an option.
+- BRK detector: confirmed close through a zone rests a retest limit at the broken edge; the fill
+  is the signal, a close back through cancels, six bars to live.
+- Score: reliability from the rank (hold-rank for REV, break-rank for BRK), stack, level history,
+  HTF 0 and bias neutral until M6, hooks at zero weight. Minimum 60. Rank gate as a switch.
+- Trade geometry: stop off the zone plus buffer, TP1 and TP2 from the next zones at least the
+  minimum distance away, minimum reward to risk, maximum stop.
+- Signal labels with entry, stop, targets, score and hook letters; breakdown in the tooltip.
+  `alert()` JSON per signal. Session VWAP and 15-minute 200 EMA computed, drawn only on request.
+- Info box: zones and signal counts. Requests 6 of 40.
+
 ## M2 v0.3, 2026-09-20
 
 - Hold and break verdict distances both default to 0.05 daily ATR (D-67). Settings change only;

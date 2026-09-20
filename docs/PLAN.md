@@ -1,6 +1,12 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 2 in review. Version 0.13, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.14, 2026-09-20.
+
+Changes in 0.14, M2 sign-off and the M3 build (D-67, D-68):
+- Hold and break verdict distances both 0.05 daily ATR.
+- M3: zones rebuilt every bar and never drawn, REV and BRK-retest detectors on the chart's
+  confirmed bars, score with M6 placeholders, one signal per bar, hooks at zero weight, `alert()`
+  JSON per signal. Notes in D-68.
 
 Changes in 0.13, plan review and first M2 chart (D-66):
 - Break trades ON by default, retest entry only, built in M3 beside the REV detector.

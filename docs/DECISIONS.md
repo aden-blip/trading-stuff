@@ -395,6 +395,29 @@ level with no edge scores near 50 % and the hold rate reads as the reversal-vers
 you asked for. The ranking is relative and was never damaged; the raw rates were misleading. The
 BRK setup in M3 gets its own break-confirm input, separate from the verdict distance.
 
+### D-68  M2 sign-off and M3 build notes  (DECIDED)
+M2 passed on the MNQ 5-minute chart: S/R (5) at about 29,505 and S/R (3) at about 29,215 sit on
+visible 4-hour pivot clusters, verdict marks match the candles, counts are the right size. (Your
+settings had Hold confirm at 0.16 by a slip; it belongs at 0.05, D-67.) Build notes for M3,
+recorded before the code:
+- Signals evaluate on the chart's confirmed bars, so the 5-minute chart is the signal chart (D-21)
+  until the 1-minute trigger mode arrives in M6.
+- Zones are rebuilt every bar from the enabled levels within the cluster tolerance, never drawn.
+  Today's high and low join as target-only members (D-15); 15-minute structure waits for M5.
+- Zone history precedence for the score: broke today (3) beats held today (15) beats touched with
+  no verdict (6); untouched is fresh (12).
+- Zone reliability is the best member's rank; a zone of unknown types scores the neutral 20.
+  Break-rank is 100 minus hold-rank.
+- One signal per bar, highest score wins. After a signal the zone's members are blocked for that
+  test and re-arm when a whole bar trades clear of the band; M4 adds the cooldown in minutes.
+- Break trades: after a confirmed close through (own input, 0.03 daily ATR, body at least 0.5
+  chart ATRs), a limit rests at the broken edge for 6 bars; a fill on the retest is the signal, a
+  close back through the zone cancels it, a fill is checked before a cancel on the same bar.
+- Alerts use `alert()` with the plan's JSON body, one per signal; the TradingView alert is created
+  with the condition "Any alert() function call".
+- HTF rejection scores 0 and bias scores neutral (7) until M6. Hooks (D-64) are computed every
+  bar at zero weight and shown as letters on the label.
+
 ---
 
 ## L. New in round 4
