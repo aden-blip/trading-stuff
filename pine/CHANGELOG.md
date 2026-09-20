@@ -1,5 +1,10 @@
 # Changelog
 
+## M3 v0.5, 2026-09-20
+
+- Signal tags show an arrow and the score only, size normal; setup, level, entry, stop, targets
+  and the breakdown are in the hover box (D-72). Compact and Full remain as options.
+
 ## M3 v0.4, 2026-09-20
 
 - Held and broke marks are off by default; the chart carries trade signals only (D-71).

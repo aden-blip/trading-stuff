@@ -442,6 +442,13 @@ Your call after the M3 v0.3 chart: the chart should carry trade signals only; wh
 held or broke is already in the statistics table, and you judge the signals by eye. The marks
 stay available in the settings for checking the statistics.
 
+### D-72  Signal tags show an arrow and the score only  (DECIDED)
+Your call: the tag should carry just the direction and the score, with everything else in the
+hover box. Default "Minimal": `▲ 76` for a long, `▼ 78` for a short, tag size normal. Green and
+red are reversal trades, blue and orange are break trades. Hovering shows the setup and the
+level, entry, stop, targets, hook letters and the score breakdown. "Compact" and "Full" remain
+as options.
+
 ---
 
 ## L. New in round 4

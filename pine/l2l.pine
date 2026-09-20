@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.4
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.5
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -157,8 +157,8 @@ showHookLines  = input.bool(false, "Show VWAP and EMA lines", group = gHk)
 gSg = "Signals"
 sigLabelsOn = input.bool(true, "Signal labels", group = gSg)
 sigKeep     = input.int(100, "Labels kept", minval = 10, maxval = 300, group = gSg)
-sigSizeIn   = input.string("small", "Label size", options = ["tiny", "small", "normal"], group = gSg)
-sigDetail   = input.string("Compact", "Label detail", options = ["Compact", "Full"], group = gSg, tooltip = "Compact shows direction, setup, level and score; entry, stop, targets and the score breakdown sit in the tooltip. Full prints everything on the label.")
+sigSizeIn   = input.string("normal", "Label size", options = ["tiny", "small", "normal", "large"], group = gSg)
+sigDetail   = input.string("Minimal", "Label detail", options = ["Minimal", "Compact", "Full"], group = gSg, tooltip = "Minimal shows an arrow and the score; everything else is in the hover box. Compact adds the setup and the level. Full prints entry, stop and targets on the tag too.")
 sigCooldownMin = input.int(12, "No repeat signal on a level within, minutes", minval = 0, maxval = 600, group = gSg, tooltip = "After a signal, the same level stays quiet for this long. 12 minutes is about two 5-minute candles. 0 turns it off.")
 alertsOn    = input.bool(true, "Fire alert() on each signal", group = gSg, tooltip = "Create one alert on this indicator with the condition Any alert() function call. The message is the JSON body from the plan.")
 baseQty     = input.int(2, "Contracts in the alert", minval = 1, group = gSg)
@@ -1173,7 +1173,7 @@ f_gateOK(bool isRev, float rk, int rkN) =>
     ok
 
 f_sigSize() =>
-    sigSizeIn == "tiny" ? size.tiny : sigSizeIn == "small" ? size.small : size.normal
+    sigSizeIn == "tiny" ? size.tiny : sigSizeIn == "small" ? size.small : sigSizeIn == "normal" ? size.normal : size.large
 
 // ---- Pending break retests: one resting limit per broken zone and direction.
 var int[]    pDir   = array.new<int>()
@@ -1337,10 +1337,11 @@ if barstate.isconfirmed and array.size(zLo) > 0
         if showHooks
             details := details + "  " + f_hookText()
         string head = dirTxt + " " + setupTxt + " " + bestCode + "  " + str.tostring(bestScore)
-        string txt = sigDetail == "Full" ? head + "  " + details : head
+        string mini = (bestDir > 0 ? "▲ " : "▼ ") + str.tostring(bestScore)
+        string txt = sigDetail == "Full" ? head + "  " + details : sigDetail == "Compact" ? head : mini
         if sigLabelsOn
             color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
-            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = details + "\n" + bestTip))
+            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + "\n" + details + "\n" + bestTip))
             if array.size(sigLabels) > sigKeep
                 label.delete(array.shift(sigLabels))
         if alertsOn
@@ -1552,7 +1553,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.4")
+    f_cell(0, "L2L M3", "v0.5")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1583,5 +1584,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.4). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.5). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
