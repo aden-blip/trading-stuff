@@ -87,8 +87,9 @@ trailing stop. Never entries, not drawn unless active as TP1 or TP2.
 ### D-16  Custom levels input  (DECIDED)
 **Answer:** included.
 
-### D-17  VWAP and 200 EMA  (DEFAULT)
-**Default:** score bonus only, session VWAP and the 15-minute 200 EMA, built in M7.
+### D-17  VWAP and 200 EMA  (DECIDED, revised by D-64)
+**Answer:** score bonus only, session VWAP and the 15-minute 200 EMA. The hooks are built hidden in
+M3 at zero weight; the weights come from the M4 backtest split (D-64).
 
 ---
 
@@ -339,6 +340,30 @@ pointing at their mean; each level keeps its own line, and setting the share dis
 floor to 0 restores identical-price-only sharing. Each stagger column is as wide as its longest
 name, from a bars-per-character input that scales with the label size, so short codes pack
 tighter than full names. Five columns by default.
+
+### D-64  Hidden confluence hooks: VWAP and the 15-minute 200 EMA  (DECIDED)
+Your question: can confluences work without showing on the chart, and which one or two are worth
+it. Yes: anything the script computes can feed the score without being drawn. Two hooks, built in
+M3 with the score, hidden, weight 0 by default: session VWAP (its side, and how far price sits
+from it in daily-ATR units, the "stretch" into a level) and a 15-minute 200 EMA trend vote. The
+first M4 backtests split the hold rate by each hook; a hook gets weight only if the split moves the
+hold rate by a real margin on a real sample. The only visible traces are letters on the signal
+label, a "Show confluence lines" switch that is off, and the split in the statistics. POC, VAH,
+VAL and options levels stay manual custom levels and are not computed. Nothing new is drawn.
+This pulls VWAP and the EMA forward from M7 to M3 as hooks only; M7 keeps the weighting.
+
+### D-65  M2 build notes: SR tolerance, pivots, verdicts, priors  (DECIDED)
+Made while building M2, recorded here before the code: the SR cluster tolerance is its own input,
+default 0.04 daily ATR with an 8-tick floor, twice the zone tolerance, because higher-timeframe
+swing points scatter more than the labeled levels do (D-51 said "the normal cluster tolerance";
+the M2 review tunes it). Pivots are 1 bar left and 1 right on the 4-hour by default, inputs.
+Pivot highs and lows both count as touches of one level, the level sits at the mean of its
+touches, and its line starts at the first touch. Verdicts are taken on confirmed bars only, so the
+table changes only on bar close. The classifier runs per level instance, so every member of a
+zone gets its own verdict, which is the plan's "credit every member" rule. The "reaches the next
+zone" shortcut for HELD waits for M3's zone list; M2 uses the hold distance alone. A NEUTRAL
+verdict does not use up an instance's one counted interaction. Priors are one text input,
+`code:rate:count, ...`, instead of eighty separate inputs.
 
 ---
 

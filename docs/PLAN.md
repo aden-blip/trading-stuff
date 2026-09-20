@@ -1,6 +1,13 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 1 in review. Version 0.11, 2026-09-20.
+Status: BUILDING. Milestone 2 in review. Version 0.12, 2026-09-20.
+
+Changes in 0.12, confluence roadmap and the M2 build (D-64, D-65):
+- Session VWAP (side and stretch) and a 15-minute 200 EMA vote become hidden score hooks built in
+  M3 at zero weight; weights come from the M4 backtest split. Nothing new is drawn. POC, VAH, VAL
+  and options levels stay manual custom levels.
+- M2 build notes: SR tolerance is its own input at twice the zone tolerance, 1-by-1 pivots on the
+  4-hour, verdicts on confirmed bars only, per-instance classification, priors as one text input.
 
 Changes in 0.11, from the first display reviews (D-62, D-63):
 - Labels are boxed bookmark tags by default; text only is the option.
@@ -276,7 +283,9 @@ States per zone: `IDLE -> TOUCHED -> (HELD | BROKE | NEUTRAL)`.
   side (default 0.10 daily ATR), or reaches the next zone, whichever comes first.
 - **NEUTRAL.** Neither happens within `verdictWindow` bars (default 30 execution bars). Not counted.
 - Only the **first** interaction per instance counts toward the statistics. Later interactions still
-  generate setup events.
+  generate setup events. A NEUTRAL verdict does not use up that one counted interaction.
+- Verdicts are taken on confirmed bars only, so table counts change only on bar close (D-65). The
+  next-zone shortcut for HELD waits for M3's zone list; M2 uses the hold distance alone.
 
 ### 4.3 [C] Stats & Ranking
 
@@ -286,7 +295,8 @@ Per level type: `holds` and `breaks` running counters (`var` arrays, persisted a
 holdRate = (priorN * priorRate + holds) / (priorN + holds + breaks)
 ```
 
-`priorRate` and `priorN` are inputs per type (defaults 0.5 and 0, so the script starts neutral).
+`priorRate` and `priorN` are per type, entered as one text input `code:rate:count, ...`
+(defaults 0.5 and 0, so the script starts neutral).
 
 **Where the counts come from, in plain language (D-23).** The script can only count what is on the
 chart. A 5-minute NQ chart holds about 3.5 months of bars on Premium, so a level type like the
@@ -384,6 +394,7 @@ TP1 distance  >= minTargetDist
 | Level history today | 0 to 15 | fresh, first test = 12; already rejected cleanly today (classifier said HELD) = 15; touched with no verdict = 6; broken through earlier today = 3 |
 | HTF rejection | 0 to 10 | timeframes among 5m / 15m / 1h / 4h whose last completed candle rejected the same zone: 0 = 0, 1 = 5, 2 = 8, 3 or more = 10. A bonus, never a requirement. |
 | Bias | 0 to 15 | with bias = 15, neutral = 7, against = 0 |
+| Confluence hooks (D-64) | 0 by default | Session VWAP side, VWAP stretch in daily-ATR units, and the 15-minute 200 EMA vote. Hidden from the chart. Weights stay 0 until the M4 backtests split the hold rate by each hook and a split earns it. |
 
 `minScore` default 60. Weights are inputs. A fresh level of a top-ranked type with no
 higher-timeframe help and neutral bias scores 40 + 5 + 12 + 0 + 7 = 64, so first tests trade on
@@ -501,6 +512,9 @@ Your higher-timeframe read is about what the candles do at the level, so that is
   higher-timeframe help still trades.
 - **Trend votes (optional, OFF by default).** Close above or below EMA(`mtfEmaLen`, default 50) on
   each timeframe; `minVotes` aligned required. Kept for anyone who wants a trend gate.
+- **VWAP and 200 EMA hooks (D-64, built in M3).** Session VWAP side (+1 above, -1 below), VWAP
+  stretch (distance from VWAP in daily-ATR units, for how extended the move into the level is), and
+  the 15-minute 200 EMA vote. Score inputs only, never drawn unless "Show confluence lines" is on.
 
 ### 4.9 [I] Bias Inputs
 
@@ -596,6 +610,7 @@ an offline study later if we want more (M8).
 | Levels | touchTol | 0.01 / 2 | daily ATR / ticks |
 | Levels | drawRange | 1.0 | daily ATR |
 | Levels | srLevels / srMinTouches / srLookbackDays / srPivotTF | ON / 3 / 10 / 240 | switch / touches / days / minutes |
+| Levels | srPivotLeft, srPivotRight / srUnit, srTicks / srMax | 1, 1 / 0.04, 8 / 12 | bars / daily ATR, ticks / levels |
 | Interaction | breakConfirm | 0.03 / 4 | daily ATR / ticks |
 | Interaction | holdConfirm | 0.10 | daily ATR |
 | Interaction | verdictWindow | 30 | execution bars |
@@ -631,6 +646,8 @@ an offline study later if we want more (M8).
 | Sizing | baseQty | 2 | contracts |
 | Sizing | sizeByScore tiers (60 to 69 / 70 to 84 / 85 and up) | OFF (2 / 3 / 5) | contracts |
 | Score | weights: reliability / stack / level history / HTF / bias | 40 / 20 / 15 / 10 / 15 | points |
+| Confluence | vwapSideWeight / vwapStretchWeight / emaVoteWeight | 0 / 0 / 0 | points, hidden hooks (D-64) |
+| Confluence | vwapStretchATR / emaTF / emaLen / showConfluenceLines | 0.25 / 15 / 200 / OFF | daily ATR / minutes / bars / switch |
 | HTF | timeframes / htfWickRatio | 5, 15, 60, 240 / 0.4 | minutes / ratio |
 | HTF | trend votes | OFF | |
 | Costs | commission / slippage | per profile, see RESEARCH.md | per side / ticks |
@@ -649,11 +666,11 @@ its acceptance list before we move on. Nothing from a later milestone leaks into
 | M0 | This plan, decisions recorded | Answer `docs/DECISIONS.md` |
 | M1 | Level engine as an **indicator**: all labeled level types, custom levels, clusters, labels, fresh / touched state, timezone, profiles | Levels match what you would draw by hand on NQ for 3 sessions. The same script on CL and SI draws sensible levels. No level moves on bar replay. |
 | M2 | SR touch-cluster levels, interaction classifier, stats table | SR levels land where you would draw untagged support and resistance. Table counts change only on bar close. Spot-check 10 touches by eye. |
-| M3 | Reversal setup detector, score, labels, signal alerts (still an indicator) | Signals appear where you would expect reversal trades. Scores read right. One alert per signal. |
+| M3 | Reversal setup detector, score, labels, signal alerts (still an indicator); hidden VWAP and 200 EMA hooks at zero weight (D-64) | Signals appear where you would expect reversal trades. Scores read right. One alert per signal. Nothing new on the chart. |
 | M4 | Strategy v1: entries, initial stop, hard TP1, filters, caps, flatten, costs, bridge JSON checked on a sim account | Backtest runs. Trade list matches the labels. Flat at the profile's flatten time every day. |
 | M5 | Trade manager: staged stops, ladder, soft targets, trailing, partials | Replay 5 trades and confirm every stop move and promotion by hand. |
 | M6 | HTF rejection, bias inputs, score integration, 1-minute trigger mode | Labels show HTF x/4. Bias toggles change scores as expected. |
-| M7 | Flip, break trades as a switch, VWAP / 200 EMA confluence, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. Break trades stay off unless switched on. |
+| M7 | Flip, break trades as a switch, VWAP / 200 EMA weights set from the backtest split, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. Break trades stay off unless switched on. |
 | M8 | Python study for priors (optional) | A priors table produced from real data. |
 
 Repo layout once code starts: `pine/l2l.pine` (the script), `pine/CHANGELOG.md`, `docs/`
