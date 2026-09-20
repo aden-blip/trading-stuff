@@ -1,5 +1,10 @@
 # Changelog
 
+## M3 v0.2, 2026-09-20
+
+- Compile fix: the two-direction setup loop counted with a negative step, which Pine rejects.
+  Variables shadowing the London open and NY high levels renamed.
+
 ## M3 v0.1, 2026-09-20
 
 - Hidden zone list every bar: members, stack, freshness, today's verdicts, best rank; today's

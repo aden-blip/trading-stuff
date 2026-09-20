@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.1
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.2
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -594,9 +594,9 @@ if srNew
         array.shift(hfLo)
         array.shift(hfLoB)
         array.shift(hfT)
-    int nh = array.size(hfHi)
-    if nh >= srPivotLeft + srPivotRight + 1
-        int k = nh - 1 - srPivotRight
+    int nhf = array.size(hfHi)
+    if nhf >= srPivotLeft + srPivotRight + 1
+        int k = nhf - 1 - srPivotRight
         float ch = array.get(hfHi, k)
         float cl = array.get(hfLo, k)
         bool isHi = true
@@ -689,12 +689,12 @@ if srNew
         int[] byN = array.sort_indices(cN, order.descending)
         for r = 0 to keep - 1
             int c = array.get(byN, r)
-            float lo = array.get(cLo, c)
-            float hi = array.get(cHi, c)
-            float px = (lo + hi) / 2
+            float clo = array.get(cLo, c)
+            float chi = array.get(cHi, c)
+            float px = (clo + chi) / 2
             int s = SR0 + r
             array.set(lvVal, s, px)
-            array.set(lvWidth, s, (hi - lo) / 2)
+            array.set(lvWidth, s, (chi - clo) / 2)
             array.set(lvAnchor, s, array.get(cB, c))
             array.set(lvCode, s, "SR" + str.tostring(array.get(cN, c)))
             array.set(lvName, s, "S/R (" + str.tostring(array.get(cN, c)) + ")")
@@ -1096,7 +1096,7 @@ f_nextZone(int dir, float fromPx, float minDist, int skipIdx) =>
 
 // Rejection bar test `off` bars ago (0 = this bar, 1 = the previous) for a zone [lo, hi] tested
 // from the approach side of dir (+1 support tested from above, -1 resistance from below).
-f_rejBar(int dir, float lo, float hi, int off) =>
+f_rejBar(int dir, float zlo, float zhi, int off) =>
     float o  = open[off]
     float h  = high[off]
     float l  = low[off]
@@ -1106,14 +1106,14 @@ f_rejBar(int dir, float lo, float hi, int off) =>
     float pl = low[off + 1]
     float ph = high[off + 1]
     float rng = h - l
-    bool touched  = dir > 0 ? l <= hi + touchTol : h >= lo - touchTol
-    bool touched2 = dir > 0 ? math.min(l, pl) <= hi + touchTol : math.max(h, ph) >= lo - touchTol
-    bool fromSide = dir > 0 ? pc > lo : pc < hi
-    bool backSide = dir > 0 ? c > hi : c < lo
+    bool touched  = dir > 0 ? l <= zhi + touchTol : h >= zlo - touchTol
+    bool touched2 = dir > 0 ? math.min(l, pl) <= zhi + touchTol : math.max(h, ph) >= zlo - touchTol
+    bool fromSide = dir > 0 ? pc > zlo : pc < zhi
+    bool backSide = dir > 0 ? c > zhi : c < zlo
     bool bigEnough = rng >= minBarATR * execATR
     float wick = dir > 0 ? math.min(o, c) - l : h - math.max(o, c)
     bool wickOK = wickOn and rng > 0 and wick >= wickRatio * rng and bigEnough and touched
-    bool pokeOK = pokeOn and touched and (dir > 0 ? l < lo : h > hi)
+    bool pokeOK = pokeOn and touched and (dir > 0 ? l < zlo : h > zhi)
     bool engOK  = engulfOn and touched2 and (dir > 0 ? (c > o and c >= math.max(po, pc) and o <= math.min(po, pc)) : (c < o and c <= math.min(po, pc) and o >= math.max(po, pc)))
     bool strong = rng > 0 and wick >= 0.6 * rng and (dir > 0 ? c >= h - rng / 3 : c <= l + rng / 3)
     bool ok = fromSide and backSide and (wickOK or pokeOK or engOK)
@@ -1242,16 +1242,17 @@ if barstate.isconfirmed and array.size(zLo) > 0
     if revOn
         for z = 0 to nz - 1
             if array.get(zEntry, z) and not array.get(zBlock, z)
-                float lo = array.get(zLo, z)
-                float hi = array.get(zHi, z)
-                for dir = 1 to -1 by -2
-                    [rej1, strong1] = f_rejBar(dir, lo, hi, 1)
-                    [rej0, strong0] = f_rejBar(dir, lo, hi, 0)
-                    bool ftOK = dir > 0 ? (close > open and close > hi) : (close < open and close < lo)
+                float zlo = array.get(zLo, z)
+                float zhi = array.get(zHi, z)
+                for d = 0 to 1
+                    int dir = d == 0 ? 1 : -1
+                    [rej1, strong1] = f_rejBar(dir, zlo, zhi, 1)
+                    [rej0, strong0] = f_rejBar(dir, zlo, zhi, 0)
+                    bool ftOK = dir > 0 ? (close > open and close > zhi) : (close < open and close < zlo)
                     bool fire = ((rej1 and ftOK) or (strongSkip and rej0 and strong0)) and volOK
                     if fire
                         float entry = close
-                        float stop  = dir > 0 ? lo - stopBuf : hi + stopBuf
+                        float stop  = dir > 0 ? zlo - stopBuf : zhi + stopBuf
                         float risk  = math.abs(entry - stop)
                         int t1 = f_nextZone(dir, entry, minTgt, z)
                         float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
@@ -1282,13 +1283,13 @@ if barstate.isconfirmed and array.size(zLo) > 0
         if bodyOK
             for z = 0 to nz - 1
                 if array.get(zEntry, z) and not array.get(zBlock, z)
-                    float lo = array.get(zLo, z)
-                    float hi = array.get(zHi, z)
-                    bool brokeDown = close[1] >= lo and close < lo - brkTol2
-                    bool brokeUp   = close[1] <= hi and close > hi + brkTol2
+                    float zlo = array.get(zLo, z)
+                    float zhi = array.get(zHi, z)
+                    bool brokeDown = close[1] >= zlo and close < zlo - brkTol2
+                    bool brokeUp   = close[1] <= zhi and close > zhi + brkTol2
                     if brokeDown or brokeUp
                         int dir = brokeDown ? -1 : 1
-                        float lim = brokeDown ? lo : hi
+                        float lim = brokeDown ? zlo : zhi
                         bool exists = false
                         int np2 = array.size(pDir)
                         if np2 > 0
@@ -1298,8 +1299,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         if not exists
                             array.push(pDir, dir)
                             array.push(pLimit, lim)
-                            array.push(pLo, lo)
-                            array.push(pHi, hi)
+                            array.push(pLo, zlo)
+                            array.push(pHi, zhi)
                             array.push(pBar, bar_index)
                             array.push(pCode, array.get(zCode, z))
                             array.push(pRank, array.get(zRank, z))
@@ -1527,7 +1528,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.1")
+    f_cell(0, "L2L M3", "v0.2")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1558,5 +1559,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.1). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.2). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
