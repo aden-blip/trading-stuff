@@ -1,5 +1,13 @@
 # Changelog
 
+## M1 v0.2, 2026-09-20
+
+- Midnight open now requires the bar to sit in the first hour of the day in the anchor zone, so
+  the Sunday reopen and any other gap no longer count as a midnight. Charts above 60 minutes
+  keep the plain date change.
+- First live check on MNQ 5-minute passed: profile, timezone, tolerances, clustering, session
+  and daily levels consistent with the candles.
+
 ## M1 v0.1, 2026-09-19
 
 - First script: `l2l.pine`, module [A] Level Engine, as an indicator.

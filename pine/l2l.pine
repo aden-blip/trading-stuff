@@ -108,12 +108,16 @@ yOpen             = request.security(syminfo.tickerid, "12M", open, lookahead = 
 [p4h, p4l, p4o]   = request.security(syminfo.tickerid, "240", [high[1], low[1], open[1]], lookahead = barmerge.lookahead_on)
 
 // ───────────────────────── [A3] CHART-BASED LEVELS ─────────────────────────
-// Midnight open: the open of the first bar of a new calendar day in the anchor zone.
+// Midnight open: the open of the first bar at or after 00:00 in the anchor zone. A gap in
+// trading such as the weekend is not a midnight, so on intraday charts the bar must also sit in
+// the first hour of the day. Charts above 60 minutes fall back to the plain date change.
 string moTz = moAnchor == "New York midnight" ? "America/New_York" : tz
 var int   moDay = -1
 var float mo    = na
-int dmNow = dayofmonth(time, moTz)
-if dmNow != moDay
+int  dmNow      = dayofmonth(time, moTz)
+bool firstHour  = hour(time, moTz) == 0
+bool coarseTf   = not timeframe.isintraday or timeframe.multiplier > 60
+if dmNow != moDay and (firstHour or coarseTf)
     if moDay != -1
         mo := open
     moDay := dmNow
