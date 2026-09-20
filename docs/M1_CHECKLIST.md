@@ -4,9 +4,15 @@ What to do with `pine/l2l.pine` and what to report back. Stop at the first failu
 
 ## Install
 
-1. TradingView, open an **MNQ1! 5-minute** chart.
-2. Pine Editor at the bottom, "Open", "New indicator", select all, delete, paste the file, "Save", "Add to chart".
-3. If it does not compile: send the **first** red error line with its line number. Nothing else is needed.
+1. Get the whole file. On a computer, open
+   https://github.com/aden-blip/trading-stuff/blob/claude/level-to-level-pivot-strategy-41crhr/pine/l2l.pine
+   and click the **copy raw file** button (the two-squares icon above the code). The phone file
+   card can cut the text short.
+2. TradingView, open an **MNQ1! 5-minute** chart.
+3. Pine Editor at the bottom, "Open", "New indicator", select all, delete, paste, "Save", "Add to chart".
+4. Scroll to the bottom of the editor. The last lines must be the `END OF FILE` marker. If they are
+   not, the paste was cut off; copy again from GitHub.
+5. If it still does not compile: send the **first** red error line with its line number. Nothing else is needed.
 
 ## Checks
 

@@ -15,6 +15,9 @@
 //  session levels come from completed sessions only), no NQ-specific numbers
 //  (distances are daily-ATR units with tick floors), all times read in the
 //  timezone input (default Central). Higher-timeframe requests used: 6 of 40.
+//
+//  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
+//  editor does not show it, the copy was cut short and the script will not compile.
 // ============================================================================
 indicator("L2L M1 - Level Engine", shorttitle = "L2L M1", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
@@ -390,3 +393,7 @@ plot(showHist and onNY     ? nh    : na, "NH",  color = colNY,     style = plot.
 plot(showHist and onNY     ? nl    : na, "NL",  color = colNY,     style = plot.style_linebr)
 plot(showHist and onWeekly ? pwh   : na, "PWH", color = colWeekly, style = plot.style_linebr)
 plot(showHist and onWeekly ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
+
+// ============================================================================
+//  END OF FILE  (L2L M1). If this line is missing in your editor, the paste was cut off.
+// ============================================================================
