@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.5
+//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.6
 //
 //  docs/PLAN.md describes every module. This file holds only module [A].
 //  Module map for the finished script:
@@ -96,6 +96,9 @@ maxLineBars = input.int(3000, "Longest line, bars", minval = 100, maxval = 9000,
 labelOffset = input.int(30, "Line end, bars right of price", minval = 1, maxval = 300, group = gD, tooltip = "Lines end here and labels sit here. If labels are cut off, widen the chart's right margin in chart settings.")
 labelStyle  = input.string("Text only", "Label style", options = ["Text only", "Boxed"], group = gD, tooltip = "Text only is plain coloured text like the Spaceman indicator. Boxed puts the text in a filled tag.")
 textPad     = input.int(6, "Text-only label pad, bars", minval = 0, maxval = 60, group = gD, tooltip = "Text-only labels are centred this many bars past the line end so the words start after the line.")
+staggerTicks = input.int(20, "Stagger labels closer than, ticks", minval = 0, maxval = 1000, group = gD, tooltip = "When two labels would sit within this many ticks of each other, the second steps right so both stay readable. 0 turns staggering off.")
+staggerBars  = input.int(14, "Stagger step, bars", minval = 1, maxval = 100, group = gD)
+staggerCols  = input.int(4, "Stagger columns", minval = 1, maxval = 8, group = gD)
 labelMode   = input.string("Full names", "Label text", options = ["Full names", "Short codes"], group = gD)
 labelSizeIn = input.string("normal", "Label size", options = ["tiny", "small", "normal", "large"], group = gD)
 showPrice   = input.bool(false, "Show price in label", group = gD)
@@ -523,9 +526,9 @@ f_drawLine(float price, int fam, int anchor) =>
     int x2 = bar_index + labelOffset
     array.push(drawL, line.new(x1, price, x2, price, color = color.new(col, 10), width = lineWidth, style = f_lineStyle()))
 
-f_drawLabel(float price, string txtIn, int fam, bool touched) =>
+f_drawLabel(float price, string txtIn, int fam, bool touched, int column) =>
     color col = f_famColor(fam)
-    int x2 = bar_index + labelOffset
+    int x2 = bar_index + labelOffset + column * staggerBars
     string txt = txtIn
     if showPrice
         txt := txt + "  " + str.tostring(price, format.mintick)
@@ -570,12 +573,16 @@ if barstate.islast
     if n > 0
         int[] idx = array.sort_indices(px, order.ascending)
         string sep = " / "
-        float mergeTol = mergeTicks * syminfo.mintick
+        float mergeTol   = mergeTicks * syminfo.mintick
+        float staggerTol = staggerTicks * syminfo.mintick
         float  gPrice = na
         string gText = ""
         int    gFam = 0
         bool   gTouched = false
         int    gCount = 0
+        // Labels that would sit too close step right, one column each, and wrap after staggerCols.
+        float  lastLabelPrice = na
+        int    column = 0
         for k = 0 to n - 1
             int j = array.get(idx, k)
             float p = array.get(px, j)
@@ -591,13 +598,16 @@ if barstate.islast
                 gCount += 1
             else
                 if gCount > 0
-                    f_drawLabel(gPrice, gText, gFam, gTouched)
+                    column := staggerTicks > 0 and not na(lastLabelPrice) and gPrice - lastLabelPrice <= staggerTol ? (column + 1) % staggerCols : 0
+                    f_drawLabel(gPrice, gText, gFam, gTouched, column)
+                    lastLabelPrice := gPrice
                 gPrice := p
                 gText := c
                 gFam := f
                 gTouched := t
                 gCount := 1
-        f_drawLabel(gPrice, gText, gFam, gTouched)
+        column := staggerTicks > 0 and not na(lastLabelPrice) and gPrice - lastLabelPrice <= staggerTol ? (column + 1) % staggerCols : 0
+        f_drawLabel(gPrice, gText, gFam, gTouched, column)
 
 // ───────────────────────────── [A7] INFO BOX ─────────────────────────────
 var table info = table.new(position.top_right, 2, 7, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
@@ -605,7 +615,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M1", "v0.5")
+    f_cell(0, "L2L M1", "v0.6")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -632,5 +642,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M1 v0.5). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M1 v0.6). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

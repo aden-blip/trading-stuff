@@ -315,6 +315,11 @@ develops during Monday. Kept on purpose: lines start at the exact candle of the 
 rather than the period's first candle, levels come from the chart's own candles, sessions are
 entered in your timezone, and custom levels exist. Notes in `reference/spaceman_notes.md`.
 
+### D-61  Stagger labels that sit too close  (DECIDED)
+Your note: levels too far apart to merge still had labels on top of each other. Labels closer
+than a set number of ticks now step right into successive columns, up to four, so every name
+stays readable. Distance, step and column count are inputs. Lines are unaffected.
+
 ---
 
 ## L. New in round 4

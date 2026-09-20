@@ -1,5 +1,10 @@
 # Changelog
 
+## M1 v0.6, 2026-09-20
+
+- Labels that would sit within a set distance of each other step right into up to four columns
+  so nearby levels stay readable. Stagger distance, step and column count are inputs.
+
 ## M1 v0.5, 2026-09-20
 
 - Spaceman alignment: text-only coloured labels by default (boxed optional), size normal, line
