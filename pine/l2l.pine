@@ -925,6 +925,11 @@ f_holdRate(int ty) =>
 // Rank percentile per type, top = 100, among types with at least one counted interaction.
 var float[] tyRank = array.new<float>(NTYPE, na)
 var int countedTotal = 0
+// Paper-trade tallies per level type (D-84): trades, trades that reached T1, net points. Filled
+// by the paper trade block further down, shown in the statistics table below.
+var int[]   tyPN   = array.new<int>(NTYPE, 0)
+var int[]   tyPW   = array.new<int>(NTYPE, 0)
+var float[] tyPNet = array.new<float>(NTYPE, 0.0)
 
 // Rank percentile per type from the current counts, for the score on every bar.
 f_updateRanks() =>
@@ -1325,11 +1330,9 @@ var int     posRowK  = 10
 var int     ptFirstT = na
 var int     ptDays   = 0
 // Per level type (D-84): a trade counts in the row of every level type in its zone, so the
-// statistics table can show which types carry the winners. The zone code ("PDH+P4H") is
+// statistics table can show which types carry the winners. The tallies themselves (tyPN, tyPW,
+// tyPNet) are declared in [C], above the table that draws them. The zone code ("PDH+P4H") is
 // parsed back into types; HOD and LOD are targets only and are skipped.
-var int[]   tyPN   = array.new<int>(NTYPE, 0)
-var int[]   tyPW   = array.new<int>(NTYPE, 0)
-var float[] tyPNet = array.new<float>(NTYPE, 0.0)
 var int[]   posTypes = array.new<int>()
 f_codeTypes(string code) =>
     int[] out = array.new<int>()

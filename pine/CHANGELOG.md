@@ -6,6 +6,8 @@
   while the paper trade is on, Trades, T1 % and Net per level type, a trade at a stacked zone
   counting in every member type's row; the breakdown table gains three rows, 1 level in the
   zone, 2 levels, 3 or more. No trading rule changed.
+- Compile fix: the level-type tallies are declared above the statistics table that draws
+  them (undeclared identifier tyPN).
 
 ## M3 v0.14, 2026-09-20
 
