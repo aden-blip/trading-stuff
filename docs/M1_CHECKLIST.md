@@ -23,8 +23,9 @@ What to do with `pine/l2l.pine` and what to report back. Stop at the first failu
    - DO: the 17:00 Central open. MO: the open of the 23:00 Central candle.
    - P4H / P4L: the high and low of the last **completed** 4-hour candle on the chart.
    - MNH / MNL: this week's Monday session high and low.
-   - AH / AL, LH / LL, NH / NL: the last completed Asia, London and New York session.
-   Only levels within one daily ATR of price are drawn; widen "Draw levels within" to see more.
+   - AH / AL, LH / LL, NH / NL: the last completed Asia, London and New York session. New York
+     runs 08:30 to 16:00 Central, so the NY high includes late-afternoon prints.
+   Every level is drawn by default; the quarter, year, weekly and Monday levels may sit far from price.
 3. **Same on 1-minute.** Switch the chart to 1-minute at the same moment. Every code and price in
    the labels should match the 5-minute chart. Report any that differ.
 4. **Replay.** Turn on "Plot level history", open bar replay, jump back a day or two. The step
@@ -40,6 +41,10 @@ What to do with `pine/l2l.pine` and what to report back. Stop at the first failu
    box, for example `20150:GEX`. The real one should appear with its label; the far one is skipped
    because it is out of draw range.
 8. **Clean chart.** Toggle families off and on. Nothing should remain drawn from a family that is off.
+9. **Line starts.** Each line should begin at the candle that made it: the NH line at the candle of
+   the NY high, the DO line at the 17:00 Central candle, the MO line at the 23:00 candle, PDH at
+   yesterday's high candle. Switch "Line start" to Right anchored and every line should become the same length.
+10. **Labels.** Change "Label size" and switch "Label text" to Full names; both should apply on the next candle.
 
 ## Report back
 

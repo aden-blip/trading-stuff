@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)
+//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.3
 //
 //  docs/PLAN.md describes every module. This file holds only module [A].
 //  Module map for the finished script:
@@ -11,10 +11,13 @@
 //    [H] HTF Confluence    (M6)      [I] Bias Inputs     (M6)
 //    [J] Output            (M3 on)
 //
-//  Rules: no repainting (previous-period values use [1] with lookahead on,
-//  session levels come from completed sessions only), no NQ-specific numbers
+//  Rules: no repainting (levels come from completed periods and sessions;
+//  higher-timeframe values use [1] with lookahead on), no NQ-specific numbers
 //  (distances are daily-ATR units with tick floors), all times read in the
-//  timezone input (default Central). Higher-timeframe requests used: 6 of 40.
+//  timezone input (default Central). Higher-timeframe requests used: 5 of 40.
+//
+//  Levels are measured from the chart's own candles wherever the history
+//  allows, so every line can start at the candle that made it.
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
@@ -25,22 +28,23 @@ indicator("L2L M1 - Level Engine", shorttitle = "L2L M1", overlay = true,
 // ───────────────────────────── [A0] INPUTS ─────────────────────────────
 gG = "General"
 tz        = input.string("America/Chicago", "Timezone for sessions and times", options = ["America/Chicago", "America/New_York", "America/Denver", "America/Los_Angeles", "America/Phoenix", "UTC", "Europe/London"], group = gG, tooltip = "Every session input below is read in this zone.")
-profileIn = input.string("Auto", "Instrument profile", options = ["Auto", "Index", "Energy", "Metals", "Generic"], group = gG, tooltip = "Auto reads the symbol root: NQ MNQ ES MES = Index, CL MCL = Energy, SI SIL GC MGC = Metals, anything else = Generic. The profile picks the New York session window.")
+profileIn = input.string("Auto", "Instrument profile", options = ["Auto", "Index", "Energy", "Metals", "Generic"], group = gG, tooltip = "Auto reads the symbol root: NQ MNQ ES MES = Index, CL MCL = Energy, SI SIL GC MGC = Metals, anything else = Generic. The profile picks which New York session input is used.")
 moAnchor  = input.string("New York midnight", "Midnight open anchor", options = ["New York midnight", "Local midnight"], group = gG, tooltip = "The midnight open is defined at 00:00 New York, which is 23:00 Central. Local midnight uses 00:00 in the timezone above instead.")
 
 gS = "Sessions (HHMM-HHMM in the timezone above)"
 sessAsia   = input.session("1900-2300", "Asia", group = gS)
 sessLondon = input.session("0100-0400", "London", group = gS)
-sessNYIdx  = input.session("0830-1500", "New York, Index profile", group = gS)
-sessNYEng  = input.session("0800-1330", "New York, Energy profile", group = gS)
-sessNYMet  = input.session("0720-1230", "New York, Metals profile", group = gS)
+sessNYIdx  = input.session("0830-1600", "New York, Index profile", group = gS, tooltip = "Cash open to the futures close. The NY high and low come from this window.")
+sessNYEng  = input.session("0830-1600", "New York, Energy profile", group = gS, tooltip = "Crude pit hours would be 0800-1330.")
+sessNYMet  = input.session("0830-1600", "New York, Metals profile", group = gS, tooltip = "Silver and gold pit hours would be 0720-1230.")
 
 gL = "Level families"
 onDaily   = input.bool(true, "Previous day high / low / mid, daily open, midnight open", group = gL)
 onWeekly  = input.bool(true, "Previous week high / low / mid, weekly open", group = gL)
 onMonthly = input.bool(true, "Previous month high / low / mid, monthly open", group = gL)
-onQY      = input.bool(true, "Quarterly open, yearly open, year high / low", group = gL)
-on4H      = input.bool(true, "Previous 4-hour high / low / open", group = gL)
+onQuarter = input.bool(true, "Previous quarter high / low / mid, quarterly open", group = gL)
+onYear    = input.bool(true, "Year high / low / mid, yearly open", group = gL)
+on4H      = input.bool(true, "Previous 4-hour high / low / mid / open, current 4-hour open", group = gL)
 onMonday  = input.bool(true, "Monday range high / low / mid", group = gL)
 onAsia    = input.bool(true, "Asia session high / low / open", group = gL)
 onLondon  = input.bool(true, "London session high / low / open", group = gL)
@@ -54,11 +58,18 @@ clusterUnit  = input.float(0.02, "Cluster tolerance, daily ATR", step = 0.005, m
 clusterTicks = input.int(4, "Cluster tolerance floor, ticks", minval = 0, group = gGeo)
 touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Price within this distance counts as a touch, which ends a level's fresh state for the day.")
 touchTicks   = input.int(2, "Touch tolerance floor, ticks", minval = 0, group = gGeo)
-drawRange    = input.float(1.0, "Draw levels within this many daily ATRs of price", step = 0.1, minval = 0.1, group = gGeo)
+limitRange   = input.bool(false, "Only draw levels near price", group = gGeo, tooltip = "Off draws every level, like the Spaceman indicator. On draws only levels within the distance below.")
+drawRange    = input.float(1.0, "Near means within this many daily ATRs", step = 0.1, minval = 0.1, group = gGeo)
 
 gD = "Display"
-lineLookback  = input.int(40, "Line start, bars back", minval = 1, maxval = 500, group = gD)
-labelOffset   = input.int(8, "Label offset, bars to the right", minval = 1, maxval = 100, group = gD)
+anchorMode  = input.string("Candle", "Line start", options = ["Candle", "Right anchored"], group = gD, tooltip = "Candle: each line starts at the candle that made the level. Right anchored: every line has the same length, measured back from the current candle.")
+rightLen    = input.int(40, "Right-anchored length, bars", minval = 5, maxval = 2000, group = gD)
+maxLineBars = input.int(3000, "Longest line, bars", minval = 100, maxval = 9000, group = gD, tooltip = "A line that would start further back than this is cut here.")
+labelOffset = input.int(6, "Label offset, bars right of price", minval = 1, maxval = 100, group = gD)
+labelMode   = input.string("Short codes", "Label text", options = ["Short codes", "Full names"], group = gD)
+labelSizeIn = input.string("small", "Label size", options = ["tiny", "small", "normal", "large"], group = gD)
+showPrice   = input.bool(false, "Show price in label", group = gD)
+lineWidth   = input.int(1, "Line width", minval = 1, maxval = 4, group = gD)
 showFreshMark = input.bool(false, "Mark untouched levels with *", group = gD)
 showInfo      = input.bool(true, "Show info box", group = gD)
 showHist      = input.bool(false, "Plot level history (replay checks)", group = gD, tooltip = "Draws the main levels as step lines through history so you can verify nothing moves in bar replay.")
@@ -74,7 +85,7 @@ colNY      = input.color(color.rgb(3, 169, 244), "New York", group = gD, inline 
 colCustom  = input.color(color.rgb(255, 255, 255), "Custom", group = gD, inline = "c4")
 
 // ───────────────────────────── [A1] PROFILE ─────────────────────────────
-string root   = syminfo.root
+string root    = syminfo.root
 bool   rootIdx = root == "NQ" or root == "MNQ" or root == "ES" or root == "MES" or root == "RTY" or root == "M2K" or root == "YM" or root == "MYM"
 bool   rootEng = root == "CL" or root == "MCL" or root == "NG" or root == "MNG" or root == "RB" or root == "HO"
 bool   rootMet = root == "SI" or root == "SIL" or root == "GC" or root == "MGC" or root == "HG" or root == "MHG" or root == "PL"
@@ -85,9 +96,57 @@ bool   isFut   = syminfo.type == "futures"
 // calendar day its session settles on, which is how Monday's range is identified.
 int    shiftMs = isFut ? 7 * 60 * 60 * 1000 : 0
 
-// ───────────────────── [A2] HIGHER-TIMEFRAME DATA (6 requests) ─────────────────────
-// Daily context: previous high / low, current open, previous day's ATR, and the running
-// year high / low as of the previous daily close.
+// ───────────────────── [A2] PERIOD LEVELS FROM THE CHART'S OWN CANDLES ─────────────────────
+// Generic period tracker: previous period high / low / open with the bar each was made on,
+// plus the current period's open with its bar. The first partial period in history is never published.
+f_period(bool newP) =>
+    var float rH  = na
+    var float rL  = na
+    var float rO  = na
+    var int   rHb = 0
+    var int   rLb = 0
+    var int   rOb = 0
+    var float pH  = na
+    var float pL  = na
+    var float pO  = na
+    var int   pHb = 0
+    var int   pLb = 0
+    var int   pOb = 0
+    var bool  seen = false
+    if newP
+        if seen
+            pH  := rH
+            pL  := rL
+            pO  := rO
+            pHb := rHb
+            pLb := rLb
+            pOb := rOb
+        seen := true
+        rH  := high
+        rL  := low
+        rO  := open
+        rHb := bar_index
+        rLb := bar_index
+        rOb := bar_index
+    else
+        if na(rH) or high > rH
+            rH  := high
+            rHb := bar_index
+        if na(rL) or low < rL
+            rL  := low
+            rLb := bar_index
+        if na(rO)
+            rO  := open
+            rOb := bar_index
+    [pH, pL, pO, pHb, pLb, pOb, seen ? rO : na, rOb]
+
+[pdh, pdl, pdo, pdhB, pdlB, pdoB, dOpen, dOpenB]           = f_period(timeframe.change("D"))
+[pwhC, pwlC, pwoC, pwhB, pwlB, pwoB, wOpenC, wOpenB]       = f_period(timeframe.change("W"))
+[pmhC, pmlC, pmoC, pmhB, pmlB, pmoB, mOpenC, mOpenB]       = f_period(timeframe.change("M"))
+[p4h, p4l, p4o, p4hB, p4lB, p4oB, h4Open, h4OpenB]         = f_period(timeframe.change("240"))
+
+// ───────────────────── [A3] HIGHER-TIMEFRAME DATA (5 requests) ─────────────────────
+// Used where the chart history may be too short: week and month fallbacks, quarter, year, daily ATR.
 f_daily() =>
     var float yh = na
     var float yl = na
@@ -98,84 +157,151 @@ f_daily() =>
     else
         yh := math.max(yh, high)
         yl := math.min(yl, low)
-    [high[1], low[1], open, ta.atr(atrLen)[1], yh[1], yl[1]]
+    [ta.atr(atrLen)[1], yh[1], yl[1]]
 
-[pdh, pdl, dOpen, dAtr, yHigh, yLow] = request.security(syminfo.tickerid, "D", f_daily(), lookahead = barmerge.lookahead_on)
-[pwh, pwl, wOpen] = request.security(syminfo.tickerid, "W",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
-[pmh, pml, mOpen] = request.security(syminfo.tickerid, "M",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
-qOpen             = request.security(syminfo.tickerid, "3M",  open, lookahead = barmerge.lookahead_on)
-yOpen             = request.security(syminfo.tickerid, "12M", open, lookahead = barmerge.lookahead_on)
-[p4h, p4l, p4o]   = request.security(syminfo.tickerid, "240", [high[1], low[1], open[1]], lookahead = barmerge.lookahead_on)
+[dAtr, yHigh, yLow]  = request.security(syminfo.tickerid, "D",   f_daily(), lookahead = barmerge.lookahead_on)
+[pwhS, pwlS, wOpenS] = request.security(syminfo.tickerid, "W",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+[pmhS, pmlS, mOpenS] = request.security(syminfo.tickerid, "M",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+[pqh, pql, qOpen]    = request.security(syminfo.tickerid, "3M",  [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+yOpen                = request.security(syminfo.tickerid, "12M", open, lookahead = barmerge.lookahead_on)
 
-// ───────────────────────── [A3] CHART-BASED LEVELS ─────────────────────────
+// Chart values first, higher-timeframe values only when the chart history is too short. A zero
+// anchor means "unknown", and the drawing code cuts such lines at the longest-line setting.
+float pwh   = na(pwhC) ? pwhS : pwhC
+float pwl   = na(pwlC) ? pwlS : pwlC
+float wOpen = na(wOpenC) ? wOpenS : wOpenC
+int   pwhA  = na(pwhC) ? 0 : pwhB
+int   pwlA  = na(pwlC) ? 0 : pwlB
+int   wOpenA = na(wOpenC) ? 0 : wOpenB
+float pmh   = na(pmhC) ? pmhS : pmhC
+float pml   = na(pmlC) ? pmlS : pmlC
+float mOpen = na(mOpenC) ? mOpenS : mOpenC
+int   pmhA  = na(pmhC) ? 0 : pmhB
+int   pmlA  = na(pmlC) ? 0 : pmlB
+int   mOpenA = na(mOpenC) ? 0 : mOpenB
+
+// Quarter and year opens: the bar of the last boundary seen on the chart, else unknown.
+var int qOpenB = 0
+if timeframe.change("3M")
+    qOpenB := bar_index
+var int yOpenB = 0
+if timeframe.change("12M")
+    yOpenB := bar_index
+// Year high / low: the chart's own extreme when it is the same price, else unknown.
+var float chartMaxH  = na
+var int   chartMaxHb = 0
+var float chartMinL  = na
+var int   chartMinLb = 0
+if na(chartMaxH) or high > chartMaxH
+    chartMaxH  := high
+    chartMaxHb := bar_index
+if na(chartMinL) or low < chartMinL
+    chartMinL  := low
+    chartMinLb := bar_index
+int yHighB = not na(yHigh) and not na(chartMaxH) and math.abs(chartMaxH - yHigh) <= syminfo.mintick ? chartMaxHb : 0
+int yLowB  = not na(yLow)  and not na(chartMinL) and math.abs(chartMinL - yLow)  <= syminfo.mintick ? chartMinLb : 0
+
+// ───────────────────────── [A4] SESSION-BASED LEVELS ─────────────────────────
 // Midnight open: the open of the first bar at or after 00:00 in the anchor zone. A gap in
 // trading such as the weekend is not a midnight, so on intraday charts the bar must also sit in
 // the first hour of the day. Charts above 60 minutes fall back to the plain date change.
 string moTz = moAnchor == "New York midnight" ? "America/New_York" : tz
 var int   moDay = -1
 var float mo    = na
-int  dmNow      = dayofmonth(time, moTz)
-bool firstHour  = hour(time, moTz) == 0
-bool coarseTf   = not timeframe.isintraday or timeframe.multiplier > 60
+var int   moB   = 0
+int  dmNow     = dayofmonth(time, moTz)
+bool firstHour = hour(time, moTz) == 0
+bool coarseTf  = not timeframe.isintraday or timeframe.multiplier > 60
 if dmNow != moDay and (firstHour or coarseTf)
     if moDay != -1
-        mo := open
+        mo  := open
+        moB := bar_index
     moDay := dmNow
 
-// Session levels: track the running session, publish when it completes, so the level never moves while traded.
+// Session tracker: track the running session, publish when it completes, with the bar of each extreme.
 f_sessionLevels(simple string sess) =>
     bool inS = not na(time(timeframe.period, sess, tz))
     var float runH  = na
     var float runL  = na
     var float runO  = na
-    var float doneH = na
-    var float doneL = na
-    var float doneO = na
+    var int   runHb = 0
+    var int   runLb = 0
+    var int   runOb = 0
+    var float doneH  = na
+    var float doneL  = na
+    var float doneO  = na
+    var int   doneHb = 0
+    var int   doneLb = 0
+    var int   doneOb = 0
     bool starts = inS and not inS[1]
     bool ends   = not inS and inS[1]
     if starts
-        runH := high
-        runL := low
-        runO := open
+        runH  := high
+        runL  := low
+        runO  := open
+        runHb := bar_index
+        runLb := bar_index
+        runOb := bar_index
     else if inS
-        runH := math.max(runH, high)
-        runL := math.min(runL, low)
+        if high > runH
+            runH  := high
+            runHb := bar_index
+        if low < runL
+            runL  := low
+            runLb := bar_index
     if ends
-        doneH := runH
-        doneL := runL
-        doneO := runO
-    [doneH, doneL, doneO]
+        doneH  := runH
+        doneL  := runL
+        doneO  := runO
+        doneHb := runHb
+        doneLb := runLb
+        doneOb := runOb
+    [doneH, doneL, doneO, doneHb, doneLb, doneOb]
 
-[ah, al, ao]   = f_sessionLevels(sessAsia)
-[lh, ll, lo]   = f_sessionLevels(sessLondon)
-[nh, nl, nyo]  = f_sessionLevels(sessNY)
+[ah, al, ao, ahB, alB, aoB]    = f_sessionLevels(sessAsia)
+[lh, ll, lo, lhB, llB, loB]    = f_sessionLevels(sessLondon)
+[nh, nl, nyo, nhB, nlB, nyoB]  = f_sessionLevels(sessNY)
 
 // Monday range: the full exchange session that settles on Monday (Sunday 17:00 CT to Monday 16:00 CT on CME).
 int  dowShift = dayofweek(time + shiftMs, tz)
 bool inMon    = dowShift == dayofweek.monday
-var float monRunH = na
-var float monRunL = na
-var float mnh = na
-var float mnl = na
+var float monRunH  = na
+var float monRunL  = na
+var int   monRunHb = 0
+var int   monRunLb = 0
+var float mnh  = na
+var float mnl  = na
+var int   mnhB = 0
+var int   mnlB = 0
 if inMon and not inMon[1]
-    monRunH := high
-    monRunL := low
+    monRunH  := high
+    monRunL  := low
+    monRunHb := bar_index
+    monRunLb := bar_index
 else if inMon
-    monRunH := math.max(monRunH, high)
-    monRunL := math.min(monRunL, low)
+    if high > monRunH
+        monRunH  := high
+        monRunHb := bar_index
+    if low < monRunL
+        monRunL  := low
+        monRunLb := bar_index
 if not inMon and inMon[1]
-    mnh := monRunH
-    mnl := monRunL
+    mnh  := monRunH
+    mnl  := monRunL
+    mnhB := monRunHb
+    mnlB := monRunLb
 
-// ───────────────────── [A4] LEVEL TABLE AND FRESH STATE ─────────────────────
+// ───────────────────── [A5] LEVEL TABLE AND FRESH STATE ─────────────────────
 // Fixed slots so the touched flag survives from bar to bar. A new value in a slot is a new level instance.
-int NSLOT = 32
-var string[] lvCode    = array.from("PDH", "PDL", "PDM", "DO", "MO", "PWH", "PWL", "PWM", "WO", "PMH", "PML", "PMM", "MOO", "QO", "YO", "YH", "YL", "P4H", "P4L", "P4O", "MNH", "MNL", "MNM", "AH", "AL", "AO", "LH", "LL", "LO", "NH", "NL", "NO")
-var int[]    lvFam     = array.from(0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8)
+int NSLOT = 38
+var string[] lvCode = array.from("PDH", "PDL", "PDM", "DO", "MO", "PWH", "PWL", "PWM", "WO", "PMH", "PML", "PMM", "MOO", "PQH", "PQL", "PQM", "QO", "YH", "YL", "YM", "YO", "P4H", "P4L", "P4M", "P4O", "4HO", "MNH", "MNL", "MNM", "AH", "AL", "AO", "LH", "LL", "LO", "NH", "NL", "NO")
+var string[] lvName = array.from("Prev Day High", "Prev Day Low", "Prev Day Mid", "Daily Open", "Midnight Open", "Prev Week High", "Prev Week Low", "Prev Week Mid", "Weekly Open", "Prev Month High", "Prev Month Low", "Prev Month Mid", "Monthly Open", "Prev Quarter High", "Prev Quarter Low", "Prev Quarter Mid", "Quarterly Open", "Year High", "Year Low", "Year Mid", "Yearly Open", "Prev 4H High", "Prev 4H Low", "Prev 4H Mid", "Prev 4H Open", "4H Open", "Monday High", "Monday Low", "Monday Mid", "Asia High", "Asia Low", "Asia Open", "London High", "London Low", "London Open", "NY High", "NY Low", "NY Open")
+var int[]    lvFam  = array.from(0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8)
 var float[]  lvVal     = array.new<float>(NSLOT, na)
+var int[]    lvAnchor  = array.new<int>(NSLOT, 0)
 var bool[]   lvTouched = array.new<bool>(NSLOT, false)
 
-f_set(int i, float v) =>
+f_set(int i, float v, int anchorBar) =>
     float old = array.get(lvVal, i)
     bool oldNa = na(old)
     bool newNa = na(v)
@@ -183,41 +309,48 @@ f_set(int i, float v) =>
     if changed
         array.set(lvTouched, i, false)
     array.set(lvVal, i, v)
+    array.set(lvAnchor, i, anchorBar)
 
-f_set(0, pdh)
-f_set(1, pdl)
-f_set(2, (pdh + pdl) / 2)
-f_set(3, dOpen)
-f_set(4, mo)
-f_set(5, pwh)
-f_set(6, pwl)
-f_set(7, (pwh + pwl) / 2)
-f_set(8, wOpen)
-f_set(9, pmh)
-f_set(10, pml)
-f_set(11, (pmh + pml) / 2)
-f_set(12, mOpen)
-f_set(13, qOpen)
-f_set(14, yOpen)
-f_set(15, yHigh)
-f_set(16, yLow)
-f_set(17, p4h)
-f_set(18, p4l)
-f_set(19, p4o)
-f_set(20, mnh)
-f_set(21, mnl)
-f_set(22, (mnh + mnl) / 2)
-f_set(23, ah)
-f_set(24, al)
-f_set(25, ao)
-f_set(26, lh)
-f_set(27, ll)
-f_set(28, lo)
-f_set(29, nh)
-f_set(30, nl)
-f_set(31, nyo)
+f_set(0, pdh, pdhB)
+f_set(1, pdl, pdlB)
+f_set(2, (pdh + pdl) / 2, math.min(pdhB, pdlB))
+f_set(3, dOpen, dOpenB)
+f_set(4, mo, moB)
+f_set(5, pwh, pwhA)
+f_set(6, pwl, pwlA)
+f_set(7, (pwh + pwl) / 2, math.min(pwhA, pwlA))
+f_set(8, wOpen, wOpenA)
+f_set(9, pmh, pmhA)
+f_set(10, pml, pmlA)
+f_set(11, (pmh + pml) / 2, math.min(pmhA, pmlA))
+f_set(12, mOpen, mOpenA)
+f_set(13, pqh, 0)
+f_set(14, pql, 0)
+f_set(15, (pqh + pql) / 2, 0)
+f_set(16, qOpen, qOpenB)
+f_set(17, yHigh, yHighB)
+f_set(18, yLow, yLowB)
+f_set(19, (yHigh + yLow) / 2, 0)
+f_set(20, yOpen, yOpenB)
+f_set(21, p4h, p4hB)
+f_set(22, p4l, p4lB)
+f_set(23, (p4h + p4l) / 2, math.min(p4hB, p4lB))
+f_set(24, p4o, p4oB)
+f_set(25, h4Open, h4OpenB)
+f_set(26, mnh, mnhB)
+f_set(27, mnl, mnlB)
+f_set(28, (mnh + mnl) / 2, math.min(mnhB, mnlB))
+f_set(29, ah, ahB)
+f_set(30, al, alB)
+f_set(31, ao, aoB)
+f_set(32, lh, lhB)
+f_set(33, ll, llB)
+f_set(34, lo, loB)
+f_set(35, nh, nhB)
+f_set(36, nl, nlB)
+f_set(37, nyo, nyoB)
 
-// Custom levels, parsed once from the text input.
+// Custom levels, parsed once from the text input. They start at the current day's open bar.
 var float[]  cuVal     = array.new<float>()
 var string[] cuCode    = array.new<string>()
 var bool[]   cuTouched = array.new<bool>()
@@ -260,17 +393,25 @@ if ncu > 0
         if high >= v - touchTol and low <= v + touchTol
             array.set(cuTouched, i, true)
 
-// Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter/year, 4 four-hour,
+// Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter and year, 4 four-hour,
 // 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom.
 f_famOn(int f) =>
-    f == 0 ? onDaily : f == 1 ? onWeekly : f == 2 ? onMonthly : f == 3 ? onQY : f == 4 ? on4H : f == 5 ? onMonday : f == 6 ? onAsia : f == 7 ? onLondon : f == 8 ? onNY : onCustom
+    f == 0 ? onDaily : f == 1 ? onWeekly : f == 2 ? onMonthly : f == 3 ? (onQuarter or onYear) : f == 4 ? on4H : f == 5 ? onMonday : f == 6 ? onAsia : f == 7 ? onLondon : f == 8 ? onNY : onCustom
+f_slotOn(int i) =>
+    int f = array.get(lvFam, i)
+    bool on = f_famOn(f)
+    if f == 3
+        on := i <= 16 ? onQuarter : onYear
+    on
 f_famColor(int f) =>
     f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : colCustom
 // Which family names a mixed zone: the higher timeframe wins.
 f_famRank(int f) =>
     f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 9 ? 6 : 7
+f_labelSize() =>
+    labelSizeIn == "tiny" ? size.tiny : labelSizeIn == "small" ? size.small : labelSizeIn == "normal" ? size.normal : size.large
 
-// ───────────────── [A5] CLUSTERING AND DRAWING (last bar only) ─────────────────
+// ───────────────── [A6] CLUSTERING AND DRAWING (last bar only) ─────────────────
 var line[]  drawL = array.new<line>()
 var box[]   drawB = array.new<box>()
 var label[] drawT = array.new<label>()
@@ -292,20 +433,26 @@ f_clearDrawings() =>
             label.delete(array.get(drawT, i))
     array.clear(drawT)
 
-f_drawZone(float zMin, float zMax, string codes, int fam, int count, bool touched) =>
+f_drawZone(float zMin, float zMax, string txtIn, int fam, int count, bool touched, int anchor) =>
     color col = f_famColor(fam)
-    int x1 = math.max(0, bar_index - lineLookback)
+    int xa = anchorMode == "Candle" and anchor > 0 ? anchor : bar_index - rightLen
+    int x1 = math.max(xa, bar_index - maxLineBars)
+    x1 := math.max(x1, 0)
     int x2 = bar_index + labelOffset
     float mid = (zMin + zMax) / 2
     bool asBox = count > 1 and zMax - zMin >= syminfo.mintick
     if asBox
-        box b = box.new(x1, zMax, x2, zMin, border_color = color.new(col, 30), bgcolor = color.new(col, 85), extend = extend.right)
+        box b = box.new(x1, zMax, x2, zMin, border_color = color.new(col, 30), border_width = lineWidth, bgcolor = color.new(col, 85))
         array.push(drawB, b)
     if not asBox
-        line l = line.new(x1, mid, x2, mid, color = color.new(col, 10), width = count > 1 ? 2 : 1, extend = extend.right)
+        line l = line.new(x1, mid, x2, mid, color = color.new(col, 10), width = lineWidth)
         array.push(drawL, l)
-    string txt = codes + (showFreshMark and not touched ? " *" : "")
-    array.push(drawT, label.new(x2, mid, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = size.tiny))
+    string txt = txtIn
+    if showPrice
+        txt := asBox ? txt + "  " + str.tostring(zMin, format.mintick) + " - " + str.tostring(zMax, format.mintick) : txt + "  " + str.tostring(mid, format.mintick)
+    if showFreshMark and not touched
+        txt := txt + " *"
+    array.push(drawT, label.new(x2, mid, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
 
 var int zonesDrawn = 0
 if barstate.islast
@@ -314,70 +461,82 @@ if barstate.islast
     string[] cd = array.new<string>()
     int[]    fm = array.new<int>()
     bool[]   tc = array.new<bool>()
+    int[]    an = array.new<int>()
+    bool useShort = labelMode == "Short codes"
     for i = 0 to NSLOT - 1
         float v = array.get(lvVal, i)
         int f = array.get(lvFam, i)
-        if not na(v) and f_famOn(f) and math.abs(v - close) <= drawRange * unit
+        bool near = not limitRange or math.abs(v - close) <= drawRange * unit
+        if not na(v) and f_slotOn(i) and near
             array.push(px, v)
-            array.push(cd, array.get(lvCode, i))
+            array.push(cd, useShort ? array.get(lvCode, i) : array.get(lvName, i))
             array.push(fm, f)
             array.push(tc, array.get(lvTouched, i))
+            array.push(an, array.get(lvAnchor, i))
     if onCustom and ncu > 0
         for i = 0 to ncu - 1
             float v = array.get(cuVal, i)
-            if math.abs(v - close) <= drawRange * unit
+            bool near = not limitRange or math.abs(v - close) <= drawRange * unit
+            if near
                 array.push(px, v)
                 array.push(cd, array.get(cuCode, i))
                 array.push(fm, 9)
                 array.push(tc, array.get(cuTouched, i))
+                array.push(an, dOpenB)
     int n = array.size(px)
     zonesDrawn := 0
     if n > 0
         int[] idx = array.sort_indices(px, order.ascending)
+        string sep = useShort ? "+" : " + "
         float  zMin = na
         float  zMax = na
-        string zCodes = ""
+        string zText = ""
         int    zFam = 0
         int    zCount = 0
         bool   zTouched = false
+        int    zAnchor = 0
         for k = 0 to n - 1
             int j = array.get(idx, k)
             float p = array.get(px, j)
             string c = array.get(cd, j)
             int f = array.get(fm, j)
             bool t = array.get(tc, j)
+            int a = array.get(an, j)
             if zCount == 0
                 zMin := p
                 zMax := p
-                zCodes := c
+                zText := c
                 zFam := f
                 zCount := 1
                 zTouched := t
+                zAnchor := a
             else if p - zMax <= clusterTol
                 zMax := p
-                zCodes := zCodes + "+" + c
+                zText := zText + sep + c
                 zFam := f_famRank(f) < f_famRank(zFam) ? f : zFam
                 zCount += 1
                 zTouched := zTouched or t
+                zAnchor := zAnchor == 0 or a == 0 ? 0 : math.min(zAnchor, a)
             else
-                f_drawZone(zMin, zMax, zCodes, zFam, zCount, zTouched)
+                f_drawZone(zMin, zMax, zText, zFam, zCount, zTouched, zAnchor)
                 zonesDrawn += 1
                 zMin := p
                 zMax := p
-                zCodes := c
+                zText := c
                 zFam := f
                 zCount := 1
                 zTouched := t
-        f_drawZone(zMin, zMax, zCodes, zFam, zCount, zTouched)
+                zAnchor := a
+        f_drawZone(zMin, zMax, zText, zFam, zCount, zTouched, zAnchor)
         zonesDrawn += 1
 
-// ───────────────────────────── [A6] INFO BOX ─────────────────────────────
+// ───────────────────────────── [A7] INFO BOX ─────────────────────────────
 var table info = table.new(position.top_right, 2, 7, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M1", "Level Engine")
+    f_cell(0, "L2L M1", "v0.3")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -385,7 +544,7 @@ if barstate.islast and showInfo
     f_cell(5, "Touch tol", str.tostring(touchTol, format.mintick) + " (" + str.tostring(math.round(touchTol / syminfo.mintick)) + " ticks)")
     f_cell(6, "Zones drawn", str.tostring(zonesDrawn))
 
-// ───────────────────── [A7] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
+// ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and onDaily  ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
 plot(showHist and onDaily  ? pdl   : na, "PDL", color = colDaily,  style = plot.style_linebr)
 plot(showHist and onDaily  ? dOpen : na, "DO",  color = color.new(colDaily, 40), style = plot.style_linebr)
@@ -404,5 +563,5 @@ plot(showHist and onWeekly ? pwh   : na, "PWH", color = colWeekly, style = plot.
 plot(showHist and onWeekly ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M1). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M1 v0.3). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

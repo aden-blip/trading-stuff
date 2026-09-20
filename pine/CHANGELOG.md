@@ -1,5 +1,16 @@
 # Changelog
 
+## M1 v0.3, 2026-09-20
+
+- New York session default 08:30 to 16:00 CT on every profile (D-56).
+- Day, week, month and 4-hour levels measured from chart candles with the bar of each extreme, so
+  lines start at the candle that made the level. Week and month fall back to higher-timeframe
+  requests on short histories. Five requests total.
+- Added PQH, PQL, PQM, YM, P4M and 4HO for Spaceman parity.
+- Display: candle-anchored or right-anchored lines, longest-line cap, label offset, label size,
+  short codes or full names, optional price, line width. All levels drawn by default; near-price
+  limit is a switch.
+
 ## M1 v0.2, 2026-09-20
 
 - Midnight open now requires the bar to sit in the first hour of the day in the anchor zone, so

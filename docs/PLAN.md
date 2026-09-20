@@ -1,6 +1,18 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 1 in progress. Version 0.7, 2026-09-19.
+Status: BUILDING. Milestone 1 in review. Version 0.8, 2026-09-20.
+
+Changes in 0.8, from the first M1 chart review:
+- **New York session runs to the 16:00 CT futures close** on every futures profile. The cash-close
+  version cut off the late-afternoon high you expected to see as the NY high. Pit-hour windows for
+  crude and metals stay available as inputs.
+- Day, week, month and 4-hour levels are now measured from the chart's own candles, so every line
+  can **start at the candle that made it**. Higher-timeframe requests are used only as fallbacks
+  and for quarter, year and the daily ATR.
+- Spaceman parity: previous quarter high / low / mid, year mid, previous 4-hour mid and the current
+  4-hour open added.
+- Display: all levels drawn by default, candle-anchored lines with a short right extension, label
+  size input, short codes or full names, optional price in the label.
 
 Changes in 0.7, final planning round:
 - Volume confirmation applies to the **Index profile only** (NQ, MNQ, ES, MES). Off on energy, metals and generic.
@@ -164,14 +176,14 @@ Level types. Each has a short code used on labels and in the stats table.
 
 | Code | Level | Source | Refreshes |
 |---|---|---|---|
-| PDH / PDL / PDM | Previous day high / low / mid | `D` timeframe, previous bar | daily rollover |
+| PDH / PDL / PDM | Previous day high / low / mid | chart candles grouped by exchange day, so each line starts at the candle that made it | daily rollover |
 | DO | Daily open (exchange open, 17:00 CT on CME) | `D` open | daily rollover |
 | MO | Midnight open (00:00 NY = 23:00 CT) | first chart bar at or after the anchor | daily |
 | PWH / PWL / PWM / WO | Previous week high / low / mid, weekly open | `W` | weekly |
 | PMH / PML / PMM / MOO | Previous month high / low / mid, monthly open | `M` | monthly |
-| QO | Quarterly open | `3M` open | quarterly |
-| YO / YH / YL | Yearly open, current-year high / low as of the prior daily close | `12M` open; running max/min on the `D` series | daily |
-| P4H / P4L / P4O | Previous 4-hour high / low / open | `240`, previous bar | every 4 hours |
+| PQH / PQL / PQM / QO | Previous quarter high / low / mid, quarterly open | `3M`, previous bar and open | quarterly |
+| YO / YH / YL / YM | Yearly open, current-year high / low / mid as of the prior daily close | `12M` open; running max/min on the `D` series | daily |
+| P4H / P4L / P4M / P4O / 4HO | Previous 4-hour high / low / mid / open, current 4-hour open | chart candles grouped by 4-hour boundary | every 4 hours |
 | MNH / MNL / MNM | Monday range high / low / mid (full Sunday 17:00 CT to Monday 16:00 CT session) | chart bars | weekly |
 | AH / AL / AO | Asia session high / low / open, last completed session | chart bars + session window | per session |
 | LH / LL / LO | London session high / low / open | chart bars + session window | per session |
@@ -189,16 +201,17 @@ STR, HOD and LOD are not drawn unless one of them is the active TP1 or TP2 of an
 |---|---|---|
 | Asia | 19:00 to 23:00 CT (20:00 to 00:00 NY) | all profiles |
 | London | 01:00 to 04:00 CT (02:00 to 05:00 NY) | all profiles |
-| New York, index | 08:30 to 15:00 CT (09:30 to 16:00 NY) | NQ, MNQ, ES, MES |
-| New York, energy | 08:00 to 13:30 CT (09:00 to 14:30 NY) | CL, MCL |
-| New York, metals | 07:20 to 12:30 CT (08:20 to 13:30 NY) | SI, SIL, GC, MGC |
+| New York, all futures profiles | 08:30 to 16:00 CT (09:30 to 17:00 NY), cash open to futures close | NQ, MNQ, ES, MES, CL, MCL, SI, SIL, GC, MGC |
+| New York, pit-hour alternatives | 08:00 to 13:30 CT for crude, 07:20 to 12:30 CT for metals, available in the inputs | CL, MCL, SI, SIL |
 
 Session levels always use the most recently *completed* session, so they never move while being traded.
 
-**Request budget.** D 1, W 1, M 1, 3M 1, 12M 1, 240 1 = 6. HTF rejection checks 5 / 15 / 60 = 3
-(the 240 call is shared). Mag 7 = 7. QQQ = 1. VIX = 1. Sectors = 11 (off by default).
-Total 29 of 40 with everything on, 18 with sectors off, 10 on CL or SI where breadth is off.
-Each HTF call returns a tuple such as `[high[1], low[1], open, atr[1]]` so one call serves several levels.
+**Request budget.** Day, week, month and 4-hour levels are measured from the chart's own candles,
+which is what gives each line its origin candle. Requests: D 1 (daily ATR, year high and low),
+W 1 and M 1 as fallbacks when the chart history is too short, 3M 1, 12M 1 = 5. HTF rejection
+checks 5 / 15 / 60 / 240 = 4. Mag 7 = 7. QQQ = 1. VIX = 1. Sectors = 11 (off by default).
+Total 29 of 40 with everything on, 18 with sectors off, 9 on CL or SI where breadth is off.
+Each request returns a tuple such as `[high[1], low[1], open]` so one call serves several levels.
 
 **Level instance identity.** An instance is (type, price, born-at time). When its period rolls the
 old instance retires and a new one is born. Statistics attach to instances, so "first interaction"
@@ -214,11 +227,13 @@ still credit every member type.
 
 **Fresh state.** A zone is fresh until price trades within `touchTol` of it after the daily rollover (D-11).
 
-**Drawing.** Only zones within `drawRange` daily ATRs of the current price are drawn (default 1.0
-above and below). Lines extend to the right with a small code label at the right edge. A zone with
-two or more members draws as a thin box with the codes joined ("PDH+P4H"). Touched and fresh zones
-look the same; the score carries that information (D-36). Everything else is off by default so the
-chart stays clean.
+**Drawing** (D-57). Every level is drawn by default, like the Spaceman indicator; a switch limits
+drawing to levels within `drawRange` daily ATRs of price. Each line starts at the candle that made
+the level and ends a few bars to the right of the current candle, where its label sits; a
+right-anchored fixed-length mode is the alternative. Labels use short codes or full names, a chosen
+text size, and optionally the price. A zone with two or more members draws as a thin box with the
+names joined ("PDH+P4H"). Touched and fresh zones look the same; the score carries that
+information (D-36).
 
 ### 4.2 [B] Interaction Classifier
 
@@ -518,9 +533,9 @@ Detected from the symbol root, overridable with an input. Times in CT (NY in bra
 
 | Profile | Symbols | Main session (NH/NL/NO) | Allowed sessions | Entry cutoff | Flatten | VIX / Mag 7 | Notes |
 |---|---|---|---|---|---|---|---|
-| Index | NQ, MNQ, ES, MES | 08:30 to 15:00 (09:30 to 16:00) | New York | 15:00 | 15:55 | NQ / MNQ only | Opening blackout 08:30 to 09:00. Cash close 15:00 CT, futures close 16:00 CT |
-| Energy | CL, MCL | 08:00 to 13:30 (09:00 to 14:30) | Asia, London, New York | 15:00 | 15:55 | off | Settlement 13:30 CT. EIA report Wednesday 09:30 CT is in the news blackout |
-| Metals | SI, SIL, GC, MGC | 07:20 to 12:30 (08:20 to 13:30) | Asia, London, New York | 15:00 | 15:55 | off | Silver settles 12:25 CT, gold 12:30 CT |
+| Index | NQ, MNQ, ES, MES | 08:30 to 16:00 (09:30 to 17:00) | New York | 15:00 | 15:55 | NQ / MNQ only | Opening blackout 08:30 to 09:00. Cash close 15:00 CT, futures close 16:00 CT |
+| Energy | CL, MCL | 08:30 to 16:00 (09:30 to 17:00); pit hours 08:00 to 13:30 available | Asia, London, New York | 15:00 | 15:55 | off | Settlement 13:30 CT. EIA report Wednesday 09:30 CT is in the news blackout |
+| Metals | SI, SIL, GC, MGC | 08:30 to 16:00 (09:30 to 17:00); pit hours 07:20 to 12:30 available | Asia, London, New York | 15:00 | 15:55 | off | Silver settles 12:25 CT, gold 12:30 CT |
 | Generic | anything else | 08:30 to 15:00 | New York | 15:00 | 15:55 | off | Crypto: sessions and flatten off |
 
 Your May rules said no Asia trading on NQ, which is why the index profile defaults to New York only.

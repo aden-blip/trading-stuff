@@ -6,7 +6,8 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Rounds 1 to 6 answered 2026-09-19. Planning is complete. Nothing is waiting on you; the beta script stays optional.
+Rounds 1 to 6 answered 2026-09-19. M1 chart review recorded 2026-09-20 (D-56, D-57). Nothing is
+waiting on you; the beta script stays optional.
 
 ---
 
@@ -271,6 +272,24 @@ dollar target that he raises when winning and lowers after a rough first trade. 
 cover these as settings (all OFF for backtesting per D-30). One addition: `maxConsecLosses` as a
 separate input from `maxLossesPerDay`, since his rule is consecutive.
 **Default:** OFF.
+
+---
+
+## N. From the first M1 chart review, 2026-09-20
+
+### D-56  New York session runs to the futures close  (DECIDED)
+You expected the NY high at the late-afternoon 29,993 print; the script had the NY session ending
+at 15:00 CT, the cash close, so that print fell outside it. The NY session is now 08:30 to 16:00 CT
+on every futures profile, cash open to futures close. Crude and metals keep their pit-hour windows
+as inputs. Your Asia, London, daily and midnight levels all matched the candles.
+
+### D-57  Level display  (DECIDED)
+Your asks: larger label text, a short-code or full-name option, lines that start at the candle
+that made the level and stop shortly right of price, and every level drawn including the quarter
+and year ones. Recorded and built in M1 v0.3: candle-anchored lines with a right-anchored
+fixed-length alternative, label size input, short codes or full names, optional price in the label,
+all levels drawn by default with a switch to limit to nearby ones. Spaceman parity levels added:
+previous quarter high, low and mid, year mid, previous 4-hour mid, current 4-hour open.
 
 ---
 
