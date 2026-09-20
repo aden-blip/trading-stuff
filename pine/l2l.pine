@@ -173,7 +173,9 @@ var bool[]   lvTouched = array.new<bool>(NSLOT, false)
 
 f_set(int i, float v) =>
     float old = array.get(lvVal, i)
-    bool changed = na(old) != na(v) or (not na(old) and not na(v) and old != v)
+    bool oldNa = na(old)
+    bool newNa = na(v)
+    bool changed = (oldNa and not newNa) or (not oldNa and newNa) or (not oldNa and not newNa and old != v)
     if changed
         array.set(lvTouched, i, false)
     array.set(lvVal, i, v)
@@ -291,10 +293,13 @@ f_drawZone(float zMin, float zMax, string codes, int fam, int count, bool touche
     int x1 = math.max(0, bar_index - lineLookback)
     int x2 = bar_index + labelOffset
     float mid = (zMin + zMax) / 2
-    if count > 1 and zMax - zMin >= syminfo.mintick
-        array.push(drawB, box.new(x1, zMax, x2, zMin, border_color = color.new(col, 30), bgcolor = color.new(col, 85), extend = extend.right))
-    else
-        array.push(drawL, line.new(x1, mid, x2, mid, color = color.new(col, 10), width = count > 1 ? 2 : 1, extend = extend.right))
+    bool asBox = count > 1 and zMax - zMin >= syminfo.mintick
+    if asBox
+        box b = box.new(x1, zMax, x2, zMin, border_color = color.new(col, 30), bgcolor = color.new(col, 85), extend = extend.right)
+        array.push(drawB, b)
+    if not asBox
+        line l = line.new(x1, mid, x2, mid, color = color.new(col, 10), width = count > 1 ? 2 : 1, extend = extend.right)
+        array.push(drawL, l)
     string txt = codes + (showFreshMark and not touched ? " *" : "")
     array.push(drawT, label.new(x2, mid, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = size.tiny))
 
