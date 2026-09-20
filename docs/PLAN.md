@@ -1,6 +1,10 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.14, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.15, 2026-09-20.
+
+Changes in 0.15, first M3 chart (D-70):
+- Break trades score a first break of a level like a first test; a signal cooldown of 12 minutes
+  per level; compact signal tags with the details in the tooltip.
 
 Changes in 0.14, M2 sign-off and the M3 build (D-67, D-68):
 - Hold and break verdict distances both 0.05 daily ATR.
@@ -409,7 +413,7 @@ TP1 distance  >= minTargetDist
 |---|---|---|
 | Reliability | 0 to 40 | `rankPct * 0.4`, using hold-rank for REV and break-rank for BRK; unknown type = 20 |
 | Stack | 0 to 20 | 1 member = 5, 2 = 12, 3 or more = 20 |
-| Level history today | 0 to 15 | fresh, first test = 12; already rejected cleanly today (classifier said HELD) = 15; touched with no verdict = 6; broken through earlier today = 3 |
+| Level history today | 0 to 15 | REV: fresh, first test = 12; already rejected cleanly today (classifier said HELD) = 15; touched with no verdict = 6; broken through earlier today = 3. BRK: first break of the level today = 12; a level that already held or broke earlier today = 6 (D-70) |
 | HTF rejection | 0 to 10 | timeframes among 5m / 15m / 1h / 4h whose last completed candle rejected the same zone: 0 = 0, 1 = 5, 2 = 8, 3 or more = 10. A bonus, never a requirement. |
 | Bias | 0 to 15 | with bias = 15, neutral = 7, against = 0 |
 | Confluence hooks (D-64) | 0 by default | Session VWAP side, VWAP stretch in daily-ATR units, and the 15-minute 200 EMA vote. Hidden from the chart. Weights stay 0 until the M4 backtests split the hold rate by each hook and a split earns it. |

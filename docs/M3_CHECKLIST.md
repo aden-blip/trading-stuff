@@ -1,12 +1,12 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.2`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.3`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
-1. **Compiles.** Everything from M2 still shows. New: signal labels under or over candles, such as
-   `LONG REV PDL+AL  S 64  E 29760.25  SL 29748.00  T1 29810.00 (T2 ...)  V+ E-`.
+1. **Compiles.** Everything from M2 still shows. New: signal tags under or over candles, such as
+   `LONG REV PDL+AL  64`. Hover one for entry, stop, targets and the score breakdown.
 2. **Signals sit where you would take reversal trades.** On MNQ 5-minute, scroll back a few days.
    A REV long should follow a wick, a poke-and-close-back or an engulfing candle at a level,
    then one bar closing the same way. Report any signal that makes no sense, with the time.

@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.2
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.3
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -158,6 +158,8 @@ gSg = "Signals"
 sigLabelsOn = input.bool(true, "Signal labels", group = gSg)
 sigKeep     = input.int(100, "Labels kept", minval = 10, maxval = 300, group = gSg)
 sigSizeIn   = input.string("small", "Label size", options = ["tiny", "small", "normal"], group = gSg)
+sigDetail   = input.string("Compact", "Label detail", options = ["Compact", "Full"], group = gSg, tooltip = "Compact shows direction, setup, level and score; entry, stop, targets and the score breakdown sit in the tooltip. Full prints everything on the label.")
+sigCooldownMin = input.int(12, "No repeat signal on a level within, minutes", minval = 0, maxval = 600, group = gSg, tooltip = "After a signal, the same level stays quiet for this long. 12 minutes is about two 5-minute candles. 0 turns it off.")
 alertsOn    = input.bool(true, "Fire alert() on each signal", group = gSg, tooltip = "Create one alert on this indicator with the condition Any alert() function call. The message is the JSON body from the plan.")
 baseQty     = input.int(2, "Contracts in the alert", minval = 1, group = gSg)
 
@@ -468,7 +470,9 @@ var bool[]  lvCounted  = array.new<bool>(NTOT, false)
 // M3: the last HELD (2) or BROKE (3) verdict today per slot, and a block after a signal until a
 // whole bar trades clear of the band again.
 var int[]   lvVerdictToday = array.new<int>(NTOT, 0)
+var int[]   lvVerdictBar   = array.new<int>(NTOT, -1)
 var bool[]  lvSigBlock     = array.new<bool>(NTOT, false)
+var int[]   lvSigBar       = array.new<int>(NTOT, -100000)
 
 f_resetSlot(int i) =>
     array.set(lvTouched, i, false)
@@ -478,7 +482,9 @@ f_resetSlot(int i) =>
     array.set(lvArmed, i, false)
     array.set(lvCounted, i, false)
     array.set(lvVerdictToday, i, 0)
+    array.set(lvVerdictBar, i, -1)
     array.set(lvSigBlock, i, false)
+    array.set(lvSigBar, i, -100000)
 
 f_set(int i, float v, int anchorBar) =>
     float old = array.get(lvVal, i)
@@ -565,6 +571,7 @@ float holdTol    = math.max(holdUnit * unit, holdTicks * syminfo.mintick)
 float tfMinutes   = math.max(timeframe.in_seconds() / 60.0, 1.0)
 bool  verdictBar  = tfMinutes >= verdictTF or time_close % (verdictTF * 60000) == 0
 int   verdictBars = math.max(1, math.ceil(verdictMinutes / tfMinutes))
+int   cooldownBars = math.ceil(sigCooldownMin / tfMinutes)
 
 // ───────────── [A5b] UNTAGGED SUPPORT AND RESISTANCE FROM HIGHER-TIMEFRAME PIVOTS ─────────────
 // Each completed bar of the pivot timeframe is stored with its high, low and the chart bars that
@@ -825,6 +832,7 @@ if barstate.isconfirmed
                 if verdict > 0
                     if verdict == 2 or verdict == 3
                         array.set(lvVerdictToday, i, verdict)
+                        array.set(lvVerdictBar, i, bar_index)
                     bool counted = not array.get(lvCounted, i)
                     if counted
                         statsDirty := true
@@ -1002,6 +1010,7 @@ int[]    zN     = array.new<int>()
 bool[]   zEntry = array.new<bool>()
 bool[]   zFresh = array.new<bool>()
 int[]    zHist  = array.new<int>()
+int[]    zHistP = array.new<int>()
 float[]  zRank  = array.new<float>()
 int[]    zRankN = array.new<int>()
 bool[]   zBlock = array.new<bool>()
@@ -1040,6 +1049,7 @@ if nzc > 0
             array.push(zEntry, false)
             array.push(zFresh, true)
             array.push(zHist, 0)
+            array.push(zHistP, 0)
             array.push(zRank, float(na))
             array.push(zRankN, 0)
             array.push(zBlock, false)
@@ -1067,7 +1077,12 @@ if nzc > 0
             int h = array.get(zHist, g)
             int hNew = vt == 3 ? 3 : (vt == 2 and h != 3) ? 15 : (touchedNow and h == 0) ? 6 : h
             array.set(zHist, g, hNew)
-            if array.get(lvSigBlock, sl)
+            // The same, ignoring a verdict made on this very bar: the state before this candle.
+            int vtP = array.get(lvVerdictBar, sl) == bar_index ? 0 : vt
+            int hP = array.get(zHistP, g)
+            int hPNew = vtP == 3 ? 3 : (vtP == 2 and hP != 3) ? 15 : (touchedNow and hP == 0) ? 6 : hP
+            array.set(zHistP, g, hPNew)
+            if array.get(lvSigBlock, sl) or bar_index - array.get(lvSigBar, sl) < cooldownBars
                 array.set(zBlock, g, true)
             int ty = f_typeOf(sl)
             float rk = array.get(tyRank, ty)
@@ -1170,6 +1185,7 @@ var string[] pCode  = array.new<string>()
 var float[]  pRank  = array.new<float>()
 var int[]    pRankN = array.new<int>()
 var int[]    pStack = array.new<int>()
+var int[]    pHist  = array.new<int>()
 f_removePending(int q) =>
     array.remove(pDir, q)
     array.remove(pLimit, q)
@@ -1180,6 +1196,7 @@ f_removePending(int q) =>
     array.remove(pRank, q)
     array.remove(pRankN, q)
     array.remove(pStack, q)
+    array.remove(pHist, q)
 
 var label[] sigLabels = array.new<label>()
 var int revCount = 0
@@ -1223,7 +1240,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                 float rk = array.get(pRank, q)
                 if geomOK and f_gateOK(false, rk, array.get(pRankN, q))
                     int hk = f_hookPoints(dir, false)
-                    [sc, sRel, sStack, sHist, sBias] = f_score(rk, false, array.get(pStack, q), 3, hk)
+                    [sc, sRel, sStack, sHist, sBias] = f_score(rk, false, array.get(pStack, q), array.get(pHist, q), hk)
                     if sc >= minScore and sc > bestScore
                         bestScore := sc
                         bestDir   := dir
@@ -1306,18 +1323,24 @@ if barstate.isconfirmed and array.size(zLo) > 0
                             array.push(pRank, array.get(zRank, z))
                             array.push(pRankN, array.get(zRankN, z))
                             array.push(pStack, array.get(zN, z))
+                            // A first break of a level scores like a first test; a level that
+                            // already held or broke earlier today scores as touched.
+                            int hP = array.get(zHistP, z)
+                            array.push(pHist, hP == 0 or hP == 6 ? 12 : 6)
     // One signal per bar: label, alert, counters, and block the zone's members for this test.
     if bestScore >= 0
         string dirTxt   = bestDir > 0 ? "LONG" : "SHORT"
         string setupTxt = bestSetup == 1 ? "REV" : "BRK"
-        string txt = dirTxt + " " + setupTxt + " " + bestCode + "  S " + str.tostring(bestScore) + "  E " + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
+        string details = "E " + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
         if not na(bestTp2)
-            txt := txt + "  T2 " + str.tostring(bestTp2, format.mintick)
+            details := details + "  T2 " + str.tostring(bestTp2, format.mintick)
         if showHooks
-            txt := txt + "  " + f_hookText()
+            details := details + "  " + f_hookText()
+        string head = dirTxt + " " + setupTxt + " " + bestCode + "  " + str.tostring(bestScore)
+        string txt = sigDetail == "Full" ? head + "  " + details : head
         if sigLabelsOn
             color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
-            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = bestTip))
+            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = details + "\n" + bestTip))
             if array.size(sigLabels) > sigKeep
                 label.delete(array.shift(sigLabels))
         if alertsOn
@@ -1338,6 +1361,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                 int sl = array.get(zmSlot, m)
                 if sl >= 0
                     array.set(lvSigBlock, sl, true)
+                    array.set(lvSigBar, sl, bar_index)
     // Re-arm signal blocks once a whole bar trades clear of the level's band.
     for i = 0 to NTOT - 1
         if array.get(lvSigBlock, i)
@@ -1528,7 +1552,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.2")
+    f_cell(0, "L2L M3", "v0.3")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1559,5 +1583,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.2). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.3). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

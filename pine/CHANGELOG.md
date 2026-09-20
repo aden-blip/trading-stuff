@@ -1,5 +1,13 @@
 # Changelog
 
+## M3 v0.3, 2026-09-20
+
+- Break trades: a first break of a level scores like a first test, so single-level break signals
+  can reach the minimum score (D-70).
+- Signal cooldown per level, 12 minutes by default.
+- Compact signal tags (direction, setup, level, score) with entry, stop, targets, hook letters
+  and the score breakdown in the tooltip; "Full" detail as an option.
+
 ## M3 v0.2, 2026-09-20
 
 - Compile fix: the two-direction setup loop counted with a negative step, which Pine rejects.

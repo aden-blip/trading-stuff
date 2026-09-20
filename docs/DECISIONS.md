@@ -424,6 +424,19 @@ knowledge. From now on every message describes what a change does on the chart a
 for, in everyday words, with no variable names or programming terms outside the script paste.
 Recorded in `CLAUDE.md` so every future session follows it.
 
+### D-70  First M3 chart: break history, signal cooldown, compact tags  (DECIDED)
+The MNQ 5-minute chart on M3 v0.2 showed 557 reversal signals and 1 break signal in about 70
+days, repeat signals on the same level a few candles apart, and tags wide enough to cover the
+candles. The statistics themselves read well (59 % hold overall, Monday and NY highs on top).
+Three changes:
+- A break trade scored its "level history" as 3 points because the level had just broken, so a
+  single-level break could never reach the minimum score. Now a first break of a level scores
+  like a first test (12) and a level that already held or broke earlier today scores 6.
+- A level stays quiet for 12 minutes after a signal (input, 0 turns it off). This is the M4
+  re-entry cooldown pulled forward for signals; M4 keeps its own after a stop-out.
+- Tags show direction, setup, level and score; entry, stop, targets, hook letters and the score
+  breakdown sit in the tooltip. "Full" puts everything back on the tag.
+
 ---
 
 ## L. New in round 4
