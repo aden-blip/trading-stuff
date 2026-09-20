@@ -532,6 +532,32 @@ Your three questions after the script is done.
    unattended 24/7 bots and allows supervised alert-driven automation; confirm in writing before
    running live (RESEARCH 4). Set up in M4 on a Tradovate demo account, which costs nothing.
 
+### D-78  Review defaults: score minimum 40, volume rule off  (DECIDED)
+The grey tags showed that the trades you would have taken died on two rules: "score under 60"
+and "volume 0.x times the 20-bar average". Both are looser during the review, for these reasons.
+1. **Score.** Today the score can only reach 82 of 100: the HTF rejection part (10) and the
+   bias part (15, fixed at the neutral 7) arrive in M6. A level on its own on its first touch of
+   the day scores 24 plus its reliability, and reliability is 0 to 40 by the hold-rate rank of
+   its type: best type 64, middle type 44, worst 24. So with the bar at 60, only the few
+   best-ranked types could fire alone; everything else needed two or more levels stacked. That
+   was not the plan's intent (60 of 100, "first tests trade on their own"). The ranks also rest
+   on about 70 days of one chart. **Now:** minimum 40 (4/10), which lets a middle-ranked level
+   fire alone and still blocks the worst-ranked ones. The bar goes back to 60 when M6 fills the
+   score, and the M4 backtest reports results by score bucket (4/10, 5/10, 6/10 and up) so the
+   final bar comes from numbers, not taste.
+2. **Volume.** The rule was a stand-in for "volume following suit": the follow-through candle's
+   volume at or above the average of the previous 20 candles. It fails more than half of all
+   candles on its own, because a few huge candles pull the average up, so most candles sit
+   below it. It also measures "busier than the last 100 minutes", not buying or selling
+   pressure at the level: after a busy open the calm-down candles all fail, in a quiet stretch
+   anything passes. **Now:** Off (D-66 already made it an optional filter for M4 to test).
+   **M4 variant to test:** Socrates reads his Bull vs Bear Power indicator, which splits each
+   candle's volume into a buying share and a selling share by where the candle closed in its
+   range. The faithful rule is directional: for a long, the follow-through candle's buying share
+   beats its selling share; for a short the reverse. Build that as the alternative and compare
+   off / average / bull-bear in the M4 backtest.
+Built in M3 v0.9 as defaults only; a v0.8 paste can be set the same way by hand.
+
 ---
 
 ## L. New in round 4

@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.8`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.9`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -35,4 +35,5 @@ comes in M6. The info box must read `L2L M3 v0.8`. Verdict distances are 0.05 an
 
 - A 5-minute MNQ screenshot with a few signals visible, and one with a label tooltip open.
 - Any signal that reads wrong, with the level name and time.
-- How many signals per day it produces at the default minimum score of 60.
+- How many signals per day it produces at the review minimum score of 40, and how many of
+  those read 6/10 or better.

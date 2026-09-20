@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.8
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.9
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -128,7 +128,7 @@ engulfOn     = input.bool(true, "Engulfing", group = gRev, inline = "rj")
 wickRatio    = input.float(0.5, "Wick at least this share of the bar", step = 0.05, minval = 0.1, maxval = 0.9, group = gRev)
 minBarATR    = input.float(0.6, "Rejection bar range, chart ATRs", step = 0.1, minval = 0, group = gRev, tooltip = "Dojis do not qualify: the rejection bar's range must be at least this many chart-timeframe ATRs.")
 strongSkip   = input.bool(false, "Strong rejection enters without follow-through", group = gRev, tooltip = "A wick of 60 % or more with a close in the far third enters at the rejection bar's close instead of waiting one bar.")
-volConfirmIn = input.string("Auto", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. The follow-through bar's volume must reach the multiple of the 20-bar average.")
+volConfirmIn = input.string("Off", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "Off during the review: the M4 backtest turns it on as one of the optional filters (D-66, D-78). Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. On or Auto: the follow-through bar's volume must reach the multiple of the 20-bar average.")
 volConfirmMult = input.float(1.0, "Volume multiple of the 20-bar average", step = 0.1, minval = 0.1, group = gRev)
 
 gBrk = "Break trade (BRK): break, retest, enter"
@@ -153,7 +153,7 @@ wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline 
 wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wHTF     = input.int(10, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
-minScore = input.int(60, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "Scored 0 to 100 inside; the tag shows it out of 10, so 60 here means 6/10 on the chart.")
+minScore = input.int(40, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "Scored 0 to 100 inside; the tag shows it out of 10, so 40 here means 4/10 on the chart. 40 while the score can only reach 82 (HTF and bias parts arrive in M6); the plan's 60 returns once they do, and the M4 backtest by score bucket decides the final bar.")
 rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
 minSamples = input.int(30, "Samples before the gate applies", minval = 1, group = gSc)
 
@@ -1642,7 +1642,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.8")
+    f_cell(0, "L2L M3", "v0.9")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1678,5 +1678,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.8). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.9). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

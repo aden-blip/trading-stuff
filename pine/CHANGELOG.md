@@ -1,5 +1,11 @@
 # Changelog
 
+## M3 v0.9, 2026-09-20
+
+- Review defaults (D-78): minimum score 40 while the score can only reach 82 (the HTF and bias
+  parts arrive in M6); volume confirmation Off until the M4 backtest tests it. Both are settings,
+  so a v0.8 paste can be set the same way by hand. No other change.
+
 ## M3 v0.8, 2026-09-20
 
 - "My pivots": ten price boxes in the settings for pivot lines you draw by hand on a higher
