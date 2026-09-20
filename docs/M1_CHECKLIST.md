@@ -39,11 +39,14 @@ What to do with `pine/l2l.pine` and what to report back. Stop at the first failu
 7. **Custom levels.** Type `12345:TEST` plus one real price near the market into the custom levels
    box, for example `20150:GEX`. The real one should appear with its label; the far one is skipped
    because it is out of draw range.
-8. **Clean chart.** Toggle families off and on. Nothing should remain drawn from a family that is off.
+8. **Clean chart.** Use the per-level toggles (Open, Prev H/L, Prev Mid per family, Monday Range
+   and Mid, session H/L and Open). Nothing should remain drawn from a switch that is off.
 9. **Line starts.** Each line should begin at the candle that made it: the NH line at the candle of
    the NY high, the DO line at the 17:00 Central candle, the MO line at the 23:00 candle, PDH at
    yesterday's high candle. Switch "Line start" to Right anchored and every line should become the same length.
-10. **Labels.** Change "Label size" and switch "Label text" to Full names; both should apply on the next candle.
+10. **Labels.** Labels are plain coloured text at the end of each line. Try "Label style" Boxed,
+    "Label size", and "Label text" Short codes; each should apply on the next candle. Levels at
+    the identical price share one label joined with a slash.
 
 ## Report back
 

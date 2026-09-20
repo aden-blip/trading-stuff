@@ -6,7 +6,7 @@ Every open question for the Level-to-Level strategy, grouped by topic. Each has 
 Status key: DECIDED = answered and recorded. OPEN = waiting on you. DEFAULT = not answered, the
 default stands unless you say otherwise. CLARIFY = answered, but one detail needs a yes or no.
 
-Rounds 1 to 6 answered 2026-09-19. M1 chart reviews recorded 2026-09-20 (D-56 to D-59). Nothing is
+Rounds 1 to 6 answered 2026-09-19. M1 chart reviews recorded 2026-09-20 (D-56 to D-60). Nothing is
 waiting on you; the beta script stays optional.
 
 ---
@@ -305,6 +305,15 @@ Thursday's. You expect the running session's high to show while the session is l
 levels now update live and freeze when the session ends; "Completed only" is a switch. For the
 trading logic, a developing session extreme counts as a target, not an entry level, until the
 session completes.
+
+### D-60  Match the Spaceman indicator's display  (DECIDED)
+You supplied the Spaceman source. Adopted: plain coloured text labels with no box at the end of
+the line, size normal, merging only at the identical price with " / ", per-level toggles (Open,
+Prev H/L, Prev Mid per family, Monday Range and Mid, session H/L and Open), a global colour
+switch, a line style input, year high and low that include today, and a Monday range that
+develops during Monday. Kept on purpose: lines start at the exact candle of the high or low
+rather than the period's first candle, levels come from the chart's own candles, sessions are
+entered in your timezone, and custom levels exist. Notes in `reference/spaceman_notes.md`.
 
 ---
 

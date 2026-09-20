@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.4
+//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.5
 //
 //  docs/PLAN.md describes every module. This file holds only module [A].
 //  Module map for the finished script:
@@ -39,19 +39,45 @@ sessNYEng  = input.session("0830-1600", "New York, Energy profile", group = gS, 
 sessNYMet  = input.session("0830-1600", "New York, Metals profile", group = gS, tooltip = "Silver and gold pit hours would be 0720-1230.")
 sessMode   = input.string("Developing", "Session levels", options = ["Developing", "Completed only"], group = gS, tooltip = "Developing: while a session is running its high, low and open update live, then freeze when it ends. Completed only: always the last finished session.")
 
-gL = "Level families"
-onDaily   = input.bool(true, "Previous day high / low / mid, daily open, midnight open", group = gL)
-onWeekly  = input.bool(true, "Previous week high / low / mid, weekly open", group = gL)
-onMonthly = input.bool(true, "Previous month high / low / mid, monthly open", group = gL)
-onQuarter = input.bool(true, "Previous quarter high / low / mid, quarterly open", group = gL)
-onYear    = input.bool(true, "Year high / low / mid, yearly open", group = gL)
-on4H      = input.bool(true, "Previous 4-hour high / low / mid / open, current 4-hour open", group = gL)
-onMonday  = input.bool(true, "Monday range high / low / mid", group = gL)
-onAsia    = input.bool(true, "Asia session high / low / open", group = gL)
-onLondon  = input.bool(true, "London session high / low / open", group = gL)
-onNY      = input.bool(true, "New York session high / low / open", group = gL)
-onCustom  = input.bool(true, "Custom levels", group = gL)
-customTxt = input.string("", "Custom levels", group = gL, tooltip = "Comma separated. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
+gDy = "Daily"
+dOpenOn  = input.bool(true, "Open", group = gDy, inline = "d")
+dRangeOn = input.bool(true, "Prev H/L", group = gDy, inline = "d")
+dMidOn   = input.bool(true, "Prev Mid", group = gDy, inline = "d")
+moOn     = input.bool(true, "Midnight open", group = gDy, inline = "d")
+gWk = "Weekly"
+wOpenOn  = input.bool(true, "Open", group = gWk, inline = "w")
+wRangeOn = input.bool(true, "Prev H/L", group = gWk, inline = "w")
+wMidOn   = input.bool(true, "Prev Mid", group = gWk, inline = "w")
+gMo = "Monthly"
+mOpenOn  = input.bool(true, "Open", group = gMo, inline = "m")
+mRangeOn = input.bool(true, "Prev H/L", group = gMo, inline = "m")
+mMidOn   = input.bool(true, "Prev Mid", group = gMo, inline = "m")
+gQt = "Quarterly"
+qOpenOn  = input.bool(true, "Open", group = gQt, inline = "q")
+qRangeOn = input.bool(true, "Prev H/L", group = gQt, inline = "q")
+qMidOn   = input.bool(true, "Prev Mid", group = gQt, inline = "q")
+gYr = "Yearly"
+yOpenOn  = input.bool(true, "Open", group = gYr, inline = "y")
+yRangeOn = input.bool(true, "Current H/L", group = gYr, inline = "y")
+yMidOn   = input.bool(true, "Mid", group = gYr, inline = "y")
+g4H = "4-hour"
+h4OpenOn  = input.bool(true, "Open", group = g4H, inline = "h")
+h4RangeOn = input.bool(true, "Prev H/L", group = g4H, inline = "h")
+h4MidOn   = input.bool(true, "Prev Mid", group = g4H, inline = "h")
+h4POpenOn = input.bool(true, "Prev Open", group = g4H, inline = "h")
+gMn = "Monday range"
+monRangeOn = input.bool(true, "Range", group = gMn, inline = "mo")
+monMidOn   = input.bool(true, "Mid", group = gMn, inline = "mo")
+gSe = "Sessions"
+aRangeOn = input.bool(true, "Asia H/L", group = gSe, inline = "s1")
+aOpenOn  = input.bool(true, "Asia Open", group = gSe, inline = "s1")
+lRangeOn = input.bool(true, "London H/L", group = gSe, inline = "s2")
+lOpenOn  = input.bool(true, "London Open", group = gSe, inline = "s2")
+nRangeOn = input.bool(true, "NY H/L", group = gSe, inline = "s3")
+nOpenOn  = input.bool(true, "NY Open", group = gSe, inline = "s3")
+gCu = "Custom levels"
+onCustom  = input.bool(true, "Show custom levels", group = gCu)
+customTxt = input.string("", "Custom levels", group = gCu, tooltip = "Comma separated. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
 
 gGeo = "Geometry (daily-ATR units with tick floors)"
 atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
@@ -61,17 +87,22 @@ touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, min
 touchTicks   = input.int(2, "Touch tolerance floor, ticks", minval = 0, group = gGeo)
 limitRange   = input.bool(false, "Only draw levels near price", group = gGeo, tooltip = "Off draws every level, like the Spaceman indicator. On draws only levels within the distance below.")
 drawRange    = input.float(1.0, "Near means within this many daily ATRs", step = 0.1, minval = 0.1, group = gGeo)
-mergeTicks   = input.int(1, "Share one label when levels are within, ticks", minval = 0, maxval = 100, group = gGeo, tooltip = "Every level is drawn on its own line. Levels this close share a label so the names do not overlap.")
+mergeTicks   = input.int(0, "Share one label when levels are within, ticks", minval = 0, maxval = 100, group = gGeo, tooltip = "Every level is drawn on its own line. Levels this close share a label so the names do not overlap. 0 means only identical prices share, like the Spaceman indicator.")
 
 gD = "Display"
 anchorMode  = input.string("Candle", "Line start", options = ["Candle", "Right anchored"], group = gD, tooltip = "Candle: each line starts at the candle that made the level. Right anchored: every line has the same length, measured back from the current candle.")
 rightLen    = input.int(40, "Right-anchored length, bars", minval = 5, maxval = 2000, group = gD)
 maxLineBars = input.int(3000, "Longest line, bars", minval = 100, maxval = 9000, group = gD, tooltip = "A line that would start further back than this is cut here.")
-labelOffset = input.int(20, "Label offset, bars right of price", minval = 1, maxval = 200, group = gD, tooltip = "If labels are cut off, widen the chart's right margin in chart settings.")
+labelOffset = input.int(30, "Line end, bars right of price", minval = 1, maxval = 300, group = gD, tooltip = "Lines end here and labels sit here. If labels are cut off, widen the chart's right margin in chart settings.")
+labelStyle  = input.string("Text only", "Label style", options = ["Text only", "Boxed"], group = gD, tooltip = "Text only is plain coloured text like the Spaceman indicator. Boxed puts the text in a filled tag.")
+textPad     = input.int(6, "Text-only label pad, bars", minval = 0, maxval = 60, group = gD, tooltip = "Text-only labels are centred this many bars past the line end so the words start after the line.")
 labelMode   = input.string("Full names", "Label text", options = ["Full names", "Short codes"], group = gD)
-labelSizeIn = input.string("small", "Label size", options = ["tiny", "small", "normal", "large"], group = gD)
+labelSizeIn = input.string("normal", "Label size", options = ["tiny", "small", "normal", "large"], group = gD)
 showPrice   = input.bool(false, "Show price in label", group = gD)
 lineWidth   = input.int(1, "Line width", minval = 1, maxval = 4, group = gD)
+lineStyleIn = input.string("Solid", "Line style", options = ["Solid", "Dashed", "Dotted"], group = gD)
+useGlobalColor = input.bool(false, "One colour for every level", group = gD, inline = "gc")
+globalColor    = input.color(color.white, "", group = gD, inline = "gc")
 showFreshMark = input.bool(false, "Mark untouched levels with *", group = gD)
 showInfo      = input.bool(true, "Show info box", group = gD)
 showHist      = input.bool(false, "Plot level history (replay checks)", group = gD, tooltip = "Draws the main levels as step lines through history so you can verify nothing moves in bar replay.")
@@ -140,12 +171,12 @@ f_period(bool newP) =>
         if na(rO)
             rO  := open
             rOb := bar_index
-    [pH, pL, pO, pHb, pLb, pOb, seen ? rO : na, rOb]
+    [pH, pL, pO, pHb, pLb, pOb, seen ? rO : na, rOb, rH, rL, rHb, rLb]
 
-[pdh, pdl, pdo, pdhB, pdlB, pdoB, dOpen, dOpenB]           = f_period(timeframe.change("D"))
-[pwhC, pwlC, pwoC, pwhB, pwlB, pwoB, wOpenC, wOpenB]       = f_period(timeframe.change("W"))
-[pmhC, pmlC, pmoC, pmhB, pmlB, pmoB, mOpenC, mOpenB]       = f_period(timeframe.change("M"))
-[p4h, p4l, p4o, p4hB, p4lB, p4oB, h4Open, h4OpenB]         = f_period(timeframe.change("240"))
+[pdh, pdl, pdo, pdhB, pdlB, pdoB, dOpen, dOpenB, dRunH, dRunL, dRunHb, dRunLb]     = f_period(timeframe.change("D"))
+[pwhC, pwlC, pwoC, pwhB, pwlB, pwoB, wOpenC, wOpenB, wRunH, wRunL, wRunHb, wRunLb] = f_period(timeframe.change("W"))
+[pmhC, pmlC, pmoC, pmhB, pmlB, pmoB, mOpenC, mOpenB, mRunH, mRunL, mRunHb, mRunLb] = f_period(timeframe.change("M"))
+[p4h, p4l, p4o, p4hB, p4lB, p4oB, h4Open, h4OpenB, h4RunH, h4RunL, h4RunHb, h4RunLb] = f_period(timeframe.change("240"))
 
 // ───────────────────── [A3] HIGHER-TIMEFRAME DATA (5 requests) ─────────────────────
 // Used where the chart history may be too short: week and month fallbacks, quarter, year, daily ATR.
@@ -200,8 +231,15 @@ if na(chartMaxH) or high > chartMaxH
 if na(chartMinL) or low < chartMinL
     chartMinL  := low
     chartMinLb := bar_index
-int yHighB = not na(yHigh) and not na(chartMaxH) and math.abs(chartMaxH - yHigh) <= syminfo.mintick ? chartMaxHb : 0
-int yLowB  = not na(yLow)  and not na(chartMinL) and math.abs(chartMinL - yLow)  <= syminfo.mintick ? chartMinLb : 0
+int yHighB0 = not na(yHigh) and not na(chartMaxH) and math.abs(chartMaxH - yHigh) <= syminfo.mintick ? chartMaxHb : 0
+int yLowB0  = not na(yLow)  and not na(chartMinL) and math.abs(chartMinL - yLow)  <= syminfo.mintick ? chartMinLb : 0
+// The year high and low include today's price action, like the Spaceman indicator. They are
+// targets only in the trading logic, so a developing value is fine.
+bool  liveMode = sessMode == "Developing"
+float yHighL = na(yHigh) ? na : liveMode and not na(dRunH) and dRunH > yHigh ? dRunH : yHigh
+float yLowL  = na(yLow)  ? na : liveMode and not na(dRunL) and dRunL < yLow  ? dRunL : yLow
+int   yHighB = liveMode and not na(dRunH) and not na(yHigh) and dRunH > yHigh ? dRunHb : yHighB0
+int   yLowB  = liveMode and not na(dRunL) and not na(yLow)  and dRunL < yLow  ? dRunLb : yLowB0
 
 // ───────────────────────── [A4] SESSION-BASED LEVELS ─────────────────────────
 // Midnight open: the open of the first bar at or after 00:00 in the anchor zone. A gap in
@@ -293,6 +331,11 @@ if not inMon and inMon[1]
     mnl  := monRunL
     mnhB := monRunHb
     mnlB := monRunLb
+bool  monLive = liveMode and inMon
+float mnhS  = monLive ? monRunH : mnh
+float mnlS  = monLive ? monRunL : mnl
+int   mnhSB = monLive ? monRunHb : mnhB
+int   mnlSB = monLive ? monRunLb : mnlB
 
 // ───────────────────── [A5] LEVEL TABLE AND FRESH STATE ─────────────────────
 // Fixed slots so the touched flag survives from bar to bar. A new value in a slot is a new level instance.
@@ -331,18 +374,18 @@ f_set(13, pqh, 0)
 f_set(14, pql, 0)
 f_set(15, (pqh + pql) / 2, 0)
 f_set(16, qOpen, qOpenB)
-f_set(17, yHigh, yHighB)
-f_set(18, yLow, yLowB)
-f_set(19, (yHigh + yLow) / 2, 0)
+f_set(17, yHighL, yHighB)
+f_set(18, yLowL, yLowB)
+f_set(19, (yHighL + yLowL) / 2, 0)
 f_set(20, yOpen, yOpenB)
 f_set(21, p4h, p4hB)
 f_set(22, p4l, p4lB)
 f_set(23, (p4h + p4l) / 2, math.min(p4hB, p4lB))
 f_set(24, p4o, p4oB)
 f_set(25, h4Open, h4OpenB)
-f_set(26, mnh, mnhB)
-f_set(27, mnl, mnlB)
-f_set(28, (mnh + mnl) / 2, math.min(mnhB, mnlB))
+f_set(26, mnhS, mnhSB)
+f_set(27, mnlS, mnlSB)
+f_set(28, (mnhS + mnlS) / 2, math.min(mnhSB, mnlSB))
 f_set(29, ah, ahB)
 f_set(30, al, alB)
 f_set(31, ao, aoB)
@@ -398,16 +441,52 @@ if ncu > 0
 
 // Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter and year, 4 four-hour,
 // 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom.
-f_famOn(int f) =>
-    f == 0 ? onDaily : f == 1 ? onWeekly : f == 2 ? onMonthly : f == 3 ? (onQuarter or onYear) : f == 4 ? on4H : f == 5 ? onMonday : f == 6 ? onAsia : f == 7 ? onLondon : f == 8 ? onNY : onCustom
 f_slotOn(int i) =>
-    int f = array.get(lvFam, i)
-    bool on = f_famOn(f)
-    if f == 3
-        on := i <= 16 ? onQuarter : onYear
-    on
+    switch i
+        0 => dRangeOn
+        1 => dRangeOn
+        2 => dMidOn
+        3 => dOpenOn
+        4 => moOn
+        5 => wRangeOn
+        6 => wRangeOn
+        7 => wMidOn
+        8 => wOpenOn
+        9 => mRangeOn
+        10 => mRangeOn
+        11 => mMidOn
+        12 => mOpenOn
+        13 => qRangeOn
+        14 => qRangeOn
+        15 => qMidOn
+        16 => qOpenOn
+        17 => yRangeOn
+        18 => yRangeOn
+        19 => yMidOn
+        20 => yOpenOn
+        21 => h4RangeOn
+        22 => h4RangeOn
+        23 => h4MidOn
+        24 => h4POpenOn
+        25 => h4OpenOn
+        26 => monRangeOn
+        27 => monRangeOn
+        28 => monMidOn
+        29 => aRangeOn
+        30 => aRangeOn
+        31 => aOpenOn
+        32 => lRangeOn
+        33 => lRangeOn
+        34 => lOpenOn
+        35 => nRangeOn
+        36 => nRangeOn
+        37 => nOpenOn
+        => onCustom
 f_famColor(int f) =>
-    f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : colCustom
+    color c = f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : colCustom
+    useGlobalColor ? globalColor : c
+f_lineStyle() =>
+    lineStyleIn == "Dashed" ? line.style_dashed : lineStyleIn == "Dotted" ? line.style_dotted : line.style_solid
 // Which family names a mixed zone: the higher timeframe wins.
 f_famRank(int f) =>
     f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 9 ? 6 : 7
@@ -442,7 +521,7 @@ f_drawLine(float price, int fam, int anchor) =>
     color col = f_famColor(fam)
     int x1 = f_lineStart(anchor)
     int x2 = bar_index + labelOffset
-    array.push(drawL, line.new(x1, price, x2, price, color = color.new(col, 10), width = lineWidth))
+    array.push(drawL, line.new(x1, price, x2, price, color = color.new(col, 10), width = lineWidth, style = f_lineStyle()))
 
 f_drawLabel(float price, string txtIn, int fam, bool touched) =>
     color col = f_famColor(fam)
@@ -452,7 +531,10 @@ f_drawLabel(float price, string txtIn, int fam, bool touched) =>
         txt := txt + "  " + str.tostring(price, format.mintick)
     if showFreshMark and not touched
         txt := txt + " *"
-    array.push(drawT, label.new(x2, price, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
+    if labelStyle == "Text only"
+        array.push(drawT, label.new(x2 + textPad, price, txt, xloc = xloc.bar_index, style = label.style_none, textcolor = col, size = f_labelSize()))
+    else
+        array.push(drawT, label.new(x2, price, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
 
 var int levelsDrawn = 0
 if barstate.islast
@@ -487,7 +569,7 @@ if barstate.islast
     levelsDrawn := n
     if n > 0
         int[] idx = array.sort_indices(px, order.ascending)
-        string sep = useShort ? "+" : " + "
+        string sep = " / "
         float mergeTol = mergeTicks * syminfo.mintick
         float  gPrice = na
         string gText = ""
@@ -523,7 +605,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M1", "v0.4")
+    f_cell(0, "L2L M1", "v0.5")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -532,23 +614,23 @@ if barstate.islast and showInfo
     f_cell(6, "Levels drawn", str.tostring(levelsDrawn))
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
-plot(showHist and onDaily  ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
-plot(showHist and onDaily  ? pdl   : na, "PDL", color = colDaily,  style = plot.style_linebr)
-plot(showHist and onDaily  ? dOpen : na, "DO",  color = color.new(colDaily, 40), style = plot.style_linebr)
-plot(showHist and onDaily  ? mo    : na, "MO",  color = color.new(colDaily, 40), style = plot.style_linebr)
-plot(showHist and on4H     ? p4h   : na, "P4H", color = col4H,     style = plot.style_linebr)
-plot(showHist and on4H     ? p4l   : na, "P4L", color = col4H,     style = plot.style_linebr)
-plot(showHist and onMonday ? mnh   : na, "MNH", color = colMonday, style = plot.style_linebr)
-plot(showHist and onMonday ? mnl   : na, "MNL", color = colMonday, style = plot.style_linebr)
-plot(showHist and onAsia   ? ah    : na, "AH",  color = colAsia,   style = plot.style_linebr)
-plot(showHist and onAsia   ? al    : na, "AL",  color = colAsia,   style = plot.style_linebr)
-plot(showHist and onLondon ? lh    : na, "LH",  color = colLondon, style = plot.style_linebr)
-plot(showHist and onLondon ? ll    : na, "LL",  color = colLondon, style = plot.style_linebr)
-plot(showHist and onNY     ? nh    : na, "NH",  color = colNY,     style = plot.style_linebr)
-plot(showHist and onNY     ? nl    : na, "NL",  color = colNY,     style = plot.style_linebr)
-plot(showHist and onWeekly ? pwh   : na, "PWH", color = colWeekly, style = plot.style_linebr)
-plot(showHist and onWeekly ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
+plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
+plot(showHist and dRangeOn   ? pdl   : na, "PDL", color = colDaily,  style = plot.style_linebr)
+plot(showHist and dOpenOn    ? dOpen : na, "DO",  color = color.new(colDaily, 40), style = plot.style_linebr)
+plot(showHist and moOn       ? mo    : na, "MO",  color = color.new(colDaily, 40), style = plot.style_linebr)
+plot(showHist and h4RangeOn  ? p4h   : na, "P4H", color = col4H,     style = plot.style_linebr)
+plot(showHist and h4RangeOn  ? p4l   : na, "P4L", color = col4H,     style = plot.style_linebr)
+plot(showHist and monRangeOn ? mnhS  : na, "MNH", color = colMonday, style = plot.style_linebr)
+plot(showHist and monRangeOn ? mnlS  : na, "MNL", color = colMonday, style = plot.style_linebr)
+plot(showHist and aRangeOn   ? ah    : na, "AH",  color = colAsia,   style = plot.style_linebr)
+plot(showHist and aRangeOn   ? al    : na, "AL",  color = colAsia,   style = plot.style_linebr)
+plot(showHist and lRangeOn   ? lh    : na, "LH",  color = colLondon, style = plot.style_linebr)
+plot(showHist and lRangeOn   ? ll    : na, "LL",  color = colLondon, style = plot.style_linebr)
+plot(showHist and nRangeOn   ? nh    : na, "NH",  color = colNY,     style = plot.style_linebr)
+plot(showHist and nRangeOn   ? nl    : na, "NL",  color = colNY,     style = plot.style_linebr)
+plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plot.style_linebr)
+plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M1 v0.4). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M1 v0.5). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

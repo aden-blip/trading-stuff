@@ -1,6 +1,14 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 1 in review. Version 0.9, 2026-09-20.
+Status: BUILDING. Milestone 1 in review. Version 0.10, 2026-09-20.
+
+Changes in 0.10, aligned with the Spaceman source (`reference/spaceman_notes.md`):
+- Labels are plain coloured text by default, size normal, at the end of the line; boxed is the option.
+- Labels merge only at the identical price, joined with " / ".
+- Toggles per level like Spaceman: Open, Prev H/L, Prev Mid for each family; Monday Range and Mid;
+  session H/L and Open; midnight open; previous 4-hour open.
+- Global colour switch and line style input.
+- Year high and low include today's price action; Monday's range develops live during Monday.
 
 Changes in 0.9, from the second M1 chart review:
 - **Session levels develop live.** While a session runs, its high, low and open update as new

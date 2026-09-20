@@ -1,5 +1,11 @@
 # Changelog
 
+## M1 v0.5, 2026-09-20
+
+- Spaceman alignment: text-only coloured labels by default (boxed optional), size normal, line
+  end 30 bars right of price, merge only at identical prices with " / ", per-level toggles,
+  global colour, line style. Year high/low include today; Monday range develops live.
+
 ## M1 v0.4, 2026-09-20
 
 - Session levels develop live while the session runs and freeze when it ends; "Completed only" switch.
