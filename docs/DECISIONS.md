@@ -556,7 +556,19 @@ and "volume 0.x times the 20-bar average". Both are looser during the review, fo
    range. The faithful rule is directional: for a long, the follow-through candle's buying share
    beats its selling share; for a short the reverse. Build that as the alternative and compare
    off / average / bull-bear in the M4 backtest.
-Built in M3 v0.9 as defaults only; a v0.8 paste can be set the same way by hand.
+Built in M3 v0.9 as defaults only; a v0.8 paste can be set the same way by hand. The bar of 40
+is superseded by D-79: with the score scaled to the reachable maximum, the review bar is 50.
+
+### D-79  Score reads out of what is reachable  (DECIDED, your idea)
+Your point: if the most a setup can score today is 82, then 82 is really 100. Agreed. The score is
+now raw points divided by the points the current weights can produce, times 100: reliability 40,
+stack 20, history 15, the neutral bias 7, plus any hook weights you turn on, so 82 today. A fresh
+level on its own now reads 78 (8/10) for the best-ranked type, 54 (5/10) for a middle type, 29
+(3/10) for the worst. When M6 adds the HTF rejection points and the full bias range, the reachable
+total becomes 100 and the tags keep their meaning. Changing a weight in the settings also
+rescales, so the weights are relative importance, not absolute points. Review minimum 50 (5/10),
+which passes the same trades as the raw 40 of D-78; the plan's 60 returns after M6 and the M4
+backtest by score bucket sets the final bar. Built in M3 v0.10.
 
 ---
 

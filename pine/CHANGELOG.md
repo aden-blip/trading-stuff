@@ -1,5 +1,11 @@
 # Changelog
 
+## M3 v0.10, 2026-09-20
+
+- Score reads out of what is reachable today (D-79): raw points over the points the current
+  weights can produce, 82 before M6 and 100 after, so a 64 shows as 78 and 8/10. The hover box
+  adds "Raw 64 of 82 reachable". Review minimum 50 (5/10), the same trades as the raw 40 of v0.9.
+
 ## M3 v0.9, 2026-09-20
 
 - Review defaults (D-78): minimum score 40 while the score can only reach 82 (the HTF and bias

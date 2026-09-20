@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.9
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.10
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -153,7 +153,7 @@ wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline 
 wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wHTF     = input.int(10, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
-minScore = input.int(40, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "Scored 0 to 100 inside; the tag shows it out of 10, so 40 here means 4/10 on the chart. 40 while the score can only reach 82 (HTF and bias parts arrive in M6); the plan's 60 returns once they do, and the M4 backtest by score bucket decides the final bar.")
+minScore = input.int(50, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "The score reads out of 100 of what the bot can measure today: raw points over the points reachable with the weights above (82 before M6, 100 after). 50 here means 5/10 on the tag. The plan's 60 returns once M6 fills the score, and the M4 backtest by score bucket sets the final bar.")
 rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
 minSamples = input.int(30, "Samples before the gate applies", minval = 1, group = gSc)
 
@@ -1181,20 +1181,24 @@ f_hookText() =>
 
 // Score (plan 4.5). Reliability from the rank: hold-rank for REV, break-rank (100 minus hold-rank)
 // for BRK, unknown = half. Stack 1 / 2 / 3+ = 25 % / 60 % / 100 % of its weight. History points
-// out of 15. HTF is 0 and bias neutral until M6.
+// out of 15. HTF is 0 and bias neutral until M6. The score reads out of what is reachable today
+// (D-79): raw points over the points the current weights can produce, so 82 raw before M6 is 100.
+int hooksMax = vwapSideW + vwapStretchW + emaVoteW
+int scoreMax = math.max(1, wRel + wStack + wHist + math.round(wBias * 7 / 15.0) + hooksMax)
 f_score(float rankPct, bool isRev, int stack, int hist, int hooks) =>
     float rel = na(rankPct) ? 0.5 : (isRev ? rankPct : 100 - rankPct) / 100.0
     int sRel   = math.round(wRel * rel)
     int sStack = stack >= 3 ? wStack : stack == 2 ? math.round(wStack * 0.6) : math.round(wStack * 0.25)
     int sHist  = math.round(wHist * hist / 15.0)
     int sBias  = math.round(wBias * 7 / 15.0)
-    [sRel + sStack + sHist + sBias + hooks, sRel, sStack, sHist, sBias]
+    int raw    = sRel + sStack + sHist + sBias + hooks
+    [math.round(100.0 * raw / scoreMax), sRel, sStack, sHist, sBias, raw]
 
 f_score10(int sc) =>
     str.tostring(math.round(sc / 10.0)) + "/10"
 
-f_tip(int sRel, int sStack, int sHist, int sBias, int hk) =>
-    "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF 0 (M6)  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk)
+f_tip(int sRel, int sStack, int sHist, int sBias, int hk, int raw) =>
+    "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF 0 (M6)  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk) + "  Raw " + str.tostring(raw) + " of " + str.tostring(scoreMax) + " reachable"
 
 // Explanation notes: one per direction per bar, the highest-priority reason wins.
 f_nearNote(int[] pri, string[] txt, int dir, int p, string t) =>
@@ -1292,10 +1296,10 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         f_nearNote(nmPri, nmTxt, dir, 1, whoB + " not taken: rank gate, this level type is in the top half for holding")
                 else
                     int hk = f_hookPoints(dir, false)
-                    [sc, sRel, sStack, sHist, sBias] = f_score(rk, false, array.get(pStack, q), array.get(pHist, q), hk)
+                    [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, false, array.get(pStack, q), array.get(pHist, q), hk)
                     if sc < minScore
                         if diag
-                            f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk) + ")")
+                            f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw) + ")")
                     else if sc > bestScore
                         bestScore := sc
                         bestDir   := dir
@@ -1306,7 +1310,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         bestTp1   := tp1
                         bestTp2   := tp2
                         bestCode  := array.get(pCode, q)
-                        bestTip   := f_tip(sRel, sStack, sHist, sBias, hk)
+                        bestTip   := f_tip(sRel, sStack, sHist, sBias, hk, raw)
             else if diagAll and (failed or expired)
                 f_nearNote(nmPri, nmTxt, dir, 0, failed ? whoB + ": price closed back through the level before the retest, order cancelled" : whoB + ": retest order at " + str.tostring(lim, format.mintick) + " not filled within " + str.tostring(retestBars) + " bars, order expired")
             if filled or failed or expired
@@ -1356,10 +1360,10 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         else
                             int hist = array.get(zHist, z) == 0 ? 12 : array.get(zHist, z)
                             int hk = f_hookPoints(dir, true)
-                            [sc, sRel, sStack, sHist, sBias] = f_score(rk, true, array.get(zN, z), hist, hk)
+                            [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, true, array.get(zN, z), hist, hk)
                             if sc < minScore
                                 if diag
-                                    f_nearNote(nmPri, nmTxt, dir, sc, who + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk) + ")")
+                                    f_nearNote(nmPri, nmTxt, dir, sc, who + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw) + ")")
                             else if sc > bestScore
                                 bestScore := sc
                                 bestDir   := dir
@@ -1370,7 +1374,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 bestTp1   := tp1
                                 bestTp2   := tp2
                                 bestCode  := array.get(zCode, z)
-                                bestTip   := f_tip(sRel, sStack, sHist, sBias, hk)
+                                bestTip   := f_tip(sRel, sStack, sHist, sBias, hk, raw)
                     else if diagAll and rej1 and zOK and not zBl
                         f_nearNote(nmPri, nmTxt, dir, 0, who + ": rejection candle on the previous bar, but this candle did not follow through, it needs a " + (dir > 0 ? "green close above " + str.tostring(zhi, format.mintick) : "red close below " + str.tostring(zlo, format.mintick)))
     // New breaks: a close through a zone by the break distance, from the other side, with enough
@@ -1642,7 +1646,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.9")
+    f_cell(0, "L2L M3", "v0.10")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1678,5 +1682,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.9). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.10). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

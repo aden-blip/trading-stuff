@@ -1,6 +1,10 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.19, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.20, 2026-09-20.
+
+Changes in 0.20, score scaled to the reachable maximum (D-79):
+- The score reads out of the points the current weights can produce (82 before M6, 100 after),
+  so the tags keep their meaning across milestones. Review minimum 50.
 
 Changes in 0.19, review defaults (D-78):
 - Minimum score 40 while the score can only reach 82 (HTF and bias parts arrive in M6); back to
@@ -441,7 +445,7 @@ TP1 distance  >= minTargetDist
 | Bias | 0 to 15 | with bias = 15, neutral = 7, against = 0 |
 | Confluence hooks (D-64) | 0 by default | Session VWAP side, VWAP stretch in daily-ATR units, and the 15-minute 200 EMA vote. Hidden from the chart. Weights stay 0 until the M4 backtests split the hold rate by each hook and a split earns it. |
 
-`minScore` default 60, set to 40 during the M3 review while the HTF and bias parts are empty (D-78). Weights are inputs. A fresh level of a top-ranked type with no
+`minScore` default 60, set to 50 during the M3 review (D-78, D-79). The score reads out of the points the current weights can produce, 82 before M6 and 100 after (D-79). Weights are inputs. A fresh level of a top-ranked type with no
 higher-timeframe help and neutral bias scores 40 + 5 + 12 + 0 + 7 = 64, so first tests trade on
 their own. The tag shows the direction and the score out of 10, for example `▲ 8/10`; the hover
 box shows the setup, the level, the exact 0 to 100 number, entry, stop, targets and the
@@ -669,7 +673,7 @@ an offline study later if we want more (M8).
 | BRK | breakTrades (break, retest, enter) | ON | switch |
 | BRK | minBreakBodyATR | 0.5 | exec ATR |
 | BRK | retestBars | 6 | execution bars |
-| Filters | minScore | 60 (40 during the M3 review, D-78) | points |
+| Filters | minScore | 60 (50 during the M3 review, D-78, D-79) | points out of the reachable maximum |
 | Filters | minRR | 1.0 | R |
 | Filters | minTargetDist | 0.15 / 10 | daily ATR / ticks |
 | Filters | maxRiskATR | 0.35 | daily ATR |
