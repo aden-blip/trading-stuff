@@ -1,5 +1,14 @@
 # Changelog
 
+## M3 v0.11, 2026-09-20
+
+- One trade at a time (D-80): the indicator follows each taken signal as a paper trade, in at
+  the signal, out at the stop, the first target or the flatten time (15:55 CT), with no new
+  trades from 15:00 CT to the flatten. Signals while a trade is open are skipped, with a grey
+  `?` explaining when Explain missed signals is on. Exit marks with the points made or lost,
+  two info-box rows (trades by outcome, net points), and an EXIT alert message. Switch it off
+  to see every setup as before.
+
 ## M3 v0.10, 2026-09-20
 
 - Score reads out of what is reachable today (D-79): raw points over the points the current

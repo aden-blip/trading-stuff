@@ -1,6 +1,11 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.20, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.21, 2026-09-20.
+
+Changes in 0.21, one trade at a time in the indicator (D-80):
+- The indicator follows each taken signal as a paper trade (stop, first target, flatten) and
+  skips signals while one is open; exit marks and a tally. Findings from the 40-versus-60
+  review in D-80: no trend gate for now, chop band to be tuned on data.
 
 Changes in 0.20, score scaled to the reachable maximum (D-79):
 - The score reads out of the points the current weights can produce (82 before M6, 100 after),

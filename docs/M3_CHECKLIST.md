@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.10`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.11`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -30,6 +30,10 @@ comes in M6. The info box must read `L2L M3 v0.10`. Verdict distances are 0.05 a
 11. **My pivots.** Settings, My pivots, type `29895.5` into Pivot 1. A pink line appears with the
     tag Pivot 1, the info box row My pivots reads 1 of 10, and after its first test the
     statistics table gets a PIV row.
+12. **One trade at a time.** With the default on, arrows never overlap in time: after an arrow,
+    the next arrow comes only after a small teal or maroon exit tag (T1, stop or flat with the
+    points). The info box shows Paper trades and Paper points. Turn the switch off and every
+    setup shows again, as in v0.10.
 
 ## Report back
 

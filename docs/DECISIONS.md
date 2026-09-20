@@ -570,6 +570,32 @@ rescales, so the weights are relative importance, not absolute points. Review mi
 which passes the same trades as the raw 40 of D-78; the plan's 60 returns after M6 and the M4
 backtest by score bucket sets the final bar. Built in M3 v0.10.
 
+### D-80  One trade at a time in the indicator, and what the 40-versus-60 screenshots showed  (DECIDED)
+Your before-and-after on Friday 18 September (MNQ 5-minute, volume rule off): at the old bar of
+60 the chart had 4 signals; at 40 it had about 25, including the ones you wanted, plus many
+"that would not make sense" and some in the opposite direction minutes apart.
+1. **Most of the noise is the indicator having no position.** It marks every setup. A bot in a
+   trade would never take the long at the Midnight Open at 13:00 CT and the short at the Prev
+   4H Open at 13:03 CT both; it would be long and stay long. Walking that day one trade at a
+   time (in at the signal, out at the stop or the first target): the 09:22 long, the 10:08 short,
+   the 11:47 long and the 13:00 long all reach their first target, the 10:45 long and the 11:20
+   short stop out. Six trades, four winners, instead of thirteen tags. So the indicator now
+   follows a paper trade (this decision) and shows only what the bot would take. The M4
+   strategy replaces it with real fills, costs and slippage; M5 adds partials and trailing.
+2. **The counter-trend signal cannot be told apart at the candle.** The 08:39 short at London
+   Low / London Open (8/10, a big winner) and the 13:03 short at the Prev 4H Open (6/10, a
+   loser) are the same shape: a rally that broke levels on the way, a rejection candle, a
+   follow-through candle. Checked by eye on that day, every simple trend gate (price versus the
+   session VWAP, versus the 15-minute 200 EMA, "levels broken in the last 30 minutes") blocks
+   the 08:39 winner as well as the 13:03 loser, and the plan's chop filter at its default band
+   would block the 06:30 and 08:39 shorts too. So no trend gate now. The planned answers stay:
+   the score bucket backtest in M4 (do 6/10 trades pay?), the bull-versus-bear volume test in M4
+   (D-78), bias and higher-timeframe rejection in M6, and the chop band tuned on data (D-28).
+3. **Repeats at the same level** (the 06:50 short 20 minutes after the 06:30 one) disappear
+   with the paper trade too, because the first trade is still open.
+Inputs: entry cutoff 15:00 CT [16:00 NY] and flatten 15:55 CT [16:55 NY] from the plan, both
+switchable, exit marks, two info-box rows. Built in M3 v0.11.
+
 ---
 
 ## L. New in round 4

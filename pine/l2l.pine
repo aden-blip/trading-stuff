@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.10
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.11
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -177,6 +177,13 @@ alertsOn    = input.bool(true, "Fire alert() on each signal", group = gSg, toolt
 baseQty     = input.int(2, "Contracts in the alert", minval = 1, group = gSg)
 nearMiss    = input.string("Off", "Explain missed signals", options = ["Off", "Rule rejections", "Rules and candles"], group = gSg, tooltip = "Grey ? tags on candles where a trade nearly happened. Hover one to read why it was not a signal. Rule rejections: a setup formed but a rule stopped it (score, volume, target, cooldown, a level still forming). Rules and candles: also rejection candles with no follow-through candle, and breaks whose retest never came.")
 nearKeep    = input.int(150, "Explanation tags kept", minval = 10, maxval = 400, group = gSg)
+
+gPa = "One trade at a time (paper trade, D-80)"
+paperOn     = input.bool(true, "Show only the trades the bot would take, one at a time", group = gPa, tooltip = "The indicator follows each signal as a paper trade: in at the signal, out at the stop, the first target or the flatten time. While a trade is open, other signals are skipped (a grey ? explains, with Explain missed signals on). Off shows every setup, as before.")
+entryCutoff = input.int(1500, "No new trades from (HHMM, timezone above; 0 = off)", minval = 0, maxval = 2359, group = gPa, tooltip = "No entries between this time and the flatten time, so a trade has room to work before the close. Evening and overnight entries are not affected.")
+flattenAt   = input.int(1555, "Close the trade at (HHMM; 0 = off)", minval = 0, maxval = 2359, group = gPa)
+showExits   = input.bool(true, "Mark exits", group = gPa, tooltip = "A small tag at each exit: T1, stop or flat, with the points made or lost. Teal is a gain, maroon a loss.")
+exitKeep    = input.int(100, "Exit marks kept", minval = 10, maxval = 300, group = gPa)
 
 gGeo = "Geometry (daily-ATR units with tick floors)"
 atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
@@ -1247,6 +1254,51 @@ var label[] nmLabels  = array.new<label>()
 var int revCount = 0
 var int brkCount = 0
 
+// ---- Paper trade (D-80): one position at a time, in at the signal, out at the stop, the first
+// target or the flatten time. Exits are checked on every confirmed bar before new signals; a stop
+// and a target in the same bar count as the stop. Costs, slippage, partials and trailing come in
+// M4 and M5; this is the review view, not the backtest.
+var int     posDir   = 0
+var float   posEntry = na
+var float   posStop  = na
+var float   posTp    = na
+var string  posCode  = ""
+var int     ptCount  = 0
+var int     ptWin    = 0
+var int     ptLoss   = 0
+var int     ptFlat   = 0
+var float   ptNet    = 0.0
+var label[] exitLabels = array.new<label>()
+string sym = str.length(syminfo.root) > 0 ? syminfo.root : syminfo.ticker
+int cutMin  = math.floor(entryCutoff / 100) * 60 + entryCutoff % 100
+int flatMin = math.floor(flattenAt / 100) * 60 + flattenAt % 100
+f_exitMark(float px, string txt, bool win) =>
+    if showExits
+        array.push(exitLabels, label.new(bar_index, px, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(win ? color.teal : color.maroon, 30), textcolor = color.white, size = size.tiny))
+        if array.size(exitLabels) > exitKeep
+            label.delete(array.shift(exitLabels))
+if barstate.isconfirmed and paperOn and posDir != 0
+    int modNow = hour(time, tz) * 60 + minute(time, tz)
+    bool flatNow = flattenAt > 0 and modNow <= flatMin and modNow + tfMinutes > flatMin
+    bool stopHit = posDir > 0 ? low <= posStop : high >= posStop
+    bool tpHit   = posDir > 0 ? high >= posTp : low <= posTp
+    if flatNow or stopHit or tpHit
+        string why = stopHit ? "stop" : tpHit ? "T1" : "flat"
+        float px   = stopHit ? posStop : tpHit ? posTp : close
+        float pts  = (px - posEntry) * posDir
+        ptCount += 1
+        if stopHit
+            ptLoss += 1
+        else if tpHit
+            ptWin += 1
+        else
+            ptFlat += 1
+        ptNet += pts
+        f_exitMark(px, why + " " + (pts >= 0 ? "+" : "") + str.tostring(pts, format.mintick), pts >= 0)
+        if alertsOn
+            alert('{"symbol":"' + sym + '","data":"close","event":"EXIT","reason":"' + why + '","level":"' + posCode + '","price":' + str.tostring(px, format.mintick) + ',"points":' + str.tostring(pts, format.mintick) + '}', alert.freq_once_per_bar_close)
+        posDir := 0
+
 if barstate.isconfirmed and array.size(zLo) > 0
     float stopBuf = math.max(stopUnit * unit, stopTicks * syminfo.mintick)
     float minTgt  = math.max(tgtUnit * unit, tgtTicks * syminfo.mintick)
@@ -1263,6 +1315,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
     float  bestTp2   = na
     string bestCode  = ""
     string bestTip   = ""
+    bool   sigTaken  = false
     bool diag    = nearMiss != "Off"
     bool diagAll = nearMiss == "Rules and candles"
     int[]    nmPri = array.new<int>(2, -1)
@@ -1412,47 +1465,61 @@ if barstate.isconfirmed and array.size(zLo) > 0
                             // already held or broke earlier today scores as touched.
                             int hP = array.get(zHistP, z)
                             array.push(pHist, hP == 0 or hP == 6 ? 12 : 6)
-    // One signal per bar: label, alert, counters, and block the zone's members for this test.
+    // One signal per bar. With the paper trade on, a signal while a trade is open or inside the
+    // entry cutoff window is skipped and noted (D-80); a taken signal opens the paper trade.
     if bestScore >= 0
+        int modNow = hour(time, tz) * 60 + minute(time, tz)
+        bool busy    = paperOn and posDir != 0
+        bool lateDay = paperOn and entryCutoff > 0 and modNow >= cutMin and (flattenAt == 0 or modNow <= flatMin)
         string dirTxt   = bestDir > 0 ? "LONG" : "SHORT"
         string setupTxt = bestSetup == 1 ? "REV" : "BRK"
-        string details = "E " + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
-        if not na(bestTp2)
-            details := details + "  T2 " + str.tostring(bestTp2, format.mintick)
-        if showHooks
-            details := details + "  " + f_hookText()
         string head = dirTxt + " " + setupTxt + " " + bestCode + "  " + f_score10(bestScore)
-        string mini = (bestDir > 0 ? "▲ " : "▼ ") + f_score10(bestScore)
-        string txt = sigDetail == "Full" ? head + "  " + details : sigDetail == "Compact" ? head : mini
-        if sigLabelsOn
-            color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
-            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + " (" + str.tostring(bestScore) + " of 100)\n" + details + "\n" + bestTip))
-            if array.size(sigLabels) > sigKeep
-                label.delete(array.shift(sigLabels))
-        if alertsOn
-            string sym = str.length(syminfo.root) > 0 ? syminfo.root : syminfo.ticker
-            string js = '{"symbol":"' + sym + '","data":"' + (bestDir > 0 ? "buy" : "sell") + '","quantity":' + str.tostring(baseQty) + ',"sl":' + str.tostring(bestStop, format.mintick) + ',"event":"ENTRY","setup":"' + setupTxt + '","level":"' + bestCode + '","score":' + str.tostring(bestScore) + ',"entry":' + str.tostring(bestEntry, format.mintick) + ',"tp1":' + str.tostring(bestTp1, format.mintick) + (na(bestTp2) ? "" : ',"tp2":' + str.tostring(bestTp2, format.mintick)) + '}'
-            alert(js, alert.freq_once_per_bar_close)
-        if bestSetup == 1
-            revCount += 1
+        if busy or lateDay
+            if diag
+                f_nearNote(nmPri, nmTxt, bestDir, 500, head + " skipped: " + (busy ? "already in a " + (posDir > 0 ? "long" : "short") + " from " + str.tostring(posEntry, format.mintick) + ", one trade at a time" : "inside the entry cutoff window"))
         else
-            brkCount += 1
-        int bz = bestZone
-        if bz < 0
-            for z = 0 to nz - 1
-                if bz < 0 and bestEntry >= array.get(zLo, z) - touchTol and bestEntry <= array.get(zHi, z) + touchTol
-                    bz := z
-        if bz >= 0
-            for m = array.get(zFirst, bz) to array.get(zLast, bz)
-                int sl = array.get(zmSlot, m)
-                if sl >= 0
-                    array.set(lvSigBlock, sl, true)
-                    array.set(lvSigBar, sl, bar_index)
-    // Explanation tags: one per direction on bars where a setup formed but no signal came.
+            sigTaken := true
+            string details = "E " + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
+            if not na(bestTp2)
+                details := details + "  T2 " + str.tostring(bestTp2, format.mintick)
+            if showHooks
+                details := details + "  " + f_hookText()
+            string mini = (bestDir > 0 ? "▲ " : "▼ ") + f_score10(bestScore)
+            string txt = sigDetail == "Full" ? head + "  " + details : sigDetail == "Compact" ? head : mini
+            if sigLabelsOn
+                color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
+                array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + " (" + str.tostring(bestScore) + " of 100)\n" + details + "\n" + bestTip))
+                if array.size(sigLabels) > sigKeep
+                    label.delete(array.shift(sigLabels))
+            if alertsOn
+                string js = '{"symbol":"' + sym + '","data":"' + (bestDir > 0 ? "buy" : "sell") + '","quantity":' + str.tostring(baseQty) + ',"sl":' + str.tostring(bestStop, format.mintick) + ',"event":"ENTRY","setup":"' + setupTxt + '","level":"' + bestCode + '","score":' + str.tostring(bestScore) + ',"entry":' + str.tostring(bestEntry, format.mintick) + ',"tp1":' + str.tostring(bestTp1, format.mintick) + (na(bestTp2) ? "" : ',"tp2":' + str.tostring(bestTp2, format.mintick)) + '}'
+                alert(js, alert.freq_once_per_bar_close)
+            if bestSetup == 1
+                revCount += 1
+            else
+                brkCount += 1
+            if paperOn
+                posDir   := bestDir
+                posEntry := bestEntry
+                posStop  := bestStop
+                posTp    := bestTp1
+                posCode  := bestCode
+            int bz = bestZone
+            if bz < 0
+                for z = 0 to nz - 1
+                    if bz < 0 and bestEntry >= array.get(zLo, z) - touchTol and bestEntry <= array.get(zHi, z) + touchTol
+                        bz := z
+            if bz >= 0
+                for m = array.get(zFirst, bz) to array.get(zLast, bz)
+                    int sl = array.get(zmSlot, m)
+                    if sl >= 0
+                        array.set(lvSigBlock, sl, true)
+                        array.set(lvSigBar, sl, bar_index)
+    // Explanation tags: one per direction on bars where a setup formed but no signal was taken.
     if diag
         for k = 0 to 1
             int nd = k == 0 ? 1 : -1
-            if array.get(nmPri, k) >= 0 and not (bestScore >= 0 and bestDir == nd)
+            if array.get(nmPri, k) >= 0 and not (sigTaken and bestDir == nd)
                 array.push(nmLabels, label.new(bar_index, nd > 0 ? low : high, "?", xloc = xloc.bar_index, style = nd > 0 ? label.style_label_up : label.style_label_down, color = color.new(color.gray, 30), textcolor = color.white, size = size.tiny, tooltip = array.get(nmTxt, k)))
                 if array.size(nmLabels) > nearKeep
                     label.delete(array.shift(nmLabels))
@@ -1641,12 +1708,12 @@ if barstate.islast
             f_drawLabel(array.get(gPrice, gi), array.get(gShow, gi), array.get(gFam, gi), xEnd)
 
 // ───────────────────────────── [A7] INFO BOX ─────────────────────────────
-var table info = table.new(position.top_right, 2, 12, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+var table info = table.new(position.top_right, 2, 14, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.10")
+    f_cell(0, "L2L M3", "v0.11")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1662,6 +1729,9 @@ if barstate.islast and showInfo
         if not na(array.get(lvVal, PIV0 + k))
             pivCount += 1
     f_cell(11, "My pivots", str.tostring(pivCount) + " of " + str.tostring(NPIV))
+    if paperOn
+        f_cell(12, "Paper trades", str.tostring(ptCount) + ": " + str.tostring(ptWin) + " T1, " + str.tostring(ptLoss) + " stop, " + str.tostring(ptFlat) + " flat")
+        f_cell(13, "Paper points", (ptNet >= 0 ? "+" : "") + str.tostring(ptNet, format.mintick) + (posDir != 0 ? "  (in a " + (posDir > 0 ? "long" : "short") + ")" : ""))
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
@@ -1682,5 +1752,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.10). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.11). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
