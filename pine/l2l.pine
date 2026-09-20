@@ -1,12 +1,12 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 2: Levels, Interaction, Statistics (indicator)  |  M2 v0.3
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.1
 //
-//  docs/PLAN.md describes every module. This file holds modules [A], [B] and [C].
+//  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
 //    [A] Level Engine      (M1, done)
-//    [B] Interaction       (this milestone)   [C] Stats & Ranking (this milestone)
-//    [D] Setup Detector    (M3)      [E] Score           (M3)
+//    [B] Interaction       (M2, done)       [C] Stats & Ranking (M2, done)
+//    [D] Setup Detector    (this milestone) [E] Score           (this milestone)
 //    [F] Filters           (M4)      [G] Trade Manager   (M5)
 //    [H] HTF Confluence    (M6)      [I] Bias Inputs     (M6)
 //    [J] Output            (M3 on)
@@ -14,7 +14,7 @@
 //  Rules: no repainting (levels come from completed periods and sessions; higher-timeframe
 //  values use [1] with lookahead on; verdicts are taken on confirmed bars only), no NQ-specific
 //  numbers (distances are daily-ATR units with tick floors), all times read in the timezone
-//  input (default Central). Higher-timeframe requests used: 5 of 40.
+//  input (default Central). Higher-timeframe requests used: 6 of 40.
 //
 //  Levels are measured from the chart's own candles wherever the history allows, so every line
 //  can start at the candle that made it.
@@ -22,7 +22,7 @@
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
 // ============================================================================
-indicator("L2L M2 - Levels and Stats", shorttitle = "L2L M2", overlay = true,
+indicator("L2L M3 - Setups and Score", shorttitle = "L2L M3", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
 
 // ───────────────────────────── [A0] INPUTS ─────────────────────────────
@@ -106,6 +106,60 @@ statsRows = input.int(15, "Rows", minval = 3, maxval = 40, group = gSt)
 statsPos  = input.string("Bottom right", "Table position", options = ["Bottom right", "Bottom left", "Top left", "Middle right"], group = gSt)
 priorWeight = input.float(10, "Prior weight, interactions", minval = 0, step = 1, group = gSt, tooltip = "Every type starts as if it already had this many interactions at a 50 % hold rate, so one lucky touch cannot top the ranking. The table shows raw hold rates; the rank uses the weighted rate. 0 ranks on raw counts.")
 priorsTxt = input.string("", "Priors (code:rate:count, ...)", group = gSt, tooltip = "Starting hold rates from a longer study, per level type, overriding the prior weight for that type. Example: PDH:0.62:40, SR:0.70:25.")
+
+gRev = "Reversal setup (REV)"
+revOn        = input.bool(true, "Reversal trades", group = gRev)
+wickOn       = input.bool(true, "Wick rejection", group = gRev, inline = "rj")
+pokeOn       = input.bool(true, "Poke and close back", group = gRev, inline = "rj")
+engulfOn     = input.bool(true, "Engulfing", group = gRev, inline = "rj")
+wickRatio    = input.float(0.5, "Wick at least this share of the bar", step = 0.05, minval = 0.1, maxval = 0.9, group = gRev)
+minBarATR    = input.float(0.6, "Rejection bar range, chart ATRs", step = 0.1, minval = 0, group = gRev, tooltip = "Dojis do not qualify: the rejection bar's range must be at least this many chart-timeframe ATRs.")
+strongSkip   = input.bool(false, "Strong rejection enters without follow-through", group = gRev, tooltip = "A wick of 60 % or more with a close in the far third enters at the rejection bar's close instead of waiting one bar.")
+volConfirmIn = input.string("Auto", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. The follow-through bar's volume must reach the multiple of the 20-bar average.")
+volConfirmMult = input.float(1.0, "Volume multiple of the 20-bar average", step = 0.1, minval = 0.1, group = gRev)
+
+gBrk = "Break trade (BRK): break, retest, enter"
+brkOn        = input.bool(true, "Break trades", group = gBrk, tooltip = "Never straight off the breakout. After a close through the zone, a limit rests at the broken edge and the entry is the retest.")
+brkUnit      = input.float(0.03, "Break confirm, daily ATR", step = 0.005, minval = 0, group = gBrk, inline = "bc")
+brkTicks     = input.int(4, "floor, ticks", minval = 0, group = gBrk, inline = "bc")
+minBreakBody = input.float(0.5, "Break bar body, chart ATRs (0 = off)", step = 0.1, minval = 0, group = gBrk)
+retestBars   = input.int(6, "Retest limit rests for, bars", minval = 1, maxval = 100, group = gBrk, tooltip = "The limit is cancelled after this many bars, or earlier if a bar closes back through the zone.")
+
+gTr = "Trade geometry (daily-ATR units with tick floors)"
+stopUnit     = input.float(0.03, "Stop buffer beyond the zone, daily ATR", step = 0.005, minval = 0, group = gTr, inline = "sb")
+stopTicks    = input.int(4, "floor, ticks", minval = 0, group = gTr, inline = "sb")
+tgtUnit      = input.float(0.15, "Minimum target distance, daily ATR", step = 0.01, minval = 0, group = gTr, inline = "td")
+tgtTicks     = input.int(10, "floor, ticks", minval = 0, group = gTr, inline = "td")
+minRR        = input.float(1.0, "Minimum reward to risk", step = 0.1, minval = 0, group = gTr)
+maxRiskATR   = input.float(0.35, "Maximum stop distance, daily ATR", step = 0.05, minval = 0.05, group = gTr)
+execAtrLen   = input.int(14, "Chart ATR length", minval = 2, group = gTr)
+
+gSc = "Score (0 to 100)"
+wRel     = input.int(40, "Reliability", minval = 0, maxval = 100, group = gSc, inline = "w1")
+wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline = "w1")
+wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
+wHTF     = input.int(10, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2")
+wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
+minScore = input.int(60, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3")
+rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
+minSamples = input.int(30, "Samples before the gate applies", minval = 1, group = gSc)
+
+gHk = "Confluence hooks (hidden, zero weight until backtests earn it)"
+vwapSideW      = input.int(0, "VWAP side points", minval = 0, maxval = 30, group = gHk, inline = "h1")
+vwapStretchW   = input.int(0, "VWAP stretch points", minval = 0, maxval = 30, group = gHk, inline = "h1")
+vwapStretchATR = input.float(0.25, "Full stretch at, daily ATR from VWAP", step = 0.05, minval = 0.05, group = gHk)
+emaVoteW       = input.int(0, "EMA vote points", minval = 0, maxval = 30, group = gHk, inline = "h2")
+emaTF          = input.timeframe("15", "EMA timeframe", group = gHk, inline = "h2")
+emaLen         = input.int(200, "EMA length", minval = 5, group = gHk, inline = "h2")
+showHooks      = input.bool(true, "Show hook letters on signal labels", group = gHk)
+showHookLines  = input.bool(false, "Show VWAP and EMA lines", group = gHk)
+
+gSg = "Signals"
+sigLabelsOn = input.bool(true, "Signal labels", group = gSg)
+sigKeep     = input.int(100, "Labels kept", minval = 10, maxval = 300, group = gSg)
+sigSizeIn   = input.string("small", "Label size", options = ["tiny", "small", "normal"], group = gSg)
+alertsOn    = input.bool(true, "Fire alert() on each signal", group = gSg, tooltip = "Create one alert on this indicator with the condition Any alert() function call. The message is the JSON body from the plan.")
+baseQty     = input.int(2, "Contracts in the alert", minval = 1, group = gSg)
 
 gGeo = "Geometry (daily-ATR units with tick floors)"
 atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
@@ -411,6 +465,10 @@ var int[]   lvSide     = array.new<int>(NTOT, 0)
 var int[]   lvTouchBar = array.new<int>(NTOT, 0)
 var bool[]  lvArmed    = array.new<bool>(NTOT, false)
 var bool[]  lvCounted  = array.new<bool>(NTOT, false)
+// M3: the last HELD (2) or BROKE (3) verdict today per slot, and a block after a signal until a
+// whole bar trades clear of the band again.
+var int[]   lvVerdictToday = array.new<int>(NTOT, 0)
+var bool[]  lvSigBlock     = array.new<bool>(NTOT, false)
 
 f_resetSlot(int i) =>
     array.set(lvTouched, i, false)
@@ -419,6 +477,8 @@ f_resetSlot(int i) =>
     array.set(lvTouchBar, i, 0)
     array.set(lvArmed, i, false)
     array.set(lvCounted, i, false)
+    array.set(lvVerdictToday, i, 0)
+    array.set(lvSigBlock, i, false)
 
 f_set(int i, float v, int anchorBar) =>
     float old = array.get(lvVal, i)
@@ -659,6 +719,7 @@ if srNew
 bool newDay = timeframe.change("D")
 if newDay
     array.fill(lvTouched, false)
+    array.fill(lvVerdictToday, 0)
 for i = 0 to NTOT - 1
     float v = array.get(lvVal, i)
     float w = array.get(lvWidth, i)
@@ -732,6 +793,7 @@ var int[] stBreak   = array.new<int>(NTYPE, 0)
 var int[] stNeutral = array.new<int>(NTYPE, 0)
 var int   touchCount = 0
 var label[] vMarks = array.new<label>()
+var bool  statsDirty = true
 
 f_mark(float price, int verdict, string code, bool counted) =>
     bool show = verdictMarks == "All" or (verdictMarks == "Counted only" and counted)
@@ -761,8 +823,11 @@ if barstate.isconfirmed
                 bool heldNow  = verdictBar and (side == 1 ? close > p + w + holdTol  : close < p - w - holdTol)
                 int verdict = brokeNow ? 3 : heldNow ? 2 : bar_index - array.get(lvTouchBar, i) >= verdictBars ? 4 : 0
                 if verdict > 0
+                    if verdict == 2 or verdict == 3
+                        array.set(lvVerdictToday, i, verdict)
                     bool counted = not array.get(lvCounted, i)
                     if counted
+                        statsDirty := true
                         int ty = f_typeOf(i)
                         if verdict == 2
                             array.set(stHold, ty, array.get(stHold, ty) + 1)
@@ -807,6 +872,25 @@ f_holdRate(int ty) =>
 // Rank percentile per type, top = 100, among types with at least one counted interaction.
 var float[] tyRank = array.new<float>(NTYPE, na)
 var int countedTotal = 0
+
+// Rank percentile per type from the current counts, for the score on every bar.
+f_updateRanks() =>
+    int[]   tIdx = array.new<int>()
+    float[] tRt  = array.new<float>()
+    for ty = 0 to NTYPE - 1
+        if array.get(stHold, ty) + array.get(stBreak, ty) > 0
+            array.push(tIdx, ty)
+            array.push(tRt, f_holdRate(ty))
+    array.fill(tyRank, na)
+    int cnt = array.size(tIdx)
+    if cnt > 0
+        int[] ord = array.sort_indices(tRt, order.descending)
+        for r = 0 to cnt - 1
+            int ty = array.get(tIdx, array.get(ord, r))
+            array.set(tyRank, ty, cnt > 1 ? 100.0 * (cnt - 1 - r) / (cnt - 1) : 100.0)
+if barstate.isconfirmed and statsDirty
+    f_updateRanks()
+    statsDirty := false
 
 f_statsPos() =>
     statsPos == "Bottom left" ? position.bottom_left : statsPos == "Top left" ? position.top_left : statsPos == "Middle right" ? position.middle_right : position.bottom_right
@@ -870,6 +954,396 @@ if barstate.islast
         f_scell(3, statsRows + 1, tot > 0 ? str.tostring(100.0 * totB / tot, "#.0") : "", txtc, hdr)
         f_scell(4, statsRows + 1, str.tostring(totN), dim, hdr)
         f_scell(5, statsRows + 1, "", txtc, hdr)
+
+// ═══════════════════ [D] SETUP DETECTOR and [E] SCORE (M3) ═══════════════════
+// Zones are rebuilt every bar from the enabled levels within the cluster tolerance and are never
+// drawn (D-66). Each carries its members, stack, freshness, today's verdicts and the best member
+// rank. Signals evaluate on the chart's confirmed bars: run the 5-minute chart (D-21) until the
+// 1-minute trigger mode arrives in M6.
+
+// Chart-timeframe ATR, the volume average, and the hidden hooks (D-64): session VWAP and a
+// higher-timeframe EMA, computed every bar, drawn only on request.
+float execATR = ta.atr(execAtrLen)
+float volAvg  = ta.sma(volume, 20)
+bool  volOK   = volConfirmIn == "Off" ? true : (volConfirmIn == "On" or profile == "Index") ? volume >= volConfirmMult * volAvg : true
+float vwapVal = ta.vwap(hlc3, timeframe.change("D"))
+float emaVal  = request.security(syminfo.tickerid, emaTF, ta.ema(close, emaLen)[1], lookahead = barmerge.lookahead_on)
+int   vwapSide    = close > vwapVal ? 1 : -1
+float vwapStretch = unit > 0 ? (close - vwapVal) / unit : 0.0
+int   emaVote     = na(emaVal) ? 0 : close > emaVal ? 1 : -1
+plot(showHookLines ? vwapVal : na, "Session VWAP", color = color.new(color.yellow, 30))
+plot(showHookLines ? emaVal : na, "Hook EMA", color = color.new(color.orange, 30))
+
+// Developing extremes are targets only until their session completes (plan 4.1).
+bool inAsiaS   = not na(time(timeframe.period, sessAsia, tz))
+bool inLondonS = not na(time(timeframe.period, sessLondon, tz))
+bool inNYS     = not na(time(timeframe.period, sessNY, tz))
+f_entryOK(int i) =>
+    bool dev = false
+    if liveMode
+        if (i == 29 or i == 30) and inAsiaS
+            dev := true
+        if (i == 32 or i == 33) and inLondonS
+            dev := true
+        if (i == 35 or i == 36) and inNYS
+            dev := true
+        if (i == 26 or i == 27) and inMon
+            dev := true
+        if i == 17 and not na(dRunH) and not na(yHigh) and dRunH > yHigh
+            dev := true
+        if i == 18 and not na(dRunL) and not na(yLow) and dRunL < yLow
+            dev := true
+    not dev
+
+// ---- Zone list, rebuilt every bar. Slot -1 is today's high, -2 today's low: targets only.
+float[]  zLo    = array.new<float>()
+float[]  zHi    = array.new<float>()
+int[]    zN     = array.new<int>()
+bool[]   zEntry = array.new<bool>()
+bool[]   zFresh = array.new<bool>()
+int[]    zHist  = array.new<int>()
+float[]  zRank  = array.new<float>()
+int[]    zRankN = array.new<int>()
+bool[]   zBlock = array.new<bool>()
+string[] zCode  = array.new<string>()
+int[]    zFirst = array.new<int>()
+int[]    zLast  = array.new<int>()
+int[]    zmSlot = array.new<int>()
+float[]  zcPx   = array.new<float>()
+int[]    zcSl   = array.new<int>()
+for i = 0 to NTOT - 1
+    float v = array.get(lvVal, i)
+    if not na(v) and f_slotOn(i)
+        array.push(zcPx, v)
+        array.push(zcSl, i)
+if not na(dRunH)
+    array.push(zcPx, dRunH)
+    array.push(zcSl, -1)
+if not na(dRunL)
+    array.push(zcPx, dRunL)
+    array.push(zcSl, -2)
+int nzc = array.size(zcPx)
+if nzc > 0
+    int[] zo = array.sort_indices(zcPx, order.ascending)
+    for k = 0 to nzc - 1
+        int j = array.get(zo, k)
+        float p = array.get(zcPx, j)
+        int sl = array.get(zcSl, j)
+        int g = array.size(zLo) - 1
+        bool joins = false
+        if g >= 0
+            joins := p - array.get(zLo, g) <= clusterTol
+        if not joins
+            array.push(zLo, p)
+            array.push(zHi, p)
+            array.push(zN, 0)
+            array.push(zEntry, false)
+            array.push(zFresh, true)
+            array.push(zHist, 0)
+            array.push(zRank, float(na))
+            array.push(zRankN, 0)
+            array.push(zBlock, false)
+            array.push(zCode, "")
+            array.push(zFirst, array.size(zmSlot))
+            array.push(zLast, array.size(zmSlot))
+            g += 1
+        array.set(zHi, g, p)
+        array.set(zLast, g, array.size(zmSlot))
+        array.push(zmSlot, sl)
+        string code = "HOD"
+        if sl == -2
+            code := "LOD"
+        else if sl >= 0
+            code := array.get(lvCode, sl)
+        array.set(zCode, g, array.get(zCode, g) == "" ? code : array.get(zCode, g) + "+" + code)
+        if sl >= 0
+            array.set(zN, g, array.get(zN, g) + 1)
+            if f_entryOK(sl)
+                array.set(zEntry, g, true)
+            bool touchedNow = array.get(lvTouched, sl)
+            if touchedNow
+                array.set(zFresh, g, false)
+            int vt = array.get(lvVerdictToday, sl)
+            int h = array.get(zHist, g)
+            int hNew = vt == 3 ? 3 : (vt == 2 and h != 3) ? 15 : (touchedNow and h == 0) ? 6 : h
+            array.set(zHist, g, hNew)
+            if array.get(lvSigBlock, sl)
+                array.set(zBlock, g, true)
+            int ty = f_typeOf(sl)
+            float rk = array.get(tyRank, ty)
+            float cur = array.get(zRank, g)
+            if not na(rk) and (na(cur) or rk > cur)
+                array.set(zRank, g, rk)
+                array.set(zRankN, g, array.get(stHold, ty) + array.get(stBreak, ty))
+
+// ---- Helpers for setups, geometry and the score.
+// The first zone whose near edge is at least minDist away in the trade direction; -1 if none.
+f_nextZone(int dir, float fromPx, float minDist, int skipIdx) =>
+    int best = -1
+    int nz = array.size(zLo)
+    if nz > 0
+        for z = 0 to nz - 1
+            if z != skipIdx
+                if dir > 0
+                    float edge = array.get(zLo, z)
+                    if edge - fromPx >= minDist and (best < 0 or edge < array.get(zLo, best))
+                        best := z
+                else
+                    float edge = array.get(zHi, z)
+                    if fromPx - edge >= minDist and (best < 0 or edge > array.get(zHi, best))
+                        best := z
+    best
+
+// Rejection bar test `off` bars ago (0 = this bar, 1 = the previous) for a zone [lo, hi] tested
+// from the approach side of dir (+1 support tested from above, -1 resistance from below).
+f_rejBar(int dir, float lo, float hi, int off) =>
+    float o  = open[off]
+    float h  = high[off]
+    float l  = low[off]
+    float c  = close[off]
+    float po = open[off + 1]
+    float pc = close[off + 1]
+    float pl = low[off + 1]
+    float ph = high[off + 1]
+    float rng = h - l
+    bool touched  = dir > 0 ? l <= hi + touchTol : h >= lo - touchTol
+    bool touched2 = dir > 0 ? math.min(l, pl) <= hi + touchTol : math.max(h, ph) >= lo - touchTol
+    bool fromSide = dir > 0 ? pc > lo : pc < hi
+    bool backSide = dir > 0 ? c > hi : c < lo
+    bool bigEnough = rng >= minBarATR * execATR
+    float wick = dir > 0 ? math.min(o, c) - l : h - math.max(o, c)
+    bool wickOK = wickOn and rng > 0 and wick >= wickRatio * rng and bigEnough and touched
+    bool pokeOK = pokeOn and touched and (dir > 0 ? l < lo : h > hi)
+    bool engOK  = engulfOn and touched2 and (dir > 0 ? (c > o and c >= math.max(po, pc) and o <= math.min(po, pc)) : (c < o and c <= math.min(po, pc) and o >= math.max(po, pc)))
+    bool strong = rng > 0 and wick >= 0.6 * rng and (dir > 0 ? c >= h - rng / 3 : c <= l + rng / 3)
+    bool ok = fromSide and backSide and (wickOK or pokeOK or engOK)
+    [ok, strong]
+
+// Hook points for a trade of direction dir. VWAP side: a trade is favoured on its own side of
+// VWAP. Stretch (reversals only): favoured when price is stretched away from VWAP against the
+// trade direction, full points at vwapStretchATR. EMA vote: favoured when the vote agrees.
+f_hookPoints(int dir, bool isRev) =>
+    int pts = 0
+    if vwapSideW > 0 and vwapSide == dir
+        pts += vwapSideW
+    if vwapStretchW > 0 and isRev
+        float st = -dir * vwapStretch
+        if st > 0
+            pts += math.round(vwapStretchW * math.min(st / vwapStretchATR, 1.0))
+    if emaVoteW > 0 and emaVote == dir
+        pts += emaVoteW
+    pts
+
+f_hookText() =>
+    (vwapSide > 0 ? "V+" : "V-") + (emaVote > 0 ? " E+" : emaVote < 0 ? " E-" : " E?")
+
+// Score (plan 4.5). Reliability from the rank: hold-rank for REV, break-rank (100 minus hold-rank)
+// for BRK, unknown = half. Stack 1 / 2 / 3+ = 25 % / 60 % / 100 % of its weight. History points
+// out of 15. HTF is 0 and bias neutral until M6.
+f_score(float rankPct, bool isRev, int stack, int hist, int hooks) =>
+    float rel = na(rankPct) ? 0.5 : (isRev ? rankPct : 100 - rankPct) / 100.0
+    int sRel   = math.round(wRel * rel)
+    int sStack = stack >= 3 ? wStack : stack == 2 ? math.round(wStack * 0.6) : math.round(wStack * 0.25)
+    int sHist  = math.round(wHist * hist / 15.0)
+    int sBias  = math.round(wBias * 7 / 15.0)
+    [sRel + sStack + sHist + sBias + hooks, sRel, sStack, sHist, sBias]
+
+f_tip(int sRel, int sStack, int sHist, int sBias, int hk) =>
+    "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF 0 (M6)  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk)
+
+f_gateOK(bool isRev, float rk, int rkN) =>
+    bool ok = true
+    if rankGate and not na(rk) and rkN >= minSamples
+        ok := isRev ? rk >= 50 : rk < 50
+    ok
+
+f_sigSize() =>
+    sigSizeIn == "tiny" ? size.tiny : sigSizeIn == "small" ? size.small : size.normal
+
+// ---- Pending break retests: one resting limit per broken zone and direction.
+var int[]    pDir   = array.new<int>()
+var float[]  pLimit = array.new<float>()
+var float[]  pLo    = array.new<float>()
+var float[]  pHi    = array.new<float>()
+var int[]    pBar   = array.new<int>()
+var string[] pCode  = array.new<string>()
+var float[]  pRank  = array.new<float>()
+var int[]    pRankN = array.new<int>()
+var int[]    pStack = array.new<int>()
+f_removePending(int q) =>
+    array.remove(pDir, q)
+    array.remove(pLimit, q)
+    array.remove(pLo, q)
+    array.remove(pHi, q)
+    array.remove(pBar, q)
+    array.remove(pCode, q)
+    array.remove(pRank, q)
+    array.remove(pRankN, q)
+    array.remove(pStack, q)
+
+var label[] sigLabels = array.new<label>()
+var int revCount = 0
+var int brkCount = 0
+
+if barstate.isconfirmed and array.size(zLo) > 0
+    float stopBuf = math.max(stopUnit * unit, stopTicks * syminfo.mintick)
+    float minTgt  = math.max(tgtUnit * unit, tgtTicks * syminfo.mintick)
+    float brkTol2 = math.max(brkUnit * unit, brkTicks * syminfo.mintick)
+    float maxRisk = maxRiskATR * unit
+    int nz = array.size(zLo)
+    int    bestScore = -1
+    int    bestDir   = 0
+    int    bestSetup = 0
+    int    bestZone  = -1
+    float  bestEntry = na
+    float  bestStop  = na
+    float  bestTp1   = na
+    float  bestTp2   = na
+    string bestCode  = ""
+    string bestTip   = ""
+    // Resting retest limits: a fill is the BRK signal, a close back through the zone cancels,
+    // and the limit expires after retestBars. Walk backwards so removal is safe.
+    int npd = array.size(pDir)
+    if npd > 0
+        for q = npd - 1 to 0
+            int dir = array.get(pDir, q)
+            float lim = array.get(pLimit, q)
+            bool filled  = dir > 0 ? low <= lim : high >= lim
+            bool failed  = dir > 0 ? close < array.get(pLo, q) : close > array.get(pHi, q)
+            bool expired = bar_index - array.get(pBar, q) >= retestBars
+            if filled
+                float entry = lim
+                float stop  = dir > 0 ? array.get(pLo, q) - stopBuf : array.get(pHi, q) + stopBuf
+                float risk  = math.abs(entry - stop)
+                int t1 = f_nextZone(dir, entry, minTgt, -1)
+                float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
+                int t2 = t1 >= 0 ? f_nextZone(dir, tp1, minTgt, t1) : -1
+                float tp2 = t2 >= 0 ? (dir > 0 ? array.get(zLo, t2) : array.get(zHi, t2)) : na
+                bool geomOK = t1 >= 0 and risk > 0 and risk <= maxRisk and math.abs(tp1 - entry) / risk >= minRR
+                float rk = array.get(pRank, q)
+                if geomOK and f_gateOK(false, rk, array.get(pRankN, q))
+                    int hk = f_hookPoints(dir, false)
+                    [sc, sRel, sStack, sHist, sBias] = f_score(rk, false, array.get(pStack, q), 3, hk)
+                    if sc >= minScore and sc > bestScore
+                        bestScore := sc
+                        bestDir   := dir
+                        bestSetup := 2
+                        bestZone  := -1
+                        bestEntry := entry
+                        bestStop  := stop
+                        bestTp1   := tp1
+                        bestTp2   := tp2
+                        bestCode  := array.get(pCode, q)
+                        bestTip   := f_tip(sRel, sStack, sHist, sBias, hk)
+            if filled or failed or expired
+                f_removePending(q)
+    // Reversal setups: a rejection bar on the previous bar and a follow-through close on this one,
+    // or a strong rejection on this bar when strongSkip is on. Volume confirmation per profile.
+    if revOn
+        for z = 0 to nz - 1
+            if array.get(zEntry, z) and not array.get(zBlock, z)
+                float lo = array.get(zLo, z)
+                float hi = array.get(zHi, z)
+                for dir = 1 to -1 by -2
+                    [rej1, strong1] = f_rejBar(dir, lo, hi, 1)
+                    [rej0, strong0] = f_rejBar(dir, lo, hi, 0)
+                    bool ftOK = dir > 0 ? (close > open and close > hi) : (close < open and close < lo)
+                    bool fire = ((rej1 and ftOK) or (strongSkip and rej0 and strong0)) and volOK
+                    if fire
+                        float entry = close
+                        float stop  = dir > 0 ? lo - stopBuf : hi + stopBuf
+                        float risk  = math.abs(entry - stop)
+                        int t1 = f_nextZone(dir, entry, minTgt, z)
+                        float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
+                        int t2 = t1 >= 0 ? f_nextZone(dir, tp1, minTgt, t1) : -1
+                        float tp2 = t2 >= 0 ? (dir > 0 ? array.get(zLo, t2) : array.get(zHi, t2)) : na
+                        bool geomOK = t1 >= 0 and risk > 0 and risk <= maxRisk and math.abs(tp1 - entry) / risk >= minRR
+                        float rk = array.get(zRank, z)
+                        if geomOK and f_gateOK(true, rk, array.get(zRankN, z))
+                            int hist = array.get(zHist, z) == 0 ? 12 : array.get(zHist, z)
+                            int hk = f_hookPoints(dir, true)
+                            [sc, sRel, sStack, sHist, sBias] = f_score(rk, true, array.get(zN, z), hist, hk)
+                            if sc >= minScore and sc > bestScore
+                                bestScore := sc
+                                bestDir   := dir
+                                bestSetup := 1
+                                bestZone  := z
+                                bestEntry := entry
+                                bestStop  := stop
+                                bestTp1   := tp1
+                                bestTp2   := tp2
+                                bestCode  := array.get(zCode, z)
+                                bestTip   := f_tip(sRel, sStack, sHist, sBias, hk)
+    // New breaks: a close through a zone by the break distance, from the other side, with enough
+    // body, rests a retest limit at the broken edge.
+    if brkOn
+        float body = math.abs(close - open)
+        bool bodyOK = minBreakBody <= 0 or body >= minBreakBody * execATR
+        if bodyOK
+            for z = 0 to nz - 1
+                if array.get(zEntry, z) and not array.get(zBlock, z)
+                    float lo = array.get(zLo, z)
+                    float hi = array.get(zHi, z)
+                    bool brokeDown = close[1] >= lo and close < lo - brkTol2
+                    bool brokeUp   = close[1] <= hi and close > hi + brkTol2
+                    if brokeDown or brokeUp
+                        int dir = brokeDown ? -1 : 1
+                        float lim = brokeDown ? lo : hi
+                        bool exists = false
+                        int np2 = array.size(pDir)
+                        if np2 > 0
+                            for q = 0 to np2 - 1
+                                if array.get(pDir, q) == dir and math.abs(array.get(pLimit, q) - lim) <= clusterTol
+                                    exists := true
+                        if not exists
+                            array.push(pDir, dir)
+                            array.push(pLimit, lim)
+                            array.push(pLo, lo)
+                            array.push(pHi, hi)
+                            array.push(pBar, bar_index)
+                            array.push(pCode, array.get(zCode, z))
+                            array.push(pRank, array.get(zRank, z))
+                            array.push(pRankN, array.get(zRankN, z))
+                            array.push(pStack, array.get(zN, z))
+    // One signal per bar: label, alert, counters, and block the zone's members for this test.
+    if bestScore >= 0
+        string dirTxt   = bestDir > 0 ? "LONG" : "SHORT"
+        string setupTxt = bestSetup == 1 ? "REV" : "BRK"
+        string txt = dirTxt + " " + setupTxt + " " + bestCode + "  S " + str.tostring(bestScore) + "  E " + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
+        if not na(bestTp2)
+            txt := txt + "  T2 " + str.tostring(bestTp2, format.mintick)
+        if showHooks
+            txt := txt + "  " + f_hookText()
+        if sigLabelsOn
+            color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
+            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = bestTip))
+            if array.size(sigLabels) > sigKeep
+                label.delete(array.shift(sigLabels))
+        if alertsOn
+            string sym = str.length(syminfo.root) > 0 ? syminfo.root : syminfo.ticker
+            string js = '{"symbol":"' + sym + '","data":"' + (bestDir > 0 ? "buy" : "sell") + '","quantity":' + str.tostring(baseQty) + ',"sl":' + str.tostring(bestStop, format.mintick) + ',"event":"ENTRY","setup":"' + setupTxt + '","level":"' + bestCode + '","score":' + str.tostring(bestScore) + ',"entry":' + str.tostring(bestEntry, format.mintick) + ',"tp1":' + str.tostring(bestTp1, format.mintick) + (na(bestTp2) ? "" : ',"tp2":' + str.tostring(bestTp2, format.mintick)) + '}'
+            alert(js, alert.freq_once_per_bar_close)
+        if bestSetup == 1
+            revCount += 1
+        else
+            brkCount += 1
+        int bz = bestZone
+        if bz < 0
+            for z = 0 to nz - 1
+                if bz < 0 and bestEntry >= array.get(zLo, z) - touchTol and bestEntry <= array.get(zHi, z) + touchTol
+                    bz := z
+        if bz >= 0
+            for m = array.get(zFirst, bz) to array.get(zLast, bz)
+                int sl = array.get(zmSlot, m)
+                if sl >= 0
+                    array.set(lvSigBlock, sl, true)
+    // Re-arm signal blocks once a whole bar trades clear of the level's band.
+    for i = 0 to NTOT - 1
+        if array.get(lvSigBlock, i)
+            float p = array.get(lvVal, i)
+            float w = array.get(lvWidth, i)
+            if na(p) or high < p - w - touchTol or low > p + w + touchTol
+                array.set(lvSigBlock, i, false)
 
 // ───────────────── [A6] DRAWING (last bar only) ─────────────────
 // Every level is its own line, starting at the candle that made it. Levels within the share
@@ -1048,12 +1522,12 @@ if barstate.islast
             f_drawLabel(array.get(gPrice, gi), array.get(gShow, gi), array.get(gFam, gi), xEnd)
 
 // ───────────────────────────── [A7] INFO BOX ─────────────────────────────
-var table info = table.new(position.top_right, 2, 9, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+var table info = table.new(position.top_right, 2, 11, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M2", "v0.3")
+    f_cell(0, "L2L M3", "v0.1")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1062,6 +1536,8 @@ if barstate.islast and showInfo
     f_cell(6, "Levels drawn", str.tostring(levelsDrawn))
     f_cell(7, "SR levels", str.tostring(srCount) + " of " + str.tostring(array.size(pvPx)) + " pivots")
     f_cell(8, "Interactions", str.tostring(countedTotal) + " counted, " + str.tostring(touchCount) + " touches")
+    f_cell(9, "Zones", str.tostring(array.size(zLo)) + " hidden")
+    f_cell(10, "Signals", str.tostring(revCount) + " REV, " + str.tostring(brkCount) + " BRK")
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
@@ -1082,5 +1558,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M2 v0.3). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.1). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
