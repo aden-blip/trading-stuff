@@ -19,3 +19,6 @@ SI/SIL, written for TradingView Pine Script v6. The owner trades from Central Ti
   module headers from the plan, and have the owner paste it into TradingView and report the first error line.
 - No NQ-specific numbers in code: distances are daily-ATR units with tick floors.
 - Commit and push to the working branch after each documentation or code change.
+- **Plain language for the owner.** The owner has no coding knowledge. Explain every change,
+  error and check in everyday words: what it does on the chart and what to look for, never
+  variable names, loops or compiler terms. Code only appears in the script paste itself.

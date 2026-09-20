@@ -418,6 +418,12 @@ recorded before the code:
 - HTF rejection scores 0 and bias scores neutral (7) until M6. Hooks (D-64) are computed every
   bar at zero weight and shown as letters on the label.
 
+### D-69  Plain-language working style  (DECIDED)
+Your ask after the first M3 compile error: explain things as if to someone with no coding
+knowledge. From now on every message describes what a change does on the chart and what to look
+for, in everyday words, with no variable names or programming terms outside the script paste.
+Recorded in `CLAUDE.md` so every future session follows it.
+
 ---
 
 ## L. New in round 4
