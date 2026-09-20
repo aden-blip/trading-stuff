@@ -1,5 +1,9 @@
 # Changelog
 
+## M3 v0.4, 2026-09-20
+
+- Held and broke marks are off by default; the chart carries trade signals only (D-71).
+
 ## M3 v0.3, 2026-09-20
 
 - Break trades: a first break of a level scores like a first test, so single-level break signals

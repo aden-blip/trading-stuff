@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.3
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.4
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -97,7 +97,7 @@ holdUnit      = input.float(0.05, "Hold confirm, daily ATR", step = 0.005, minva
 holdTicks     = input.int(4, "Hold confirm floor, ticks", minval = 0, group = gI)
 verdictTF     = input.int(5, "Verdict closes on, minutes", minval = 1, maxval = 60, group = gI, tooltip = "HELD and BROKE are judged on closes of this timeframe, so a 1-minute chart gives the same verdicts as a 5-minute chart. On charts at or above it every bar counts.")
 verdictMinutes = input.int(150, "Verdict window, minutes", minval = 5, maxval = 3000, group = gI, tooltip = "A touch with neither outcome inside this long is NEUTRAL and is not counted. 150 minutes is 30 five-minute bars.")
-verdictMarks  = input.string("Counted only", "Mark verdicts on the chart", options = ["Counted only", "All", "Off"], group = gI, tooltip = "Counted only marks the first interaction of each level instance, the ones the table counts. All marks later interactions too.")
+verdictMarks  = input.string("Off", "Mark verdicts on the chart", options = ["Off", "Counted only", "All"], group = gI, tooltip = "Off keeps the chart to trade signals only. Counted only marks the first interaction of each level instance, the ones the table counts. All marks later interactions too.")
 verdictKeep   = input.int(150, "Marks kept", minval = 10, maxval = 400, group = gI)
 
 gSt = "Statistics"
@@ -1552,7 +1552,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.3")
+    f_cell(0, "L2L M3", "v0.4")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1583,5 +1583,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.3). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.4). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

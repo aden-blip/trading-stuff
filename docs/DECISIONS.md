@@ -437,6 +437,11 @@ Three changes:
 - Tags show direction, setup, level and score; entry, stop, targets, hook letters and the score
   breakdown sit in the tooltip. "Full" puts everything back on the tag.
 
+### D-71  Held and broke marks off by default  (DECIDED)
+Your call after the M3 v0.3 chart: the chart should carry trade signals only; whether a level
+held or broke is already in the statistics table, and you judge the signals by eye. The marks
+stay available in the settings for checking the statistics.
+
 ---
 
 ## L. New in round 4

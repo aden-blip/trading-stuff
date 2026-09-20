@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.3`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.4` (v0.3 with the verdict marks switched off is the same thing). Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
