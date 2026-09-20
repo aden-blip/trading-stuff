@@ -1,5 +1,20 @@
 # Changelog
 
+## M2 v0.1, 2026-09-20
+
+- Untagged support and resistance (SR): completed bars of the pivot timeframe (4-hour default)
+  give pivot highs and lows; pivots inside the lookback are clustered within the SR tolerance and
+  a cluster with enough touches is a level, priced at the mean of its touches, line from the first
+  touch, tag "S/R (n)". Strongest clusters kept. Inputs per D-65.
+- Interaction classifier per level instance: touch, approach side from the prior close,
+  HELD / BROKE / NEUTRAL on confirmed bars only, first HELD or BROKE counted, every verdict can be
+  marked on the chart ("Counted only" by default, rolling 150 marks).
+- Statistics table per level type: N, hold %, break %, neutral, rank percentile; totals row;
+  priors as one text input `code:rate:count`.
+- Level slots unified: 38 labeled, up to 20 custom, up to 30 SR, one loop for touch, verdict and
+  drawing. Info box shows the SR count, pivot count and interactions counted.
+- Hidden VWAP and 200 EMA hooks are M3 (D-64); nothing new is drawn in M2.
+
 ## M1 v0.8, 2026-09-20
 
 - Levels within the touch tolerance share one tag, names joined with a slash, tag at their mean

@@ -1,28 +1,28 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 1: Level Engine (indicator)  |  v0.8
+//  Level-to-Level (L2L)  |  Milestone 2: Levels, Interaction, Statistics (indicator)  |  M2 v0.1
 //
-//  docs/PLAN.md describes every module. This file holds only module [A].
+//  docs/PLAN.md describes every module. This file holds modules [A], [B] and [C].
 //  Module map for the finished script:
-//    [A] Level Engine      (this milestone)
-//    [B] Interaction       (M2)      [C] Stats & Ranking (M2)
+//    [A] Level Engine      (M1, done)
+//    [B] Interaction       (this milestone)   [C] Stats & Ranking (this milestone)
 //    [D] Setup Detector    (M3)      [E] Score           (M3)
 //    [F] Filters           (M4)      [G] Trade Manager   (M5)
 //    [H] HTF Confluence    (M6)      [I] Bias Inputs     (M6)
 //    [J] Output            (M3 on)
 //
-//  Rules: no repainting (levels come from completed periods and sessions;
-//  higher-timeframe values use [1] with lookahead on), no NQ-specific numbers
-//  (distances are daily-ATR units with tick floors), all times read in the
-//  timezone input (default Central). Higher-timeframe requests used: 5 of 40.
+//  Rules: no repainting (levels come from completed periods and sessions; higher-timeframe
+//  values use [1] with lookahead on; verdicts are taken on confirmed bars only), no NQ-specific
+//  numbers (distances are daily-ATR units with tick floors), all times read in the timezone
+//  input (default Central). Higher-timeframe requests used: 5 of 40.
 //
-//  Levels are measured from the chart's own candles wherever the history
-//  allows, so every line can start at the candle that made it.
+//  Levels are measured from the chart's own candles wherever the history allows, so every line
+//  can start at the candle that made it.
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
 // ============================================================================
-indicator("L2L M1 - Level Engine", shorttitle = "L2L M1", overlay = true,
+indicator("L2L M2 - Levels and Stats", shorttitle = "L2L M2", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
 
 // ───────────────────────────── [A0] INPUTS ─────────────────────────────
@@ -77,13 +77,39 @@ nRangeOn = input.bool(true, "NY H/L", group = gSe, inline = "s3")
 nOpenOn  = input.bool(true, "NY Open", group = gSe, inline = "s3")
 gCu = "Custom levels"
 onCustom  = input.bool(true, "Show custom levels", group = gCu)
-customTxt = input.string("", "Custom levels", group = gCu, tooltip = "Comma separated. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
+customTxt = input.string("", "Custom levels", group = gCu, tooltip = "Comma separated, up to 20. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
+
+gSR = "Untagged support and resistance (SR)"
+srOn         = input.bool(true, "Find SR levels from higher-timeframe pivots", group = gSR, tooltip = "The untagged lines Socrates draws on the 4-hour chart: prices where the market pivoted more than once. A pivot is a bar whose high (or low) beats its neighbours on the pivot timeframe. Pivots within the SR tolerance of each other are touches of one level, and a level needs the touch count below inside the lookback.")
+srTF         = input.timeframe("240", "Pivot timeframe", group = gSR)
+srPivotLeft  = input.int(1, "Pivot bars left", minval = 1, maxval = 10, group = gSR, inline = "pv")
+srPivotRight = input.int(1, "right", minval = 1, maxval = 10, group = gSR, inline = "pv")
+srMinTouches = input.int(3, "Touches needed", minval = 2, maxval = 20, group = gSR)
+srLookback   = input.int(10, "Lookback, days", minval = 1, maxval = 90, group = gSR)
+srUnit       = input.float(0.04, "SR tolerance, daily ATR", step = 0.005, minval = 0, group = gSR, tooltip = "Pivots this close together are touches of one level. Twice the zone tolerance by default, because higher-timeframe swing points scatter more than the labeled levels do.")
+srTicks      = input.int(8, "SR tolerance floor, ticks", minval = 0, group = gSR)
+srMax        = input.int(12, "Most SR levels kept", minval = 1, maxval = 30, group = gSR, tooltip = "When more clusters qualify, the ones with the most touches win.")
+
+gI = "Interaction (verdicts on confirmed bars only)"
+breakUnit     = input.float(0.03, "Break confirm, daily ATR", step = 0.005, minval = 0, group = gI, tooltip = "A close this far beyond the level on the far side means BROKE.")
+breakTicks    = input.int(4, "Break confirm floor, ticks", minval = 0, group = gI)
+holdUnit      = input.float(0.10, "Hold confirm, daily ATR", step = 0.01, minval = 0, group = gI, tooltip = "A close this far away from the level on the approach side means HELD.")
+holdTicks     = input.int(4, "Hold confirm floor, ticks", minval = 0, group = gI)
+verdictWindow = input.int(30, "Verdict window, bars", minval = 2, maxval = 500, group = gI, tooltip = "A touch with neither outcome inside this many chart bars is NEUTRAL and is not counted.")
+verdictMarks  = input.string("Counted only", "Mark verdicts on the chart", options = ["Counted only", "All", "Off"], group = gI, tooltip = "Counted only marks the first interaction of each level instance, the ones the table counts. All marks later interactions too.")
+verdictKeep   = input.int(150, "Marks kept", minval = 10, maxval = 400, group = gI)
+
+gSt = "Statistics"
+showStats = input.bool(true, "Show statistics table", group = gSt)
+statsRows = input.int(15, "Rows", minval = 3, maxval = 40, group = gSt)
+statsPos  = input.string("Bottom right", "Table position", options = ["Bottom right", "Bottom left", "Top left", "Middle right"], group = gSt)
+priorsTxt = input.string("", "Priors (code:rate:count, ...)", group = gSt, tooltip = "Starting hold rates from a longer study, per level type. Example: PDH:0.62:40, SR:0.70:25. Blank starts every type at 0.5 with no weight.")
 
 gGeo = "Geometry (daily-ATR units with tick floors)"
 atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
 clusterUnit  = input.float(0.02, "Cluster tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Levels closer together than this merge into one zone.")
 clusterTicks = input.int(4, "Cluster tolerance floor, ticks", minval = 0, group = gGeo)
-touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Price within this distance counts as a touch, which ends a level's fresh state for the day.")
+touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Price within this distance counts as a touch, which ends a level's fresh state for the day and starts an interaction.")
 touchTicks   = input.int(2, "Touch tolerance floor, ticks", minval = 0, group = gGeo)
 limitRange   = input.bool(false, "Only draw levels near price", group = gGeo, tooltip = "Off draws every level, like the Spaceman indicator. On draws only levels within the distance below.")
 drawRange    = input.float(1.0, "Near means within this many daily ATRs", step = 0.1, minval = 0.1, group = gGeo)
@@ -121,6 +147,7 @@ colAsia    = input.color(color.rgb(0, 150, 136), "Asia", group = gD, inline = "c
 colLondon  = input.color(color.rgb(76, 175, 80), "London", group = gD, inline = "c3")
 colNY      = input.color(color.rgb(3, 169, 244), "New York", group = gD, inline = "c3")
 colCustom  = input.color(color.rgb(255, 255, 255), "Custom", group = gD, inline = "c4")
+colSR      = input.color(color.rgb(0, 229, 255), "SR", group = gD, inline = "c4")
 
 // ───────────────────────────── [A1] PROFILE ─────────────────────────────
 string root    = syminfo.root
@@ -182,6 +209,8 @@ f_period(bool newP) =>
 [pwhC, pwlC, pwoC, pwhB, pwlB, pwoB, wOpenC, wOpenB, wRunH, wRunL, wRunHb, wRunLb] = f_period(timeframe.change("W"))
 [pmhC, pmlC, pmoC, pmhB, pmlB, pmoB, mOpenC, mOpenB, mRunH, mRunL, mRunHb, mRunLb] = f_period(timeframe.change("M"))
 [p4h, p4l, p4o, p4hB, p4lB, p4oB, h4Open, h4OpenB, h4RunH, h4RunL, h4RunHb, h4RunLb] = f_period(timeframe.change("240"))
+// A second tracker on the SR pivot timeframe feeds the untagged levels in [A5b].
+[srPH, srPL, srPO, srPHb, srPLb, srPOb, srCO, srCOb, srRH, srRL, srRHb, srRLb] = f_period(timeframe.change(srTF))
 
 // ───────────────────── [A3] HIGHER-TIMEFRAME DATA (5 requests) ─────────────────────
 // Used where the chart history may be too short: week and month fallbacks, quarter, year, daily ATR.
@@ -343,14 +372,49 @@ int   mnhSB = monLive ? monRunHb : mnhB
 int   mnlSB = monLive ? monRunLb : mnlB
 
 // ───────────────────── [A5] LEVEL TABLE AND FRESH STATE ─────────────────────
-// Fixed slots so the touched flag survives from bar to bar. A new value in a slot is a new level instance.
-int NSLOT = 38
+// One slot table for every level: 38 labeled slots, then custom slots, then SR slots. A slot keeps
+// its touched flag and its interaction state from bar to bar. A new value in a slot is a new level
+// instance and resets both.
+int NLAB   = 38
+int NCUS   = 20
+int NSR    = 30
+int CUS0   = NLAB
+int SR0    = NLAB + NCUS
+int NTOT   = SR0 + NSR
+int TY_CUS = 38
+int TY_SR  = 39
+int NTYPE  = 40
 var string[] lvCode = array.from("PDH", "PDL", "PDM", "DO", "MO", "PWH", "PWL", "PWM", "WO", "PMH", "PML", "PMM", "MOO", "PQH", "PQL", "PQM", "QO", "YH", "YL", "YM", "YO", "P4H", "P4L", "P4M", "P4O", "4HO", "MNH", "MNL", "MNM", "AH", "AL", "AO", "LH", "LL", "LO", "NH", "NL", "NO")
 var string[] lvName = array.from("Prev Day High", "Prev Day Low", "Prev Day Mid", "Daily Open", "Midnight Open", "Prev Week High", "Prev Week Low", "Prev Week Mid", "Weekly Open", "Prev Month High", "Prev Month Low", "Prev Month Mid", "Monthly Open", "Prev Quarter High", "Prev Quarter Low", "Prev Quarter Mid", "Quarterly Open", "Year High", "Year Low", "Year Mid", "Yearly Open", "Prev 4H High", "Prev 4H Low", "Prev 4H Mid", "Prev 4H Open", "4H Open", "Monday High", "Monday Low", "Monday Mid", "Asia High", "Asia Low", "Asia Open", "London High", "London Low", "London Open", "NY High", "NY Low", "NY Open")
 var int[]    lvFam  = array.from(0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8)
-var float[]  lvVal     = array.new<float>(NSLOT, na)
-var int[]    lvAnchor  = array.new<int>(NSLOT, 0)
-var bool[]   lvTouched = array.new<bool>(NSLOT, false)
+// Statistics are kept per level type: the 38 codes, then CUS and SR.
+var string[] tyCode = array.copy(lvCode)
+if barstate.isfirst
+    for i = NLAB to NTOT - 1
+        array.push(lvCode, "")
+        array.push(lvName, "")
+        array.push(lvFam, i >= SR0 ? 10 : 9)
+    array.push(tyCode, "CUS")
+    array.push(tyCode, "SR")
+var float[] lvVal      = array.new<float>(NTOT, na)
+var int[]   lvAnchor   = array.new<int>(NTOT, 0)
+var bool[]  lvTouched  = array.new<bool>(NTOT, false)
+// Interaction state per slot: 0 idle, 1 touched. Side +1 means price came from above (the level
+// acts as support), -1 from below (resistance). Armed means a whole bar has traded outside the
+// touch band since the last touch, so the next entry into the band is a new touch.
+var int[]   lvState    = array.new<int>(NTOT, 0)
+var int[]   lvSide     = array.new<int>(NTOT, 0)
+var int[]   lvTouchBar = array.new<int>(NTOT, 0)
+var bool[]  lvArmed    = array.new<bool>(NTOT, false)
+var bool[]  lvCounted  = array.new<bool>(NTOT, false)
+
+f_resetSlot(int i) =>
+    array.set(lvTouched, i, false)
+    array.set(lvState, i, 0)
+    array.set(lvSide, i, 0)
+    array.set(lvTouchBar, i, 0)
+    array.set(lvArmed, i, false)
+    array.set(lvCounted, i, false)
 
 f_set(int i, float v, int anchorBar) =>
     float old = array.get(lvVal, i)
@@ -358,7 +422,7 @@ f_set(int i, float v, int anchorBar) =>
     bool newNa = na(v)
     bool changed = (oldNa and not newNa) or (not oldNa and newNa) or (not oldNa and not newNa and old != v)
     if changed
-        array.set(lvTouched, i, false)
+        f_resetSlot(i)
     array.set(lvVal, i, v)
     array.set(lvAnchor, i, anchorBar)
 
@@ -401,25 +465,28 @@ f_set(35, nh, nhB)
 f_set(36, nl, nlB)
 f_set(37, nyo, nyoB)
 
-// Custom levels, parsed once from the text input. They start at the current day's open bar.
-var float[]  cuVal     = array.new<float>()
-var string[] cuCode    = array.new<string>()
-var bool[]   cuTouched = array.new<bool>()
+// Custom levels, parsed once from the text input into the custom slots. Their lines start at the
+// current day's open bar.
+var float[] cuV = array.new<float>()
 if barstate.isfirst and str.length(customTxt) > 0
     string[] parts = str.split(customTxt, ",")
     int np = array.size(parts)
     if np > 0
         for k = 0 to np - 1
             string item = str.trim(array.get(parts, k))
-            if str.length(item) > 0
+            if str.length(item) > 0 and array.size(cuV) < NCUS
                 string[] kv = str.split(item, ":")
                 float p = str.tonumber(str.trim(array.get(kv, 0)))
                 string lab = array.size(kv) > 1 ? str.trim(array.get(kv, 1)) : "CUS"
                 if not na(p)
-                    array.push(cuVal, p)
-                    array.push(cuCode, lab)
-                    array.push(cuTouched, false)
-int ncu = array.size(cuVal)
+                    int s = CUS0 + array.size(cuV)
+                    array.push(cuV, p)
+                    array.set(lvCode, s, lab)
+                    array.set(lvName, s, lab)
+int ncu = array.size(cuV)
+if ncu > 0
+    for k = 0 to ncu - 1
+        f_set(CUS0 + k, array.get(cuV, k), dOpenB)
 
 // Tolerances in daily-ATR units with tick floors. Early in history, before a daily ATR exists,
 // the last 50 bars' range stands in.
@@ -427,25 +494,162 @@ float fallbackUnit = ta.highest(high, 50) - ta.lowest(low, 50)
 float unit       = na(dAtr) ? fallbackUnit : dAtr
 float clusterTol = math.max(clusterUnit * unit, clusterTicks * syminfo.mintick)
 float touchTol   = math.max(touchUnit * unit, touchTicks * syminfo.mintick)
+float srTol      = math.max(srUnit * unit, srTicks * syminfo.mintick)
+float breakTol   = math.max(breakUnit * unit, breakTicks * syminfo.mintick)
+float holdTol    = math.max(holdUnit * unit, holdTicks * syminfo.mintick)
+
+// ───────────── [A5b] UNTAGGED SUPPORT AND RESISTANCE FROM HIGHER-TIMEFRAME PIVOTS ─────────────
+// Each completed bar of the pivot timeframe is stored with its high, low and the chart bars that
+// made them. A bar whose high beats its neighbours is a pivot high, likewise for lows. Pivots
+// inside the lookback are sorted by price and walked: pivots within the SR tolerance are touches
+// of one level. Clusters with enough touches become SR levels, strongest first, priced at the mean
+// of their touches, with the line starting at the first touch.
+var float[] hfHi  = array.new<float>()
+var int[]   hfHiB = array.new<int>()
+var float[] hfLo  = array.new<float>()
+var int[]   hfLoB = array.new<int>()
+var int[]   hfT   = array.new<int>()
+var float[] pvPx  = array.new<float>()
+var int[]   pvB   = array.new<int>()
+var int[]   pvT   = array.new<int>()
+var int     srCount = 0
+bool srNew = srOn and timeframe.change(srTF) and not barstate.isfirst and not na(srPH)
+if srNew
+    array.push(hfHi, srPH)
+    array.push(hfHiB, srPHb)
+    array.push(hfLo, srPL)
+    array.push(hfLoB, srPLb)
+    array.push(hfT, time)
+    if array.size(hfHi) > 800
+        array.shift(hfHi)
+        array.shift(hfHiB)
+        array.shift(hfLo)
+        array.shift(hfLoB)
+        array.shift(hfT)
+    int nh = array.size(hfHi)
+    if nh >= srPivotLeft + srPivotRight + 1
+        int k = nh - 1 - srPivotRight
+        float ch = array.get(hfHi, k)
+        float cl = array.get(hfLo, k)
+        bool isHi = true
+        bool isLo = true
+        for m = k - srPivotLeft to k + srPivotRight
+            if m != k
+                if array.get(hfHi, m) >= ch
+                    isHi := false
+                if array.get(hfLo, m) <= cl
+                    isLo := false
+        if isHi
+            array.push(pvPx, ch)
+            array.push(pvB, array.get(hfHiB, k))
+            array.push(pvT, array.get(hfT, k))
+        if isLo
+            array.push(pvPx, cl)
+            array.push(pvB, array.get(hfLoB, k))
+            array.push(pvT, array.get(hfT, k))
+    // Drop pivots older than the lookback. They were stored in time order.
+    int cutoff = time - srLookback * 86400000
+    bool more = array.size(pvPx) > 0
+    while more
+        if array.get(pvT, 0) < cutoff
+            array.shift(pvPx)
+            array.shift(pvB)
+            array.shift(pvT)
+            more := array.size(pvPx) > 0
+        else
+            more := false
+    // Cluster the remaining pivots by price.
+    float[] cPx = array.new<float>()
+    int[]   cN  = array.new<int>()
+    int[]   cB  = array.new<int>()
+    int np = array.size(pvPx)
+    if np > 0
+        int[] ord = array.sort_indices(pvPx, order.ascending)
+        float zMin = na
+        float zSum = 0.0
+        int   zN   = 0
+        int   zB   = 0
+        for k = 0 to np - 1
+            int j = array.get(ord, k)
+            float p = array.get(pvPx, j)
+            int b = array.get(pvB, j)
+            bool joins = false
+            if zN > 0
+                joins := p - zMin <= srTol
+            if joins
+                zSum += p
+                zN += 1
+                zB := math.min(zB, b)
+            else
+                if zN >= srMinTouches
+                    array.push(cPx, zSum / zN)
+                    array.push(cN, zN)
+                    array.push(cB, zB)
+                zMin := p
+                zSum := p
+                zN := 1
+                zB := b
+        if zN >= srMinTouches
+            array.push(cPx, zSum / zN)
+            array.push(cN, zN)
+            array.push(cB, zB)
+    // Remember the old SR slots so a level that is still there keeps its interaction state.
+    float[] oVal     = array.new<float>()
+    bool[]  oTouched = array.new<bool>()
+    int[]   oState   = array.new<int>()
+    int[]   oSide    = array.new<int>()
+    int[]   oTouchB  = array.new<int>()
+    bool[]  oArmed   = array.new<bool>()
+    bool[]  oCounted = array.new<bool>()
+    for s = SR0 to SR0 + NSR - 1
+        array.push(oVal, array.get(lvVal, s))
+        array.push(oTouched, array.get(lvTouched, s))
+        array.push(oState, array.get(lvState, s))
+        array.push(oSide, array.get(lvSide, s))
+        array.push(oTouchB, array.get(lvTouchBar, s))
+        array.push(oArmed, array.get(lvArmed, s))
+        array.push(oCounted, array.get(lvCounted, s))
+        array.set(lvVal, s, na)
+    int nc = array.size(cPx)
+    int keep = math.min(math.min(nc, srMax), NSR)
+    if keep > 0
+        int[] byN = array.sort_indices(cN, order.descending)
+        for r = 0 to keep - 1
+            int c = array.get(byN, r)
+            float px = array.get(cPx, c)
+            int s = SR0 + r
+            array.set(lvVal, s, px)
+            array.set(lvAnchor, s, array.get(cB, c))
+            array.set(lvCode, s, "SR" + str.tostring(array.get(cN, c)))
+            array.set(lvName, s, "S/R (" + str.tostring(array.get(cN, c)) + ")")
+            int match = -1
+            for q = 0 to NSR - 1
+                float ov = array.get(oVal, q)
+                if match < 0 and not na(ov) and math.abs(ov - px) <= srTol
+                    match := q
+            if match >= 0
+                array.set(lvTouched, s, array.get(oTouched, match))
+                array.set(lvState, s, array.get(oState, match))
+                array.set(lvSide, s, array.get(oSide, match))
+                array.set(lvTouchBar, s, array.get(oTouchB, match))
+                array.set(lvArmed, s, array.get(oArmed, match))
+                array.set(lvCounted, s, array.get(oCounted, match))
+                array.set(oVal, match, na)
+            else
+                f_resetSlot(s)
+    srCount := keep
 
 // Fresh state resets at the daily rollover; a touch inside the tolerance ends it.
 bool newDay = timeframe.change("D")
 if newDay
     array.fill(lvTouched, false)
-    if ncu > 0
-        array.fill(cuTouched, false)
-for i = 0 to NSLOT - 1
+for i = 0 to NTOT - 1
     float v = array.get(lvVal, i)
     if not na(v) and high >= v - touchTol and low <= v + touchTol
         array.set(lvTouched, i, true)
-if ncu > 0
-    for i = 0 to ncu - 1
-        float v = array.get(cuVal, i)
-        if high >= v - touchTol and low <= v + touchTol
-            array.set(cuTouched, i, true)
 
 // Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter and year, 4 four-hour,
-// 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom.
+// 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom, 10 SR.
 f_slotOn(int i) =>
     switch i
         0 => dRangeOn
@@ -486,22 +690,172 @@ f_slotOn(int i) =>
         35 => nRangeOn
         36 => nRangeOn
         37 => nOpenOn
-        => onCustom
+        => i >= SR0 ? srOn : onCustom
+f_typeOf(int i) =>
+    i >= SR0 ? TY_SR : i >= CUS0 ? TY_CUS : i
 f_famColor(int f) =>
-    color c = f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : colCustom
+    color c = f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : f == 10 ? colSR : colCustom
     useGlobalColor ? globalColor : c
 f_lineStyle() =>
     lineStyleIn == "Dashed" ? line.style_dashed : lineStyleIn == "Dotted" ? line.style_dotted : line.style_solid
-// Which family names a mixed zone: the higher timeframe wins.
+// Which family names a shared tag: the higher timeframe wins.
 f_famRank(int f) =>
-    f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 9 ? 6 : 7
+    f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 10 ? 6 : f == 9 ? 7 : 8
 f_labelSize() =>
     labelSizeIn == "tiny" ? size.tiny : labelSizeIn == "small" ? size.small : labelSizeIn == "normal" ? size.normal : size.large
+
+// ───────────────── [B] INTERACTION CLASSIFIER (confirmed bars only) ─────────────────
+// Per level instance: IDLE -> TOUCHED -> HELD / BROKE / NEUTRAL. The approach side comes from the
+// close before the touch. BROKE: a close beyond the far side by the break distance. HELD: a close
+// back on the approach side by the hold distance. NEUTRAL: neither inside the verdict window.
+// Only the first HELD or BROKE per instance counts; every verdict can be marked on the chart.
+var int[] stHold    = array.new<int>(NTYPE, 0)
+var int[] stBreak   = array.new<int>(NTYPE, 0)
+var int[] stNeutral = array.new<int>(NTYPE, 0)
+var int   touchCount = 0
+var label[] vMarks = array.new<label>()
+
+f_mark(float price, int verdict, string code, bool counted) =>
+    bool show = verdictMarks == "All" or (verdictMarks == "Counted only" and counted)
+    if show
+        string word = verdict == 2 ? "held" : verdict == 3 ? "broke" : "neutral"
+        color col = verdict == 2 ? color.new(color.lime, 20) : verdict == 3 ? color.new(color.red, 20) : color.new(color.gray, 30)
+        array.push(vMarks, label.new(bar_index, price, code + " " + word, xloc = xloc.bar_index, style = label.style_label_left, color = col, textcolor = color.white, size = size.small))
+        if array.size(vMarks) > verdictKeep
+            label.delete(array.shift(vMarks))
+
+if barstate.isconfirmed
+    for i = 0 to NTOT - 1
+        float p = array.get(lvVal, i)
+        if not na(p) and f_slotOn(i)
+            bool inBand = high >= p - touchTol and low <= p + touchTol
+            int st = array.get(lvState, i)
+            if st == 0 and array.get(lvArmed, i) and inBand
+                st := 1
+                array.set(lvSide, i, close[1] > p ? 1 : -1)
+                array.set(lvTouchBar, i, bar_index)
+                array.set(lvArmed, i, false)
+                touchCount += 1
+            if st == 1
+                int side = array.get(lvSide, i)
+                bool brokeNow = side == 1 ? close < p - breakTol : close > p + breakTol
+                bool heldNow  = side == 1 ? close > p + holdTol  : close < p - holdTol
+                int verdict = brokeNow ? 3 : heldNow ? 2 : bar_index - array.get(lvTouchBar, i) >= verdictWindow ? 4 : 0
+                if verdict > 0
+                    bool counted = not array.get(lvCounted, i)
+                    if counted
+                        int ty = f_typeOf(i)
+                        if verdict == 2
+                            array.set(stHold, ty, array.get(stHold, ty) + 1)
+                            array.set(lvCounted, i, true)
+                        else if verdict == 3
+                            array.set(stBreak, ty, array.get(stBreak, ty) + 1)
+                            array.set(lvCounted, i, true)
+                        else
+                            array.set(stNeutral, ty, array.get(stNeutral, ty) + 1)
+                    f_mark(p, verdict, array.get(lvCode, i), counted)
+                    st := 0
+            array.set(lvState, i, st)
+            if not inBand
+                array.set(lvArmed, i, true)
+
+// ───────────────── [C] STATISTICS AND RANKING ─────────────────
+// holdRate = (priorN * priorRate + holds) / (priorN + holds + breaks), per level type.
+var float[] prRate = array.new<float>(NTYPE, 0.5)
+var float[] prN    = array.new<float>(NTYPE, 0.0)
+if barstate.isfirst and str.length(priorsTxt) > 0
+    string[] items = str.split(priorsTxt, ",")
+    int ni = array.size(items)
+    if ni > 0
+        for k = 0 to ni - 1
+            string[] kv = str.split(str.trim(array.get(items, k)), ":")
+            if array.size(kv) >= 3
+                string code = str.upper(str.trim(array.get(kv, 0)))
+                float r = str.tonumber(str.trim(array.get(kv, 1)))
+                float n0 = str.tonumber(str.trim(array.get(kv, 2)))
+                int ty = array.indexof(tyCode, code)
+                if ty >= 0 and not na(r) and not na(n0)
+                    array.set(prRate, ty, r)
+                    array.set(prN, ty, n0)
+
+f_holdRate(int ty) =>
+    float h  = array.get(stHold, ty)
+    float b  = array.get(stBreak, ty)
+    float n0 = array.get(prN, ty)
+    float den = n0 + h + b
+    den > 0 ? (n0 * array.get(prRate, ty) + h) / den : na
+
+// Rank percentile per type, top = 100, among types with at least one counted interaction.
+var float[] tyRank = array.new<float>(NTYPE, na)
+var int countedTotal = 0
+
+f_statsPos() =>
+    statsPos == "Bottom left" ? position.bottom_left : statsPos == "Top left" ? position.top_left : statsPos == "Middle right" ? position.middle_right : position.bottom_right
+var table stats = table.new(f_statsPos(), 6, statsRows + 2, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+f_scell(int c, int r, string txt, color tc, color bg) =>
+    table.cell(stats, c, r, txt, text_color = tc, text_size = size.small, bgcolor = bg, text_halign = c == 0 ? text.align_left : text.align_right)
+
+if barstate.islast
+    int[]   tyIdx = array.new<int>()
+    float[] tyRt  = array.new<float>()
+    int totH = 0
+    int totB = 0
+    int totN = 0
+    for ty = 0 to NTYPE - 1
+        int h = array.get(stHold, ty)
+        int b = array.get(stBreak, ty)
+        totH += h
+        totB += b
+        totN += array.get(stNeutral, ty)
+        if h + b > 0
+            array.push(tyIdx, ty)
+            array.push(tyRt, f_holdRate(ty))
+    countedTotal := totH + totB
+    array.fill(tyRank, na)
+    int cnt = array.size(tyIdx)
+    color hdr  = color.new(color.gray, 70)
+    color txtc = color.white
+    color dim  = color.new(color.white, 20)
+    if showStats
+        f_scell(0, 0, "Type", dim, hdr)
+        f_scell(1, 0, "N", dim, hdr)
+        f_scell(2, 0, "Hold %", dim, hdr)
+        f_scell(3, 0, "Break %", dim, hdr)
+        f_scell(4, 0, "Neutral", dim, hdr)
+        f_scell(5, 0, "Rank", dim, hdr)
+    if cnt > 0
+        int[] ord = array.sort_indices(tyRt, order.descending)
+        for r = 0 to cnt - 1
+            int ty = array.get(tyIdx, array.get(ord, r))
+            float pct = cnt > 1 ? 100.0 * (cnt - 1 - r) / (cnt - 1) : 100.0
+            array.set(tyRank, ty, pct)
+            if showStats and r < statsRows
+                int h = array.get(stHold, ty)
+                int b = array.get(stBreak, ty)
+                float hr = f_holdRate(ty)
+                f_scell(0, r + 1, array.get(tyCode, ty), txtc, color.new(color.black, 100))
+                f_scell(1, r + 1, str.tostring(h + b), txtc, color.new(color.black, 100))
+                f_scell(2, r + 1, str.tostring(hr * 100, "#.0"), hr >= 0.5 ? color.lime : color.orange, color.new(color.black, 100))
+                f_scell(3, r + 1, str.tostring((1 - hr) * 100, "#.0"), txtc, color.new(color.black, 100))
+                f_scell(4, r + 1, str.tostring(array.get(stNeutral, ty)), dim, color.new(color.black, 100))
+                f_scell(5, r + 1, str.tostring(math.round(pct)), txtc, color.new(color.black, 100))
+    if showStats
+        if cnt < statsRows
+            for r = cnt to statsRows - 1
+                for c = 0 to 5
+                    f_scell(c, r + 1, "", txtc, color.new(color.black, 100))
+        int tot = totH + totB
+        f_scell(0, statsRows + 1, "Total", dim, hdr)
+        f_scell(1, statsRows + 1, str.tostring(tot), txtc, hdr)
+        f_scell(2, statsRows + 1, tot > 0 ? str.tostring(100.0 * totH / tot, "#.0") : "", txtc, hdr)
+        f_scell(3, statsRows + 1, tot > 0 ? str.tostring(100.0 * totB / tot, "#.0") : "", txtc, hdr)
+        f_scell(4, statsRows + 1, str.tostring(totN), dim, hdr)
+        f_scell(5, statsRows + 1, "", txtc, hdr)
 
 // ───────────────── [A6] DRAWING (last bar only) ─────────────────
 // Every level is its own line, starting at the candle that made it. Levels within the share
 // distance (default: the touch tolerance) share one tag so the names stay readable. Zones for
-// trading are built in M2 from the cluster tolerance; drawing does not merge them.
+// trading are built in M3 from the cluster tolerance; drawing does not merge them.
 var line[]  drawL = array.new<line>()
 var label[] drawT = array.new<label>()
 
@@ -587,26 +941,16 @@ if barstate.islast
     bool[]   tc = array.new<bool>()
     int[]    an = array.new<int>()
     bool useShort = labelMode == "Short codes"
-    for i = 0 to NSLOT - 1
+    for i = 0 to NTOT - 1
         float v = array.get(lvVal, i)
-        int f = array.get(lvFam, i)
         bool near = not limitRange or math.abs(v - close) <= drawRange * unit
         if not na(v) and f_slotOn(i) and near
+            bool isCustom = i >= CUS0 and i < SR0
             array.push(px, v)
             array.push(cd, useShort ? array.get(lvCode, i) : array.get(lvName, i))
-            array.push(fm, f)
+            array.push(fm, array.get(lvFam, i))
             array.push(tc, array.get(lvTouched, i))
-            array.push(an, array.get(lvAnchor, i))
-    if onCustom and ncu > 0
-        for i = 0 to ncu - 1
-            float v = array.get(cuVal, i)
-            bool near = not limitRange or math.abs(v - close) <= drawRange * unit
-            if near
-                array.push(px, v)
-                array.push(cd, array.get(cuCode, i))
-                array.push(fm, 9)
-                array.push(tc, array.get(cuTouched, i))
-                array.push(an, dOpenB)
+            array.push(an, isCustom ? dOpenB : array.get(lvAnchor, i))
     int n = array.size(px)
     levelsDrawn := n
     if n > 0
@@ -685,18 +1029,20 @@ if barstate.islast
             f_drawLabel(array.get(gPrice, gi), array.get(gShow, gi), array.get(gFam, gi), xEnd)
 
 // ───────────────────────────── [A7] INFO BOX ─────────────────────────────
-var table info = table.new(position.top_right, 2, 7, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+var table info = table.new(position.top_right, 2, 9, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M1", "v0.8")
+    f_cell(0, "L2L M2", "v0.1")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
     f_cell(4, "Cluster tol", str.tostring(clusterTol, format.mintick) + " (" + str.tostring(math.round(clusterTol / syminfo.mintick)) + " ticks)")
     f_cell(5, "Touch tol", str.tostring(touchTol, format.mintick) + " (" + str.tostring(math.round(touchTol / syminfo.mintick)) + " ticks)")
     f_cell(6, "Levels drawn", str.tostring(levelsDrawn))
+    f_cell(7, "SR levels", str.tostring(srCount) + " of " + str.tostring(array.size(pvPx)) + " pivots")
+    f_cell(8, "Interactions", str.tostring(countedTotal) + " counted, " + str.tostring(touchCount) + " touches")
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
@@ -717,5 +1063,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M1 v0.8). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M2 v0.1). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
