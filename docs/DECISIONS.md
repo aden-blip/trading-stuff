@@ -642,6 +642,42 @@ between. Recorded as Session 1 in `docs/BACKTEST_LOG.md`.
    runs the same splits with costs; the entry style (close of the follow-through candle, a
    limit at the level, the 1-minute trigger) is the first thing it compares.
 
+### D-83  The payoff decides, not the score; reversal entry and stop switches  (DECIDED)
+Your two v0.13 screenshots (MNQ 5-minute, 7 Jun to 18 Sep 2026, 72 trading days; range filter
+off, then on), logged as Session 2 in `docs/BACKTEST_LOG.md`.
+1. **The hit rate is the same everywhere.** Every group reaches its first target about one time
+   in four or five: low scores, high scores, reversals, breaks, every session window. Nothing
+   the bot measures today picks winners.
+2. **The payoff decides.** Every group whose average winner was more than three times its
+   average loser made money: the 5/10 and 6/10 trades and the break trades. Every group under
+   two and a half times lost: the 7/10 and 8/10 trades and the reversals as a whole. In the
+   columns: 5/10 trades win +157 and lose −44; 8/10 trades win +134 and lose −63; break trades
+   win +126 and lose −22.
+3. **Why the high scores carry the wide stops.** A high score today mostly means a stacked zone,
+   two or three levels close together. The zone is wider and the stop sits beyond the far side
+   of the whole zone, so the stack bonus is buying a wider stop, not a better trade. Break
+   trades have tight stops because their entry is at the level, the broken edge, not a candle
+   or two away like the reversal entry. The score is not re-weighted on this: fix the geometry
+   first, then read the buckets again.
+4. **Range filter: no verdict.** It removed 43 trades and improved the net by about 550 points,
+   but with one trade at a time every skipped trade changes the trades after it, and the session
+   rows flipped sign between the two runs, so that gain sits inside the noise. Stays off; the
+   M4 tester measures it.
+5. **Sessions: no conclusion**, for the same reason. Asia went from the best window to the worst
+   by skipping twelve trades.
+6. **Decision, built in M3 v0.14 as test switches.** Reversal entry: the close of the
+   follow-through candle (plan default), a limit at the level after the follow-through, or a
+   limit at the level right after the rejection candle (your quick-return entry, no
+   follow-through needed). Reversal stop: beyond the zone (plan default), beyond the rejection
+   wick, or the farther of the two, the options the plan lists under D-22. A resting reversal
+   limit is cancelled by a close back through the zone and expires after 6 bars (input). One
+   honesty fix with it: a limit that fills and crosses its stop on the same candle counts as a
+   stop, for break retests too, as the strategy tester would count it; break numbers drop a
+   little from v0.13.
+7. **Caveats.** 72 days, in-sample ranks, no costs, and the 5/10 bucket holds only 100 trades.
+   The pattern is strong and the same in both runs, which is why it earns a test now and not a
+   rule.
+
 ---
 
 ## L. New in round 4

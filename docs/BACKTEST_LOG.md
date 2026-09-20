@@ -33,6 +33,59 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-20  Session 2  (M3 v0.13, indicator paper trade with the breakdown table)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to 18 Sep 2026, 72 trading days
+(from the table header). The history under this run is not identical to Session 1: the
+continuous contract rolled to December on Friday. Same trade count, net moved from −1280.75 to
+about −1200.50.
+Costs used (commission per side, slippage ticks): none (paper trade).
+Settings changed from defaults: run A none; run B Range filter On.
+
+Headline stats (run A, range filter off):
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 807 | 23 % reached T1 | not measured | about −1200.50 points | not measured | +136.25 | −52.75 | not measured |
+
+Run B (range filter on): 764 trades, 22 % reached T1, avg T1 +131.50, avg stop −46.25, net −651.00.
+
+By setup: run A: REV 626 trades / 25 % / −2341.75; BRK 181 / 19 % / +1141.25.
+  Run B: REV 511 / 25 % / −1081.50; BRK 253 / 15 % / +430.50.
+By score: run A: 5/10 or less 100 / 25 % / +1164.00 (avg T1 +157.50, avg stop −44.50);
+  6/10 226 / 26 % / +1936.25 (+142.50, −43.25); 7/10 224 / 21 % / −2259.50 (+120.25, −54.00);
+  8/10 or more 257 / 23 % / −2041.00 (+134.00, −63.25).
+  Run B: 90 / 22 % / +580.50; 226 / 21 % / +1676.25; 204 / 20 % / −2755.50; 244 / 25 % / −152.25.
+By level type (top 3 and bottom 3 by net P&L): not measured.
+By session: run A: Asia window 136 / 30 % / +1148.25; London window 80 / 18 % / −1123.75;
+  New York window 348 / 22 % / −911.25; other hours 243 / 24 % / −314.00.
+  Run B: Asia 124 / 21 % / −1204.25; London 76 / 22 % / −311.00; New York 337 / 22 % / +1083.00;
+  other hours 227 / 22 % / −218.75.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The hit rate is flat, about one in four or five in every group. What separates the winning
+groups from the losing ones is the payoff: 5/10, 6/10 and break trades have winners over three
+times their losers and made money; 7/10, 8/10 and reversals as a whole sit near two to one and
+lost. The wide stops belong to stacked zones (the stop is beyond the far side of a wide zone)
+and to the reversal entry a candle or two away from the level; break entries sit at the level
+and carry a 22-point average stop against a 63-point one for reversals. The range filter
+changed the whole trade sequence (one trade at a time), so its 550-point improvement and the
+session rows, which flipped sign between the runs, are not conclusions.
+
+Issues found (bugs, repainting, alerts, drawing problems): none. The All row matched the info
+box. Noted: a limit fill that crosses its stop within the same candle was carried to the next
+candle before the stop check; fixed in v0.14 (counts as a stop at once, as the tester would).
+
+Changes made before the next session (setting or code, and why): M3 v0.14 adds the reversal
+entry switch (close of the follow-through candle; limit at the level after the follow-through;
+limit at the level right after the rejection candle) and the reversal stop switch (beyond the
+zone; beyond the rejection wick; the farther of the two), plus the same-candle stop rule for
+limit fills (D-83). No score change. Next session compares the four settings on the breakdown.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; two
+screenshots in the chat of 2026-09-20.
+
+---
+
 ## 2026-09-20  Session 1  (M3 v0.12, indicator paper trade, not the strategy tester)
 
 Symbol / timeframe / date range: MNQ, 5-minute; date range not reported (the chart's loaded

@@ -1,5 +1,16 @@
 # Changelog
 
+## M3 v0.14, 2026-09-20
+
+- Reversal entry and stop as test switches (D-83), from the first breakdown: entry at the close
+  of the follow-through candle (default), a limit at the level after the follow-through, or a
+  limit at the level right after the rejection candle; stop beyond the zone (default), beyond
+  the rejection wick, or the farther of the two. A resting reversal limit shows as a REV signal
+  on the candle that fills it, is cancelled by a close back through the zone, and expires after
+  a bar count (6).
+- A limit that fills and crosses its stop on the same candle now counts as a stop, for break
+  retests too, as the strategy tester would count it. Break trade numbers drop a little.
+
 ## M3 v0.13, 2026-09-20
 
 - Paper breakdown table (D-82): the paper trades split by score (5/10 or less, 6, 7, 8 or

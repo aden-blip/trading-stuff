@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.13`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.14`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -38,6 +38,11 @@ comes in M6. The info box must read `L2L M3 v0.13`. Verdict distances are 0.05 a
     the paper trades by score, by REV or BRK and by session window, with the share that reached
     T1, the average gain, the average loss and the net points. Its header shows the date of the
     first trade and the trading days covered. The All row must match the info box rows.
+14. **Entry and stop switches.** Settings, Reversal setup. Set Reversal entry to "Limit at the
+    level after the follow-through": REV arrows now sit on the candle that comes back to the
+    level, and the hover box shows E at the level's price. Set Reversal stop to "Beyond the
+    rejection wick": SL in the hover box moves to just beyond the rejection candle's wick. Put
+    both back to the first option when done.
 
 ## Report back
 
@@ -47,3 +52,6 @@ comes in M6. The info box must read `L2L M3 v0.13`. Verdict distances are 0.05 a
   those read 7/10 or better.
 - A screenshot of the paper breakdown table with the defaults, and one with the range filter
   switched on.
+- Four breakdown screenshots for D-83: defaults; Reversal entry "Limit at the level after the
+  follow-through"; Reversal entry "Limit at the level after the rejection candle"; and, back on
+  the default entry, Reversal stop "Beyond the rejection wick".

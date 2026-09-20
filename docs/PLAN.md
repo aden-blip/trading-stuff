@@ -1,6 +1,14 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.23, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.24, 2026-09-20.
+
+Changes in 0.24, reversal entry and stop switches (D-83):
+- The first breakdown shows the hit rate flat at about one in four everywhere and the payoff
+  deciding: groups with winners over three times the losers pay, groups under two and a half
+  times lose, and the wide stops sit on the stacked zones and on the reversal entry a candle
+  away from the level. The plan's entry and stop options (a limit at the zone edge; the stop at
+  the rejection candle's extreme or the farther of the two) are built as test switches in
+  M3 v0.14, before any score re-weighting.
 
 Changes in 0.23, paper breakdown table (D-82):
 - The first full tally of the one-trade-at-a-time view (807 trades, one in five reaching the
@@ -400,6 +408,9 @@ closed bar to act on, so it uses two bars:
    close above the zone's near edge). Entry at that close, which the emulator fills at the next bar open.
    - Option `strongSkip` (default OFF): if the rejection bar's wick is at least 60 % of its range and
      it closes in the far third, enter at the rejection bar's close without waiting.
+   - Option `revEntry` (D-83, test switch from M3 v0.14): instead of the close, a limit at the
+     zone's near edge, resting for `revLimitBars` after the follow-through, or right after the
+     rejection candle with no follow-through needed. Cancelled by a close back through the zone.
 3. The zone is REV-eligible ([C]) and the filters pass ([F]).
 4. **Volume confirmation** (D-52, ON by default on the Index profile, OFF elsewhere): the
    follow-through bar's volume is at least `volConfirmMult` (default 1.0) times the 20-bar average
@@ -419,7 +430,7 @@ Two more entry triggers are planned as options, not defaults:
 
 Stop (D-22): the far edge of the zone plus `stopBuffer`, default 0.03 daily ATR with a 4-tick floor
 (about 9 NQ points on a 300-point ATR day). Options: the rejection bar's extreme, or the farther of
-the two. A separate cap, `maxStopTicks` (default 0 = off), rejects any setup whose stop would be
+the two (both built as the `revStop` switch in M3 v0.14, D-83). A separate cap, `maxStopTicks` (default 0 = off), rejects any setup whose stop would be
 wider than that many ticks. Your manual habit is a 50-tick stop on MNQ; a bot that enters one bar
 later than you do needs more room, so the right number comes out of the backtests (D-45).
 Ladder: the next zones in the bounce direction, skipping any closer than `minTargetDist`.
