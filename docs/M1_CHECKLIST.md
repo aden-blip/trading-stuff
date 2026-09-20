@@ -47,8 +47,9 @@ What to do with `pine/l2l.pine` and what to report back. Stop at the first failu
 10. **Labels.** Labels are filled bookmark tags hanging off the end of each line. Two names that
     would sit on top of each other step right into the next column, and the lower line runs out
     to its own tag. Try "Label style" Text only, "Label size", and "Label text" Short codes; each
-    should apply on the next candle. Levels at the identical price share one label joined with a
-    slash. If tags still overlap when zoomed in, raise "Stagger step, bars".
+    should apply on the next candle. Levels within the touch tolerance share one tag joined with
+    slashes, each still on its own line. If tags overlap sideways when zoomed in, raise "Tag
+    width, bars per character".
 
 ## Report back
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## M1 v0.8, 2026-09-20
+
+- Levels within the touch tolerance share one tag, names joined with a slash, tag at their mean
+  price; every level keeps its own line. Share distance is a daily-ATR input with a tick floor,
+  0 and 0 means identical prices only (D-63).
+- Stagger columns are as wide as their longest name, from a bars-per-character input scaled by
+  the label size. Five columns by default. Text-only labels start at the column edge.
+- Fixed step and text pad inputs removed.
+
 ## M1 v0.7, 2026-09-20
 
 - Boxed bookmark tags are the default label style again; text only stays as an option (D-62).

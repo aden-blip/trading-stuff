@@ -1,6 +1,11 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 1 in review. Version 0.10, 2026-09-20.
+Status: BUILDING. Milestone 1 in review. Version 0.11, 2026-09-20.
+
+Changes in 0.11, from the first display reviews (D-62, D-63):
+- Labels are boxed bookmark tags by default; text only is the option.
+- Levels within the touch tolerance share one tag, names joined with " / ", each level on its own line.
+- Tags that would still overlap step right into columns sized by their longest name.
 
 Changes in 0.10, aligned with the Spaceman source (`reference/spaceman_notes.md`):
 - Labels are plain coloured text by default, size normal, at the end of the line; boxed is the option.
@@ -249,9 +254,10 @@ still credit every member type.
 limits drawing to levels within `drawRange` daily ATRs of price. **Every level is its own line**,
 starting at the candle that made it and ending some bars to the right of the current candle, where
 its label sits; a right-anchored fixed-length mode is the alternative. Labels default to full names
-with short codes as the option, in a chosen text size, optionally with the price. Levels at the
-same price within `mergeTicks` share one label so names do not overlap. Zones for trading are
-built from the cluster tolerance in M2 and are not drawn as boxes. Touched and fresh levels look
+with short codes as the option, in a chosen text size, optionally with the price. Levels within
+the share distance (`mergeUnit`, default the touch tolerance) share one tag so names do not
+overlap, and tags that would still overlap step right into columns sized by name length. Zones
+for trading are built from the cluster tolerance in M2 and are not drawn as boxes. Touched and fresh levels look
 the same; the score carries that information (D-36).
 
 ### 4.2 [B] Interaction Classifier

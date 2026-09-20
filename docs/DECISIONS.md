@@ -330,6 +330,16 @@ by default, wider than a full-name tag, and a level's line now runs all the way 
 so a staggered tag still hangs off its line. A label takes the first column whose previous label
 is far enough below it, and the tag count per column is not limited.
 
+### D-63  Tags share within the touch tolerance; columns sized by name length  (DECIDED)
+From the v0.7 screenshots: the 1-minute chart was clean, the 5-minute chart had four tags within
+11 points, one more than the three columns, so the fourth landed on another tag, and full-name
+tags in one column nearly touched the next. Three changes. Levels within the touch tolerance
+(0.01 daily ATR, floor 2 ticks) now share one tag with the names joined by a slash and the tag
+pointing at their mean; each level keeps its own line, and setting the share distance and its
+floor to 0 restores identical-price-only sharing. Each stagger column is as wide as its longest
+name, from a bars-per-character input that scales with the label size, so short codes pack
+tighter than full names. Five columns by default.
+
 ---
 
 ## L. New in round 4
