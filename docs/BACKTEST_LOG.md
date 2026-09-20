@@ -33,6 +33,49 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-20  Session 3  (M3 v0.14, entry and stop switches; run A = baseline)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to the Sunday 20 Sep evening
+session, 73 trading days (from the table header).
+Costs used (commission per side, slippage ticks): none (paper trade).
+Settings changed from defaults: run A none (Reversal entry: close of the follow-through candle;
+Reversal stop: beyond the zone; range filter off). Runs B, C and D (limit after the
+follow-through; limit after the rejection candle; wick stop) to be added below as they come in.
+
+Headline stats (run A, baseline):
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 812 (182 T1, 587 stop, 43 flat) | 22 % reached T1 | not measured | −2759.75 points | not measured | +135.50 | −52.50 | not measured |
+
+By setup: REV 629 trades / 24 % / avg T1 +138.50 / avg stop −63.50 / −2808.25;
+  BRK 183 / 15 % / +120.50 / −22.25 / +48.25.
+By score: 5/10 or less 102 / 24 % / +908.75 (+156.00, −43.50); 6/10 226 / 24 % / +1182.75
+  (+142.00, −43.00); 7/10 227 / 21 % / −2594.75 (+120.25, −54.00); 8/10 or more 257 / 22 % /
+  −2256.75 (+133.75, −63.50).
+By level type (top 3 and bottom 3 by net P&L): not measured.
+By session: Asia window 136 / 29 % / +932.50; London window 80 / 18 % / −1123.75; New York
+  window 353 / 20 % / −2254.75; other hours 243 / 24 % / −314.00.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The same-candle stop rule took the break trades from +1141.25 (Session 2, run A) to +48.25:
+their T1 share fell from 19 % to 15 %, so about seven retests that reached the target in
+v0.13 had crossed their stop inside the fill candle and now count as stops, as the tester
+would count them. Reversal trades moved from −2341.75 to −2808.25 through the changed trade
+sequence and one more trading day. The pattern from Session 2 is unchanged: 5/10 and 6/10
+positive, 7/10 and 8/10 negative, Asia positive, London and New York negative, hit rate flat
+at about one in four or five everywhere.
+
+Issues found (bugs, repainting, alerts, drawing problems): none. The All row matches the info
+box (812 trades, −2759.75).
+
+Changes made before the next session (setting or code, and why): none yet. Runs B, C and D of
+this session decide the Milestone 4 default entry and stop.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; in the chat of
+2026-09-20.
+
+---
+
 ## 2026-09-20  Session 2  (M3 v0.13, indicator paper trade with the breakdown table)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to 18 Sep 2026, 72 trading days
