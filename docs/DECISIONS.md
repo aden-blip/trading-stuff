@@ -596,6 +596,21 @@ Your before-and-after on Friday 18 September (MNQ 5-minute, volume rule off): at
 Inputs: entry cutoff 15:00 CT [16:00 NY] and flatten 15:55 CT [16:55 NY] from the plan, both
 switchable, exit marks, two info-box rows. Built in M3 v0.11.
 
+### D-81  Chop: trade the edges of a range, not the middle  (DECIDED as a test switch)
+Your thought on the same screenshot: nothing in the script notices chop, and the signals in the
+middle of the screen sit inside a range, "almost a crappy AMD setup" (accumulation, then the
+sweep of the low, then the real move up). Checked against that day: the plan's chop band
+(D-28, 30-minute range under 0.25 % of price) would have blocked the 06:30 and 08:39 shorts that
+you liked, because a 30-minute stretch on MNQ is usually that narrow. What separates the good
+trades from the bad ones there is not "range or not" but "edge or middle": the 08:39 short at
+the top of the range and the 09:22 long near its bottom paid; the longs and shorts at the
+Midnight Open, Daily Open and Prev 4H Open in the middle mostly did not. So the test version is
+a range-edges rule: look back 120 minutes; if that stretch is narrower than 0.5 daily ATR and a
+level sits in its middle half, no reversal entry there. Off by default, because on that day it
+also skips the 12:28 and 13:00 longs that paid, which were the first legs of the move out of
+the range. The M4 backtest measures it next to the plan's band rule; the M7 sweep-reclaim entry
+is the "manipulation, then distribution" trade you describe. Built in M3 v0.12.
+
 ---
 
 ## L. New in round 4

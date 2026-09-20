@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.11
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.12
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -184,6 +184,12 @@ entryCutoff = input.int(1500, "No new trades from (HHMM, timezone above; 0 = off
 flattenAt   = input.int(1555, "Close the trade at (HHMM; 0 = off)", minval = 0, maxval = 2359, group = gPa)
 showExits   = input.bool(true, "Mark exits", group = gPa, tooltip = "A small tag at each exit: T1, stop or flat, with the points made or lost. Teal is a gain, maroon a loss.")
 exitKeep    = input.int(100, "Exit marks kept", minval = 10, maxval = 300, group = gPa)
+
+gRg = "Range filter (test, D-81)"
+rangeOn     = input.bool(false, "No reversal at a level inside a range, edges only", group = gRg, tooltip = "Your read: in a range, trade the edges, not the middle. The script looks back over the window below. If that stretch is narrower than the limit and the level sits in the middle of it, away from both edges by the edge share, reversal entries at that level are skipped. Breaks are not affected. Off until the M4 backtest measures it.")
+rangeMin    = input.int(120, "Window, minutes", minval = 15, maxval = 720, group = gRg)
+rangeMaxATR = input.float(0.5, "Counts as a range when narrower than, daily ATR", step = 0.05, minval = 0.05, group = gRg)
+rangeEdge   = input.float(0.25, "Edge share of the range height", step = 0.05, minval = 0.05, maxval = 0.5, group = gRg, tooltip = "0.25 means the top quarter and the bottom quarter of the range count as edges; a level in the middle half is skipped.")
 
 gGeo = "Geometry (daily-ATR units with tick floors)"
 atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
@@ -1016,6 +1022,13 @@ int   emaVote     = na(emaVal) ? 0 : close > emaVal ? 1 : -1
 plot(showHookLines ? vwapVal : na, "Session VWAP", color = color.new(color.yellow, 30))
 plot(showHookLines ? emaVal : na, "Hook EMA", color = color.new(color.orange, 30))
 
+// Range filter (D-81, test): the last rangeMin minutes' high and low. With the switch on, a level
+// sitting in the middle of a narrow range is skipped for reversal entries; the edges stay live.
+int   rangeBars = math.max(2, math.round(rangeMin / tfMinutes))
+float rgH = ta.highest(high, rangeBars)
+float rgL = ta.lowest(low, rangeBars)
+bool  inRange = rangeOn and (rgH - rgL) < rangeMaxATR * unit
+
 // Developing extremes are targets only until their session completes (plan 4.1).
 bool inAsiaS   = not na(time(timeframe.period, sessAsia, tz))
 bool inLondonS = not na(time(timeframe.period, sessLondon, tz))
@@ -1378,6 +1391,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
             if (zOK and not zBl) or diag
                 float zlo = array.get(zLo, z)
                 float zhi = array.get(zHi, z)
+                bool midRange = inRange and zlo > rgL + rangeEdge * (rgH - rgL) and zhi < rgH - rangeEdge * (rgH - rgL)
                 for d = 0 to 1
                     int dir = d == 0 ? 1 : -1
                     [rej1, strong1] = f_rejBar(dir, zlo, zhi, 1)
@@ -1391,6 +1405,9 @@ if barstate.isconfirmed and array.size(zLo) > 0
                     else if pattern and zBl
                         if diag
                             f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: this zone signalled within the last " + str.tostring(sigCooldownMin) + " minutes, or price has not left it since")
+                    else if pattern and midRange
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: level sits inside the last " + str.tostring(rangeMin) + " minutes' range " + str.tostring(rgL, format.mintick) + " to " + str.tostring(rgH, format.mintick) + ", edges only (range filter)")
                     else if pattern and not volOK
                         if diag
                             f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: volume " + str.tostring(volAvg > 0 ? volume / volAvg : 0, "#.0") + "x the 20-bar average, needs " + str.tostring(volConfirmMult, "#.0") + "x")
@@ -1713,7 +1730,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.11")
+    f_cell(0, "L2L M3", "v0.12")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1752,5 +1769,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.11). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.12). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

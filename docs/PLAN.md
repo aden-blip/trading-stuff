@@ -1,6 +1,10 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.21, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.22, 2026-09-20.
+
+Changes in 0.22, range filter as a test switch (D-81):
+- Range-edges rule from the owner's AMD read: inside a narrow 120-minute range, no reversal at
+  a level in the middle half. Off by default; M4 measures it beside the chop band.
 
 Changes in 0.21, one trade at a time in the indicator (D-80):
 - The indicator follows each taken signal as a paper trade (stop, first target, flatten) and
@@ -462,6 +466,9 @@ breakdown (D-72, D-73).
   `chopMinutes` (default 30), converted to bars from the chart timeframe. If highest minus lowest
   over the window is within the band, chop is ON and the band is frozen. Chop turns OFF on the first
   close outside the frozen band. No entries while ON. We tune this after the first backtests (D-28).
+  A second candidate, built in M3 as a test switch (D-81): inside a range narrower than
+  `rangeMaxATR` over `rangeMin` minutes, reversal entries only at levels in the top or bottom
+  `rangeEdge` share of the range, never in the middle. M4 measures both.
 - **Allowed sessions.** Three checkboxes, Asia / London / New York, plus an optional custom window.
   Entries only inside a checked session. Index profile default: New York only. Energy and metals:
   all three, since you trade them at any time. For 24/7 symbols the filter can be disabled.

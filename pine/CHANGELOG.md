@@ -1,5 +1,11 @@
 # Changelog
 
+## M3 v0.12, 2026-09-20
+
+- Range filter as a test switch, off by default (D-81, your AMD read): inside a narrow range
+  (last 120 minutes narrower than 0.5 daily ATR), reversal entries at levels in the middle half
+  are skipped; the top and bottom quarters stay live. Grey `?` names the range.
+
 ## M3 v0.11, 2026-09-20
 
 - One trade at a time (D-80): the indicator follows each taken signal as a paper trade, in at
