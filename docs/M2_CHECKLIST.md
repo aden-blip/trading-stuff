@@ -2,7 +2,7 @@
 
 Same install as M1 (`docs/M1_CHECKLIST.md`): copy the raw file from GitHub or the chat paste, replace
 the script in the Pine Editor, confirm the END OF FILE line is present, save, add to chart. The info
-box must read `L2L M2 v0.1`.
+box must read `L2L M2 v0.2`.
 
 ## Checks
 
@@ -16,12 +16,14 @@ box must read `L2L M2 v0.1`.
    (held above a level means it was tested from above and bounced), did a "held" close the hold
    distance away, did a "broke" close through by the break distance? Report any that read wrong.
 4. **Counts change only on bar close.** Watch a live bar near a level: the table and the
-   "Interactions" row in the info box must not change until the candle closes.
+   "Interactions" row in the info box must not change until the candle closes. On a 1-minute chart
+   held and broke marks land on 5-minute closes only; neutral marks can land on any bar.
 5. **Totals agree.** The info box "Interactions ... counted" equals the table's Total N.
 6. **Replay.** Bar replay from a day ago: the same S/R lines, the same marks, the same counts up to
    that point. Nothing should appear or vanish as replay steps forward, apart from new verdicts.
 7. **Other symbols.** CL and SIL: sensible S/R lines, no errors, table fills.
-8. **Priors.** Type `PDH:0.62:40` into "Priors" and confirm the PDH row's hold % moves toward 62.
+8. **Priors.** Type `PDH:0.62:40` into "Priors" and confirm the PDH row's rank moves up. The
+   hold % column stays raw; only the rank uses priors.
 
 ## Report back
 

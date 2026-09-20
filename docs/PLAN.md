@@ -1,6 +1,12 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 2 in review. Version 0.12, 2026-09-20.
+Status: BUILDING. Milestone 2 in review. Version 0.13, 2026-09-20.
+
+Changes in 0.13, plan review and first M2 chart (D-66):
+- Break trades ON by default, retest entry only, built in M3 beside the REV detector.
+- Zones are kept for the stack score and the stop edge, built in M3, never drawn.
+- SR levels are zones with a width; SR tolerance 0.08; verdicts on 5-minute closes with a
+  150-minute window; prior weight 10 on the ranking; M4 starts with a base run, filters off.
 
 Changes in 0.12, confluence roadmap and the M2 build (D-64, D-65):
 - Session VWAP (side and stretch) and a 15-minute 200 EMA vote become hidden score hooks built in
@@ -124,7 +130,7 @@ One TradingView Pine Script v6 **strategy** that:
 
 - draws the key horizontal levels from higher-timeframe data and clusters the ones that overlap,
 - measures how often each level type holds versus breaks and ranks the types against each other,
-- fires REV signals when a level holds; break trades on a closed candle through a level exist as a switch, OFF by default,
+- fires REV signals when a level holds and BRK signals on the retest after a level breaks (switch, ON by default, never straight off a breakout),
 - scores every signal 0 to 100 and only trades above a minimum,
 - targets the next key level and, if price closes through it, promotes to the level after that,
 - protects the trade in stages (half risk, then break-even plus cushion, then structure trail),
@@ -166,7 +172,7 @@ One script, ten modules, in this order so that an error points at one module:
 [A] Level Engine      -> level list (type, price, zone, fresh/touched state)
 [B] Interaction       -> each touch classified HOLD / BREAK / NEUTRAL, feeds [C]
 [C] Stats & Ranking   -> hold rate per type, rank, REV/BRK eligibility
-[D] Setup Detector    -> REV candidates on the execution bar close (BRK only when switched on)
+[D] Setup Detector    -> REV candidates on the execution bar close, BRK retest candidates after a confirmed break (switch, ON)
 [E] Score             -> 0-100 from reliability, stack, first test, HTF rejection, bias
 [F] Filters           -> chop, time window, news blackout, daily caps, min R:R, min distance, max risk
 [G] Trade Manager     -> ladder, staged stops, trailing, soft targets, partials, flatten, flip
@@ -264,7 +270,8 @@ its label sits; a right-anchored fixed-length mode is the alternative. Labels de
 with short codes as the option, in a chosen text size, optionally with the price. Levels within
 the share distance (`mergeUnit`, default the touch tolerance) share one tag so names do not
 overlap, and tags that would still overlap step right into columns sized by name length. Zones
-for trading are built from the cluster tolerance in M2 and are not drawn as boxes. Touched and fresh levels look
+for trading are built from the cluster tolerance in M3 for the stack score and the stop edge and
+are never drawn (D-66). Touched and fresh levels look
 the same; the score carries that information (D-36).
 
 ### 4.2 [B] Interaction Classifier
@@ -286,6 +293,10 @@ States per zone: `IDLE -> TOUCHED -> (HELD | BROKE | NEUTRAL)`.
   generate setup events. A NEUTRAL verdict does not use up that one counted interaction.
 - Verdicts are taken on confirmed bars only, so table counts change only on bar close (D-65). The
   next-zone shortcut for HELD waits for M3's zone list; M2 uses the hold distance alone.
+- HELD and BROKE are judged on closes of the verdict timeframe (default 5 minutes), so a 1-minute
+  chart produces the same statistics as a 5-minute chart; the verdict window is in minutes
+  (default 150). SR levels are zones: half the spread of their touches widens the touch band and
+  the break and hold thresholds (D-66).
 
 ### 4.3 [C] Stats & Ranking
 
@@ -295,8 +306,9 @@ Per level type: `holds` and `breaks` running counters (`var` arrays, persisted a
 holdRate = (priorN * priorRate + holds) / (priorN + holds + breaks)
 ```
 
-`priorRate` and `priorN` are per type, entered as one text input `code:rate:count, ...`
-(defaults 0.5 and 0, so the script starts neutral).
+`priorRate` and `priorN` are per type, entered as one text input `code:rate:count, ...`. A global
+prior weight (default 10 interactions at 0.5) applies to every type not listed, so one lucky touch
+cannot top the ranking; the table shows raw hold rates and the rank uses the weighted rate (D-66).
 
 **Where the counts come from, in plain language (D-23).** The script can only count what is on the
 chart. A 5-minute NQ chart holds about 3.5 months of bars on Premium, so a level type like the
@@ -358,14 +370,13 @@ wider than that many ticks. Your manual habit is a 50-tick stop on MNQ; a bot th
 later than you do needs more room, so the right number comes out of the backtests (D-45).
 Ladder: the next zones in the bounce direction, skipping any closer than `minTargetDist`.
 
-**BRK (zone fails). Optional, OFF by default, built in M7 (D-50).** The core of this strategy is
-the reversal off a pivot and the trail to the target. A level that price rips through is already
-handled by the ladder, which keeps a running trade alive through it. A standalone break entry only
-matters when we happen to be flat at that moment, so it is a switch for backtest comparison, not
-part of the base product. Your rule: entering straight off a breakout is bad, entering on the
-retest after a break is fine. So the switch means **break, then retest, then enter**; there is no
-immediate breakout entry. Socrates's own go-to at the daily open, daily high and daily low is
-exactly that (D-53). Rules, for when it is on:
+**BRK (zone fails). Switch, ON by default, retest entry only, built in M3 beside REV (D-50, D-66).**
+The core of this strategy is the reversal off a pivot and the trail to the target, and a level that
+price rips through during a trade is handled by the ladder. The standalone break trade covers the
+case where we are flat when a level breaks, which is Socrates's own go-to at the daily open, daily
+high and daily low (D-53), so you turned the switch on to match his method. Your rule stands:
+entering straight off a breakout is bad, entering on the retest after a break is fine. So the
+switch means **break, then retest, then enter**; there is no immediate breakout entry. Rules:
 
 1. A bar closes beyond the zone's far side by at least `breakConfirm`. A wick through does not count.
 2. Optional momentum filter: bar body at least `minBreakBodyATR` execution ATRs.
@@ -610,16 +621,16 @@ an offline study later if we want more (M8).
 | Levels | touchTol | 0.01 / 2 | daily ATR / ticks |
 | Levels | drawRange | 1.0 | daily ATR |
 | Levels | srLevels / srMinTouches / srLookbackDays / srPivotTF | ON / 3 / 10 / 240 | switch / touches / days / minutes |
-| Levels | srPivotLeft, srPivotRight / srUnit, srTicks / srMax | 1, 1 / 0.04, 8 / 12 | bars / daily ATR, ticks / levels |
+| Levels | srPivotLeft, srPivotRight / srUnit, srTicks / srMax | 1, 1 / 0.08, 8 / 12 | bars / daily ATR, ticks / levels |
 | Interaction | breakConfirm | 0.03 / 4 | daily ATR / ticks |
 | Interaction | holdConfirm | 0.10 | daily ATR |
-| Interaction | verdictWindow | 30 | execution bars |
+| Interaction | verdictTF / verdictMinutes | 5 / 150 | minutes |
 | REV | wickRatio / minBarATR | 0.5 / 0.6 | ratio / exec ATR |
 | REV | strongSkip | OFF | |
 | REV | volConfirm / volConfirmMult | ON for Index, OFF elsewhere / 1.0 | switch / multiple of the 20-bar average |
 | REV | stopBuffer (off the level) | 0.03 / 4 | daily ATR / ticks |
 | REV | maxStopTicks | 0 (off) | ticks |
-| BRK | breakTrades (break, retest, enter) | OFF | switch |
+| BRK | breakTrades (break, retest, enter) | ON | switch |
 | BRK | minBreakBodyATR | 0.5 | exec ATR |
 | BRK | retestBars | 6 | execution bars |
 | Filters | minScore | 60 | points |
@@ -635,6 +646,7 @@ an offline study later if we want more (M8).
 | Filters | cooldownMinutes | 12 | minutes |
 | Filters | thinMarket / thinVolumePct | OFF / 40 | percent |
 | Stats | rankGate / minSamples | OFF / 30 | switch / interactions |
+| Stats | priorWeight | 10 | interactions at 0.5 |
 | Manager | stage thresholds | 0.5 / 1.0 / 1.5 | R |
 | Manager | beTicks / beATR | 2 / 0.02 | ticks / exec ATR |
 | Manager | structLookback / structATR / chaseATR | 5 / 0.5 / 2.0 | bars / exec ATR |
@@ -666,11 +678,11 @@ its acceptance list before we move on. Nothing from a later milestone leaks into
 | M0 | This plan, decisions recorded | Answer `docs/DECISIONS.md` |
 | M1 | Level engine as an **indicator**: all labeled level types, custom levels, clusters, labels, fresh / touched state, timezone, profiles | Levels match what you would draw by hand on NQ for 3 sessions. The same script on CL and SI draws sensible levels. No level moves on bar replay. |
 | M2 | SR touch-cluster levels, interaction classifier, stats table | SR levels land where you would draw untagged support and resistance. Table counts change only on bar close. Spot-check 10 touches by eye. |
-| M3 | Reversal setup detector, score, labels, signal alerts (still an indicator); hidden VWAP and 200 EMA hooks at zero weight (D-64) | Signals appear where you would expect reversal trades. Scores read right. One alert per signal. Nothing new on the chart. |
+| M3 | Hidden zone list, reversal and break-retest setup detectors, score, labels, signal alerts (still an indicator); hidden VWAP and 200 EMA hooks at zero weight (D-64, D-66) | Signals appear where you would expect reversal trades. Scores read right. One alert per signal. Nothing new on the chart. |
 | M4 | Strategy v1: entries, initial stop, hard TP1, filters, caps, flatten, costs, bridge JSON checked on a sim account | Backtest runs. Trade list matches the labels. Flat at the profile's flatten time every day. |
 | M5 | Trade manager: staged stops, ladder, soft targets, trailing, partials | Replay 5 trades and confirm every stop move and promotion by hand. |
 | M6 | HTF rejection, bias inputs, score integration, 1-minute trigger mode | Labels show HTF x/4. Bias toggles change scores as expected. |
-| M7 | Flip, break trades as a switch, VWAP / 200 EMA weights set from the backtest split, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. Break trades stay off unless switched on. |
+| M7 | Flip, VWAP / 200 EMA weights set from the backtest split, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. |
 | M8 | Python study for priors (optional) | A priors table produced from real data. |
 
 Repo layout once code starts: `pine/l2l.pine` (the script), `pine/CHANGELOG.md`, `docs/`

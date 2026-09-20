@@ -365,11 +365,32 @@ zone" shortcut for HELD waits for M3's zone list; M2 uses the hold distance alon
 verdict does not use up an instance's one counted interaction. Priors are one text input,
 `code:rate:count, ...`, instead of eighty separate inputs.
 
+### D-66  Break-retest switch ON, zones hidden, M2 review fixes  (DECIDED)
+From the plan review and the first M2 chart (CL 1-minute). Three things you decided:
+1. **Break trades ON by default, retest entry only**, to match Socrates's go-to at the daily open,
+   daily high and daily low. Still never straight off a breakout: break, then retest, then enter.
+   The BRK detector moves from M7 to M3 and is built beside the REV detector, so the level
+   ranking's second half (weak types traded as breaks) is live again. M4 backtests compare
+   REV-only against REV plus BRK.
+2. **Zones stay, hidden.** The chart keeps one line per level. Zones from the cluster tolerance
+   exist only for the stack score and the stop edge, built in M3, never drawn.
+3. **The rest of the plan stands** as reviewed.
+And the M2 fixes from the CL chart, recorded before the code:
+- SR tolerance default 0.08 daily ATR (0.04 found 0 levels from 21 pivots on CL). An SR level is
+  a zone: price at the midpoint of its touches, half the spread as its width, and that width
+  widens the touch band and the break and hold thresholds.
+- Verdicts are judged on closes of a verdict timeframe, default 5 minutes, so the 1-minute and
+  5-minute charts produce the same statistics; the verdict window is 150 minutes instead of 30 bars.
+- A prior weight of 10 interactions at 0.5 for every type so one lucky touch cannot top the
+  ranking. The table shows raw hold rates; the rank uses the weighted rate. Per-type priors override.
+- First M4 backtest runs the base product with every optional filter off (volume confirmation,
+  news blackout, opening blackout, cooldown), then adds them one at a time, each logged.
+
 ---
 
 ## L. New in round 4
 
-### D-50  Break trades are optional, and retest-only  (DECIDED)
+### D-50  Break trades are optional, and retest-only  (DECIDED, revised by D-66: switch ON)
 Your point: the strategy is taking the trade off a pivot and trailing it to the target, so break
 entries do not really fit. Agreed. A level that price rips through is already handled by the target
 ladder, which keeps a running reversal trade alive through the level. A standalone break entry only

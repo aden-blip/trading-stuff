@@ -1,5 +1,13 @@
 # Changelog
 
+## M2 v0.2, 2026-09-20
+
+- SR levels are zones: price at the midpoint of the touches, half the spread as a width that
+  widens the touch band and the break and hold thresholds. SR tolerance default 0.08 daily ATR.
+- Verdicts judged on closes of a verdict timeframe (default 5 minutes) with the window in minutes
+  (default 150), so 1-minute and 5-minute charts agree.
+- Prior weight input (default 10 at 0.5) for the ranking; the table shows raw hold rates.
+
 ## M2 v0.1, 2026-09-20
 
 - Untagged support and resistance (SR): completed bars of the pivot timeframe (4-hour default)
