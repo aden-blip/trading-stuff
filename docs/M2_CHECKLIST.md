@@ -2,7 +2,7 @@
 
 Same install as M1 (`docs/M1_CHECKLIST.md`): copy the raw file from GitHub or the chat paste, replace
 the script in the Pine Editor, confirm the END OF FILE line is present, save, add to chart. The info
-box must read `L2L M2 v0.2`.
+box must read `L2L M2 v0.3` (v0.2 with Break confirm and Hold confirm both set to 0.05 is the same thing).
 
 ## Checks
 

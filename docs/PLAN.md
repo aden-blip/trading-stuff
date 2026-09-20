@@ -285,9 +285,10 @@ States per zone: `IDLE -> TOUCHED -> (HELD | BROKE | NEUTRAL)`.
   came from using the prior bar's close. From above means the zone acts as support; from below
   means resistance.
 - **BROKE.** A bar closes beyond the far side of the zone by at least `breakConfirm`
-  (default 0.03 daily ATR, floor 4 ticks).
+  (default 0.05 daily ATR, floor 4 ticks).
 - **HELD.** Before any BROKE, price closes at least `holdConfirm` away from the zone on the approach
-  side (default 0.10 daily ATR), or reaches the next zone, whichever comes first.
+  side (default 0.05 daily ATR, the same distance as a break so a level with no edge scores near
+  50 %, D-67), or reaches the next zone, whichever comes first.
 - **NEUTRAL.** Neither happens within `verdictWindow` bars (default 30 execution bars). Not counted.
 - Only the **first** interaction per instance counts toward the statistics. Later interactions still
   generate setup events. A NEUTRAL verdict does not use up that one counted interaction.
@@ -622,8 +623,8 @@ an offline study later if we want more (M8).
 | Levels | drawRange | 1.0 | daily ATR |
 | Levels | srLevels / srMinTouches / srLookbackDays / srPivotTF | ON / 3 / 10 / 240 | switch / touches / days / minutes |
 | Levels | srPivotLeft, srPivotRight / srUnit, srTicks / srMax | 1, 1 / 0.08, 8 / 12 | bars / daily ATR, ticks / levels |
-| Interaction | breakConfirm | 0.03 / 4 | daily ATR / ticks |
-| Interaction | holdConfirm | 0.10 | daily ATR |
+| Interaction | breakConfirm | 0.05 / 4 | daily ATR / ticks |
+| Interaction | holdConfirm | 0.05 | daily ATR |
 | Interaction | verdictTF / verdictMinutes | 5 / 150 | minutes |
 | REV | wickRatio / minBarATR | 0.5 / 0.6 | ratio / exec ATR |
 | REV | strongSkip | OFF | |

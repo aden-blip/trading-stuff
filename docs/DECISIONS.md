@@ -139,7 +139,7 @@ Revised after you said the higher-timeframe rejection helps a little but is not 
 a level which already rejected today is a plus. A fresh top-ranked level with no other help scores
 64, so first tests trade on their own.
 
-### D-26  What counts as a hold and a break  (DEFAULT)
+### D-26  What counts as a hold and a break  (DEFAULT, distances revised by D-67)
 **Default:** break = close beyond the zone by 0.03 daily ATR; hold = close 0.10 daily ATR away on
 the approach side or reaching the next zone first; neither within 30 bars = not counted.
 
@@ -385,6 +385,15 @@ And the M2 fixes from the CL chart, recorded before the code:
   ranking. The table shows raw hold rates; the rank uses the weighted rate. Per-type priors override.
 - First M4 backtest runs the base product with every optional filter off (volume confirmation,
   news blackout, opening blackout, cooldown), then adds them one at a time, each logged.
+
+### D-67  Hold and break verdicts use the same distance  (DECIDED)
+From the MNQ 5-minute chart on M2 v0.2: 36 % hold, 64 % break over 2,151 interactions. That split
+was made by the thresholds, not the market: a break needed a close 0.03 daily ATR through the
+level while a hold needed a close 0.10 away, and a coin-flip market "breaks" about three times
+in four under those numbers. Both distances are now 0.05 daily ATR with a 4-tick floor, so a
+level with no edge scores near 50 % and the hold rate reads as the reversal-versus-break odds
+you asked for. The ranking is relative and was never damaged; the raw rates were misleading. The
+BRK setup in M3 gets its own break-confirm input, separate from the verdict distance.
 
 ---
 

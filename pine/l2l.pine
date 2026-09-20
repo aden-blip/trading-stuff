@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 2: Levels, Interaction, Statistics (indicator)  |  M2 v0.2
+//  Level-to-Level (L2L)  |  Milestone 2: Levels, Interaction, Statistics (indicator)  |  M2 v0.3
 //
 //  docs/PLAN.md describes every module. This file holds modules [A], [B] and [C].
 //  Module map for the finished script:
@@ -91,9 +91,9 @@ srTicks      = input.int(8, "SR tolerance floor, ticks", minval = 0, group = gSR
 srMax        = input.int(12, "Most SR levels kept", minval = 1, maxval = 30, group = gSR, tooltip = "When more clusters qualify, the ones with the most touches win.")
 
 gI = "Interaction (verdicts on confirmed bars only)"
-breakUnit     = input.float(0.03, "Break confirm, daily ATR", step = 0.005, minval = 0, group = gI, tooltip = "A close this far beyond the level on the far side means BROKE.")
+breakUnit     = input.float(0.05, "Break confirm, daily ATR", step = 0.005, minval = 0, group = gI, tooltip = "A close this far beyond the level on the far side means BROKE. Same distance as the hold by default, so a level with no edge scores near 50 %.")
 breakTicks    = input.int(4, "Break confirm floor, ticks", minval = 0, group = gI)
-holdUnit      = input.float(0.10, "Hold confirm, daily ATR", step = 0.01, minval = 0, group = gI, tooltip = "A close this far away from the level on the approach side means HELD.")
+holdUnit      = input.float(0.05, "Hold confirm, daily ATR", step = 0.005, minval = 0, group = gI, tooltip = "A close this far away from the level on the approach side means HELD. Keep it equal to the break distance unless you want to bias the verdicts on purpose.")
 holdTicks     = input.int(4, "Hold confirm floor, ticks", minval = 0, group = gI)
 verdictTF     = input.int(5, "Verdict closes on, minutes", minval = 1, maxval = 60, group = gI, tooltip = "HELD and BROKE are judged on closes of this timeframe, so a 1-minute chart gives the same verdicts as a 5-minute chart. On charts at or above it every bar counts.")
 verdictMinutes = input.int(150, "Verdict window, minutes", minval = 5, maxval = 3000, group = gI, tooltip = "A touch with neither outcome inside this long is NEUTRAL and is not counted. 150 minutes is 30 five-minute bars.")
@@ -1053,7 +1053,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M2", "v0.2")
+    f_cell(0, "L2L M2", "v0.3")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1082,5 +1082,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M2 v0.2). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M2 v0.3). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

@@ -1,5 +1,10 @@
 # Changelog
 
+## M2 v0.3, 2026-09-20
+
+- Hold and break verdict distances both default to 0.05 daily ATR (D-67). Settings change only;
+  no other code differs from v0.2.
+
 ## M2 v0.2, 2026-09-20
 
 - SR levels are zones: price at the midpoint of the touches, half the spread as a width that
