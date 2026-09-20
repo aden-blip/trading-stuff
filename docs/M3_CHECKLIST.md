@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.14`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.15`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -43,6 +43,10 @@ comes in M6. The info box must read `L2L M3 v0.14`. Verdict distances are 0.05 a
     level, and the hover box shows E at the level's price. Set Reversal stop to "Beyond the
     rejection wick": SL in the hover box moves to just beyond the rejection candle's wick. Put
     both back to the first option when done.
+15. **Level-type columns.** With the paper trade on, the statistics table shows three more
+    columns, Trades, T1 % and Net, per level type, and the breakdown table three more rows,
+    1 level in the zone, 2 levels, 3 or more. Hover the Trades header for the note: a trade at a
+    stacked zone counts in every member type's row.
 
 ## Report back
 
@@ -55,3 +59,5 @@ comes in M6. The info box must read `L2L M3 v0.14`. Verdict distances are 0.05 a
 - Four breakdown screenshots for D-83: defaults; Reversal entry "Limit at the level after the
   follow-through"; Reversal entry "Limit at the level after the rejection candle"; and, back on
   the default entry, Reversal stop "Beyond the rejection wick".
+- One screenshot with the defaults showing the statistics table's new columns and the breakdown
+  table's stack rows (D-84).

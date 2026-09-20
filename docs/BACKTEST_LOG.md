@@ -70,8 +70,23 @@ box (812 trades, −2759.75). A further run (809 trades, 21 % T1, −2305.75; RE
 BRK 239 / −406.00) arrived with the settings line still showing the default entry and stop, so
 an unidentified setting had changed; set aside until the settings are confirmed.
 
-Changes made before the next session (setting or code, and why): none yet. Runs B, C and D of
-this session decide the Milestone 4 default entry and stop.
+Run E (Reversal entry "Limit at the level after the follow-through", Reversal stop "Beyond the
+rejection wick", confirmed by the settings line): 908 trades, 13 % reached T1, avg T1 +125.00,
+avg stop −25.25, net −3356.75. REV 512 / 12 % / +132.25 / −27.75 / −3028.25; BRK 396 / 14 % /
++117.25 / −22.00 / −328.50. By score: 5/10 or less 142 / 13 % / +59.75; 6/10 281 / 15 % /
+−81.75; 7/10 239 / 12 % / −1650.75; 8/10 or more 246 / 12 % / −1683.75. By session: Asia 163 /
+15 % / −16.75; London 91 / 14 % / −228.25; New York 432 / 14 % / −1634.25; other 222 / 11 % /
+−1477.50. Reading (D-84): the reversal stop halved and the hit rate halved with it; per trade
+the reversals lost 5.9 points instead of 4.5, and 21 % of the stop instead of 7 %. Break trades
+doubled in number because the bot was free more often (unfilled limits, quick stops). Against a
+coin flip (stop ÷ (stop + target)) the reversals sit under it in both geometries, the stacked
+zones well under it and the single levels at it. Runs B, C and D not run; the geometry question
+is answered well enough by A and E.
+
+Changes made before the next session (setting or code, and why): M3 v0.15 splits the paper
+trades by level type (statistics table columns) and by the number of levels in the zone
+(breakdown rows), to see whether a few level types carry the winners (D-84). No trading rule
+changed. M4's default stays the plan's entry and stop.
 
 Screenshots or trade list attached under reference/backtests/<date>/ : not saved; in the chat of
 2026-09-20.

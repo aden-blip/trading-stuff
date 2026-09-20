@@ -678,6 +678,35 @@ off, then on), logged as Session 2 in `docs/BACKTEST_LOG.md`.
    The pattern is strong and the same in both runs, which is why it earns a test now and not a
    rule.
 
+### D-84  The hit rate follows the stop; the raw trigger has no edge; split by level type  (DECIDED)
+Your v0.14 run with the limit entry after the follow-through and the wick stop (Session 3, run
+E): 908 trades, 13 % reached T1, net −3356.75. Reversals 512 trades, 12 %, average gain
++132.25, average loss −27.75, net −3028.25; breaks 396, 14 %, +117.25, −22.00, −328.50. Against
+the baseline the reversal stop halved, from 63 to 28 points, and the hit rate halved with it,
+from 24 % to 12 %. Per trade the reversals lost 5.9 points instead of 4.5, and measured against
+the risk taken, 21 % of the stop per trade instead of 7 %.
+1. **No geometry makes the raw trigger positive.** A trade that flips a coin reaches its target
+   before its stop about stop ÷ (stop + target) of the time. With the baseline geometry that is
+   31 %, and the reversals reached 24 %. With the tight geometry it is 17 %, and they reached
+   12 %. Moving the entry and the stop only trades hit rate for payoff, and both land a little
+   under a coin flip. The switches stay in the script for the M4 tester; they are not the fix.
+2. **Stacked zones are worse than a coin flip, single levels are at it.** Baseline: the 5/10 and
+   6/10 trades, mostly one level, reached the target 24 % of the time against a coin flip of 22
+   to 23 %; the 7/10 and 8/10 trades, two or three levels, reached it 21 to 22 % against 31 to
+   32 %. That ten-point gap is the one real signal in three sessions of tables, and it matches
+   your read of the clusters in the middle of the range: a pile of session opens and mids near
+   the current price is a chop zone, not a pivot.
+3. **Decision, built in M3 v0.15.** Split the paper trades by level type and by how many levels
+   sit in the zone: three columns on the statistics table (paper trades, T1 share and net points
+   per level type, a stacked trade counting in every member's row) and three rows on the
+   breakdown table (1 level, 2 levels, 3 or more). No rule change. If a few types carry the
+   winners, the M4 defaults turn the others off for reversals. If none do, the edge has to come
+   from context the bot does not have yet, the higher-timeframe rejection and bias of M6 and
+   the sweep entry of M7, and M4 is built as the tester for that work, not as a finished
+   strategy.
+4. **M4 default unchanged:** entry at the close of the follow-through candle, stop beyond the
+   zone, the plan's choice, with the entry and stop switches carried over.
+
 ---
 
 ## L. New in round 4

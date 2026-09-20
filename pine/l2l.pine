@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.14
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.15
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -947,7 +947,7 @@ if barstate.isconfirmed and statsDirty
 
 f_statsPos() =>
     statsPos == "Bottom left" ? position.bottom_left : statsPos == "Top left" ? position.top_left : statsPos == "Middle right" ? position.middle_right : position.bottom_right
-var table stats = table.new(f_statsPos(), 6, statsRows + 2, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+var table stats = table.new(f_statsPos(), 9, statsRows + 2, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_scell(int c, int r, string txt, color tc, color bg) =>
     table.cell(stats, c, r, txt, text_color = tc, text_size = size.small, bgcolor = bg, text_halign = c == 0 ? text.align_left : text.align_right)
 
@@ -979,6 +979,10 @@ if barstate.islast
         f_scell(3, 0, "Break %", dim, hdr)
         f_scell(4, 0, "Neutral", dim, hdr)
         f_scell(5, 0, "Rank", dim, hdr)
+        if paperOn
+            table.cell(stats, 6, 0, "Trades", text_color = dim, text_size = size.small, bgcolor = hdr, text_halign = text.align_right, tooltip = "Paper trades whose zone includes this level type (D-84). A trade at a stacked zone counts in every member type's row, so these three columns do not add up to the total.")
+            f_scell(7, 0, "T1 %", dim, hdr)
+            f_scell(8, 0, "Net", dim, hdr)
     if cnt > 0
         int[] ord = array.sort_indices(tyRt, order.descending)
         for r = 0 to cnt - 1
@@ -995,10 +999,17 @@ if barstate.islast
                 f_scell(3, r + 1, str.tostring((1 - hr) * 100, "#.0"), txtc, color.new(color.black, 100))
                 f_scell(4, r + 1, str.tostring(array.get(stNeutral, ty)), dim, color.new(color.black, 100))
                 f_scell(5, r + 1, str.tostring(math.round(pct)), txtc, color.new(color.black, 100))
+                if paperOn
+                    int pn = array.get(tyPN, ty)
+                    int pw = array.get(tyPW, ty)
+                    float pnet = array.get(tyPNet, ty)
+                    f_scell(6, r + 1, pn > 0 ? str.tostring(pn) : "", txtc, color.new(color.black, 100))
+                    f_scell(7, r + 1, pn > 0 ? str.tostring(100.0 * pw / pn, "#") : "", txtc, color.new(color.black, 100))
+                    f_scell(8, r + 1, pn > 0 ? (pnet >= 0 ? "+" : "") + str.tostring(pnet, format.mintick) : "", pnet > 0 ? color.lime : pnet < 0 ? color.orange : txtc, color.new(color.black, 100))
     if showStats
         if cnt < statsRows
             for r = cnt to statsRows - 1
-                for c = 0 to 5
+                for c = 0 to (paperOn ? 8 : 5)
                     f_scell(c, r + 1, "", txtc, color.new(color.black, 100))
         int tot = totH + totB
         f_scell(0, statsRows + 1, "Total", dim, hdr)
@@ -1007,6 +1018,10 @@ if barstate.islast
         f_scell(3, statsRows + 1, tot > 0 ? str.tostring(100.0 * totB / tot, "#.0") : "", txtc, hdr)
         f_scell(4, statsRows + 1, str.tostring(totN), dim, hdr)
         f_scell(5, statsRows + 1, "", txtc, hdr)
+        if paperOn
+            f_scell(6, statsRows + 1, "", txtc, hdr)
+            f_scell(7, statsRows + 1, "", txtc, hdr)
+            f_scell(8, statsRows + 1, "", txtc, hdr)
 
 // ═══════════════════ [D] SETUP DETECTOR and [E] SCORE (M3) ═══════════════════
 // Zones are rebuilt every bar from the enabled levels within the cluster tolerance and are never
@@ -1295,18 +1310,45 @@ var float   ptNet    = 0.0
 var label[] exitLabels = array.new<label>()
 // Breakdown tallies (D-82). Rows 0 to 3: score 5/10 or less, 6/10, 7/10, 8/10 or more.
 // Rows 4 and 5: REV, BRK. Rows 6 to 9: Asia window, London window, New York window, other
-// hours. Every closed trade lands in one row of each group; the exit block adds it.
-var int[]   pbN    = array.new<int>(10, 0)
-var int[]   pbW    = array.new<int>(10, 0)
-var int[]   pbL    = array.new<int>(10, 0)
-var float[] pbWin  = array.new<float>(10, 0.0)
-var float[] pbLoss = array.new<float>(10, 0.0)
-var float[] pbNet  = array.new<float>(10, 0.0)
+// hours. Rows 10 to 12 (D-84): 1 level, 2 levels, 3 or more levels in the zone. Every closed
+// trade lands in one row of each group; the exit block adds it.
+var int[]   pbN    = array.new<int>(13, 0)
+var int[]   pbW    = array.new<int>(13, 0)
+var int[]   pbL    = array.new<int>(13, 0)
+var float[] pbWin  = array.new<float>(13, 0.0)
+var float[] pbLoss = array.new<float>(13, 0.0)
+var float[] pbNet  = array.new<float>(13, 0.0)
 var int     posRowS  = 0
 var int     posRowT  = 4
 var int     posRowH  = 9
+var int     posRowK  = 10
 var int     ptFirstT = na
 var int     ptDays   = 0
+// Per level type (D-84): a trade counts in the row of every level type in its zone, so the
+// statistics table can show which types carry the winners. The zone code ("PDH+P4H") is
+// parsed back into types; HOD and LOD are targets only and are skipped.
+var int[]   tyPN   = array.new<int>(NTYPE, 0)
+var int[]   tyPW   = array.new<int>(NTYPE, 0)
+var float[] tyPNet = array.new<float>(NTYPE, 0.0)
+var int[]   posTypes = array.new<int>()
+f_codeTypes(string code) =>
+    int[] out = array.new<int>()
+    string[] parts = str.split(code, "+")
+    int n = array.size(parts)
+    if n > 0
+        for k = 0 to n - 1
+            string c = array.get(parts, k)
+            int ty = array.indexof(tyCode, c)
+            if ty < 0
+                if str.startswith(c, "SR")
+                    ty := TY_SR
+                else if str.startswith(c, "PV")
+                    ty := TY_PIV
+                else if c != "HOD" and c != "LOD" and c != ""
+                    ty := TY_CUS
+            if ty >= 0 and array.indexof(out, ty) < 0
+                array.push(out, ty)
+    out
 f_pbAdd(int r, float pts, bool win, bool loss) =>
     array.set(pbN, r, array.get(pbN, r) + 1)
     array.set(pbNet, r, array.get(pbNet, r) + pts)
@@ -1347,6 +1389,15 @@ if barstate.isconfirmed and paperOn and posDir != 0
         f_pbAdd(posRowS, pts, tpHit and not stopHit, stopHit)
         f_pbAdd(posRowT, pts, tpHit and not stopHit, stopHit)
         f_pbAdd(posRowH, pts, tpHit and not stopHit, stopHit)
+        f_pbAdd(posRowK, pts, tpHit and not stopHit, stopHit)
+        int npt = array.size(posTypes)
+        if npt > 0
+            for k = 0 to npt - 1
+                int tyk = array.get(posTypes, k)
+                array.set(tyPN, tyk, array.get(tyPN, tyk) + 1)
+                if tpHit and not stopHit
+                    array.set(tyPW, tyk, array.get(tyPW, tyk) + 1)
+                array.set(tyPNet, tyk, array.get(tyPNet, tyk) + pts)
         f_exitMark(px, why + " " + (pts >= 0 ? "+" : "") + str.tostring(pts, format.mintick), pts >= 0)
         if alertsOn
             alert('{"symbol":"' + sym + '","data":"close","event":"EXIT","reason":"' + why + '","level":"' + posCode + '","price":' + str.tostring(px, format.mintick) + ',"points":' + str.tostring(pts, format.mintick) + '}', alert.freq_once_per_bar_close)
@@ -1371,6 +1422,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
     string bestTip   = ""
     bool   sigTaken  = false
     bool   bestLimit = false
+    int    bestStack = 1
     bool diag    = nearMiss != "Off"
     bool diagAll = nearMiss == "Rules and candles"
     bool revLimitOn  = revEntry != "Close of the follow-through candle"
@@ -1419,6 +1471,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         bestSetup := kind
                         bestZone  := -1
                         bestLimit := true
+                        bestStack := array.get(pStack, q)
                         bestEntry := entry
                         bestStop  := stop
                         bestTp1   := tp1
@@ -1516,6 +1569,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 bestDir   := dir
                                 bestSetup := 1
                                 bestZone  := z
+                                bestStack := array.get(zN, z)
                                 bestEntry := entry
                                 bestStop  := stop
                                 bestTp1   := tp1
@@ -1603,6 +1657,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
                 posRowS  := math.min(3, math.max(0, math.round(bestScore / 10.0) - 5))
                 posRowT  := bestSetup == 1 ? 4 : 5
                 posRowH  := inNYS ? 8 : inLondonS ? 7 : inAsiaS ? 6 : 9
+                posRowK  := 9 + math.min(3, math.max(1, bestStack))
+                posTypes := f_codeTypes(bestCode)
                 if na(ptFirstT)
                     ptFirstT := time
                     ptDays   := 1
@@ -1818,7 +1874,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.14")
+    f_cell(0, "L2L M3", "v0.15")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1844,7 +1900,7 @@ if barstate.islast and showInfo
 // and the net points. The header shows the first trade's date and the trading days since.
 f_breakPos() =>
     breakPos == "Middle left" ? position.middle_left : breakPos == "Top left" ? position.top_left : breakPos == "Bottom left" ? position.bottom_left : position.middle_right
-var table pbT = table.new(f_breakPos(), 6, 13, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+var table pbT = table.new(f_breakPos(), 6, 16, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_pcell(int c, int r, string txt, color tc, color bg) =>
     table.cell(pbT, c, r, txt, text_color = tc, text_size = size.small, bgcolor = bg, text_halign = c == 0 ? text.align_left : text.align_right)
 f_pbRow(int r, string name, int n, int nW, int nL, float winPts, float lossPts, float net) =>
@@ -1873,8 +1929,8 @@ if barstate.islast and paperOn and showBreak
         aWin  += array.get(pbWin, r)
         aLoss += array.get(pbLoss, r)
     f_pbRow(2, "All", ptCount, ptWin, ptLoss, aWin, aLoss, ptNet)
-    string[] pbName = array.from("Score 5/10 or less", "Score 6/10", "Score 7/10", "Score 8/10 or more", "REV", "BRK", "Asia window", "London window", "New York window", "Other hours")
-    for r = 0 to 9
+    string[] pbName = array.from("Score 5/10 or less", "Score 6/10", "Score 7/10", "Score 8/10 or more", "REV", "BRK", "Asia window", "London window", "New York window", "Other hours", "1 level in the zone", "2 levels in the zone", "3 or more levels")
+    for r = 0 to 12
         f_pbRow(r + 3, array.get(pbName, r), array.get(pbN, r), array.get(pbW, r), array.get(pbL, r), array.get(pbWin, r), array.get(pbLoss, r), array.get(pbNet, r))
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
@@ -1896,5 +1952,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.14). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.15). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

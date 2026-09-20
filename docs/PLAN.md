@@ -1,6 +1,12 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.24, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.25, 2026-09-20.
+
+Changes in 0.25, paper trades by level type and stack (D-84):
+- The geometry test showed the hit rate following the stop size, both landing a little under a
+  coin flip, with stacked zones well under it and single levels at it. Before M4 the paper
+  trades are split by level type (statistics table columns) and by the number of levels in the
+  zone (breakdown rows). M4's default stays the plan's entry and stop.
 
 Changes in 0.24, reversal entry and stop switches (D-83):
 - The first breakdown shows the hit rate flat at about one in four everywhere and the payoff

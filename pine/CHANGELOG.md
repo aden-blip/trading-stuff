@@ -1,5 +1,12 @@
 # Changelog
 
+## M3 v0.15, 2026-09-20
+
+- Paper trades by level type and by stack (D-84): the statistics table gains three columns
+  while the paper trade is on, Trades, T1 % and Net per level type, a trade at a stacked zone
+  counting in every member type's row; the breakdown table gains three rows, 1 level in the
+  zone, 2 levels, 3 or more. No trading rule changed.
+
 ## M3 v0.14, 2026-09-20
 
 - Reversal entry and stop as test switches (D-83), from the first breakdown: entry at the close
