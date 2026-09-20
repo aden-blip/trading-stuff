@@ -66,7 +66,9 @@ positive, 7/10 and 8/10 negative, Asia positive, London and New York negative, h
 at about one in four or five everywhere.
 
 Issues found (bugs, repainting, alerts, drawing problems): none. The All row matches the info
-box (812 trades, −2759.75).
+box (812 trades, −2759.75). A further run (809 trades, 21 % T1, −2305.75; REV 570 / −1899.75,
+BRK 239 / −406.00) arrived with the settings line still showing the default entry and stop, so
+an unidentified setting had changed; set aside until the settings are confirmed.
 
 Changes made before the next session (setting or code, and why): none yet. Runs B, C and D of
 this session decide the Milestone 4 default entry and stop.
