@@ -1,5 +1,13 @@
 # Changelog
 
+## M3 v0.7, 2026-09-20
+
+- "Explain missed signals" switch (D-74): grey `?` tags on candles where a setup formed but a
+  rule stopped it, with the reason in the hover box (score under the minimum with the breakdown,
+  volume below average, no target or stop too wide, cooldown, a level still forming). The
+  "Rules and candles" option also marks rejection candles with no follow-through and break
+  retests that never filled. Off by default.
+
 ## M3 v0.6, 2026-09-20
 
 - Signal tags show the score out of 10, for example `▲ 8/10` (D-73). The hover box adds the exact

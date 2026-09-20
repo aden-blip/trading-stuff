@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.6
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.7
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -162,6 +162,8 @@ sigDetail   = input.string("Minimal", "Label detail", options = ["Minimal", "Com
 sigCooldownMin = input.int(12, "No repeat signal on a level within, minutes", minval = 0, maxval = 600, group = gSg, tooltip = "After a signal, the same level stays quiet for this long. 12 minutes is about two 5-minute candles. 0 turns it off.")
 alertsOn    = input.bool(true, "Fire alert() on each signal", group = gSg, tooltip = "Create one alert on this indicator with the condition Any alert() function call. The message is the JSON body from the plan.")
 baseQty     = input.int(2, "Contracts in the alert", minval = 1, group = gSg)
+nearMiss    = input.string("Off", "Explain missed signals", options = ["Off", "Rule rejections", "Rules and candles"], group = gSg, tooltip = "Grey ? tags on candles where a trade nearly happened. Hover one to read why it was not a signal. Rule rejections: a setup formed but a rule stopped it (score, volume, target, cooldown, a level still forming). Rules and candles: also rejection candles with no follow-through candle, and breaks whose retest never came.")
+nearKeep    = input.int(150, "Explanation tags kept", minval = 10, maxval = 400, group = gSg)
 
 gGeo = "Geometry (daily-ATR units with tick floors)"
 atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
@@ -1169,6 +1171,16 @@ f_score10(int sc) =>
 f_tip(int sRel, int sStack, int sHist, int sBias, int hk) =>
     "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF 0 (M6)  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk)
 
+// Explanation notes: one per direction per bar, the highest-priority reason wins.
+f_nearNote(int[] pri, string[] txt, int dir, int p, string t) =>
+    int k = dir > 0 ? 0 : 1
+    if p > array.get(pri, k)
+        array.set(pri, k, p)
+        array.set(txt, k, t)
+
+f_geomWhy(int t1, float risk, float tp1, float entry, float minTgt, float maxRisk) =>
+    t1 < 0 ? "no target at least " + str.tostring(minTgt, format.mintick) + " away" : risk <= 0 ? "stop sits on the entry" : risk > maxRisk ? "stop " + str.tostring(risk, format.mintick) + " wider than the cap " + str.tostring(maxRisk, format.mintick) : "reward " + str.tostring(math.abs(tp1 - entry) / risk, "#.0") + "R under " + str.tostring(minRR, "#.0") + "R"
+
 f_gateOK(bool isRev, float rk, int rkN) =>
     bool ok = true
     if rankGate and not na(rk) and rkN >= minSamples
@@ -1202,6 +1214,7 @@ f_removePending(int q) =>
     array.remove(pHist, q)
 
 var label[] sigLabels = array.new<label>()
+var label[] nmLabels  = array.new<label>()
 var int revCount = 0
 var int brkCount = 0
 
@@ -1221,6 +1234,10 @@ if barstate.isconfirmed and array.size(zLo) > 0
     float  bestTp2   = na
     string bestCode  = ""
     string bestTip   = ""
+    bool diag    = nearMiss != "Off"
+    bool diagAll = nearMiss == "Rules and candles"
+    int[]    nmPri = array.new<int>(2, -1)
+    string[] nmTxt = array.new<string>(2, "")
     // Resting retest limits: a fill is the BRK signal, a close back through the zone cancels,
     // and the limit expires after retestBars. Walk backwards so removal is safe.
     int npd = array.size(pDir)
@@ -1231,6 +1248,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
             bool filled  = dir > 0 ? low <= lim : high >= lim
             bool failed  = dir > 0 ? close < array.get(pLo, q) : close > array.get(pHi, q)
             bool expired = bar_index - array.get(pBar, q) >= retestBars
+            string whoB = (dir > 0 ? "LONG BRK " : "SHORT BRK ") + array.get(pCode, q)
             if filled
                 float entry = lim
                 float stop  = dir > 0 ? array.get(pLo, q) - stopBuf : array.get(pHi, q) + stopBuf
@@ -1241,10 +1259,19 @@ if barstate.isconfirmed and array.size(zLo) > 0
                 float tp2 = t2 >= 0 ? (dir > 0 ? array.get(zLo, t2) : array.get(zHi, t2)) : na
                 bool geomOK = t1 >= 0 and risk > 0 and risk <= maxRisk and math.abs(tp1 - entry) / risk >= minRR
                 float rk = array.get(pRank, q)
-                if geomOK and f_gateOK(false, rk, array.get(pRankN, q))
+                if not geomOK
+                    if diag
+                        f_nearNote(nmPri, nmTxt, dir, 1, whoB + " not taken: " + f_geomWhy(t1, risk, tp1, entry, minTgt, maxRisk))
+                else if not f_gateOK(false, rk, array.get(pRankN, q))
+                    if diag
+                        f_nearNote(nmPri, nmTxt, dir, 1, whoB + " not taken: rank gate, this level type is in the top half for holding")
+                else
                     int hk = f_hookPoints(dir, false)
                     [sc, sRel, sStack, sHist, sBias] = f_score(rk, false, array.get(pStack, q), array.get(pHist, q), hk)
-                    if sc >= minScore and sc > bestScore
+                    if sc < minScore
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk) + ")")
+                    else if sc > bestScore
                         bestScore := sc
                         bestDir   := dir
                         bestSetup := 2
@@ -1255,13 +1282,18 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         bestTp2   := tp2
                         bestCode  := array.get(pCode, q)
                         bestTip   := f_tip(sRel, sStack, sHist, sBias, hk)
+            else if diagAll and (failed or expired)
+                f_nearNote(nmPri, nmTxt, dir, 0, failed ? whoB + ": price closed back through the level before the retest, order cancelled" : whoB + ": retest order at " + str.tostring(lim, format.mintick) + " not filled within " + str.tostring(retestBars) + " bars, order expired")
             if filled or failed or expired
                 f_removePending(q)
     // Reversal setups: a rejection bar on the previous bar and a follow-through close on this one,
     // or a strong rejection on this bar when strongSkip is on. Volume confirmation per profile.
+    // With explanations on, forming and blocked zones are still checked so a near miss can be noted.
     if revOn
         for z = 0 to nz - 1
-            if array.get(zEntry, z) and not array.get(zBlock, z)
+            bool zOK = array.get(zEntry, z)
+            bool zBl = array.get(zBlock, z)
+            if (zOK and not zBl) or diag
                 float zlo = array.get(zLo, z)
                 float zhi = array.get(zHi, z)
                 for d = 0 to 1
@@ -1269,8 +1301,18 @@ if barstate.isconfirmed and array.size(zLo) > 0
                     [rej1, strong1] = f_rejBar(dir, zlo, zhi, 1)
                     [rej0, strong0] = f_rejBar(dir, zlo, zhi, 0)
                     bool ftOK = dir > 0 ? (close > open and close > zhi) : (close < open and close < zlo)
-                    bool fire = ((rej1 and ftOK) or (strongSkip and rej0 and strong0)) and volOK
-                    if fire
+                    bool pattern = (rej1 and ftOK) or (strongSkip and rej0 and strong0)
+                    string who = (dir > 0 ? "LONG REV " : "SHORT REV ") + array.get(zCode, z)
+                    if pattern and not zOK
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: a level in this zone is still forming, its session is running")
+                    else if pattern and zBl
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: this zone signalled within the last " + str.tostring(sigCooldownMin) + " minutes, or price has not left it since")
+                    else if pattern and not volOK
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: volume " + str.tostring(volAvg > 0 ? volume / volAvg : 0, "#.0") + "x the 20-bar average, needs " + str.tostring(volConfirmMult, "#.0") + "x")
+                    else if pattern
                         float entry = close
                         float stop  = dir > 0 ? zlo - stopBuf : zhi + stopBuf
                         float risk  = math.abs(entry - stop)
@@ -1280,11 +1322,20 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         float tp2 = t2 >= 0 ? (dir > 0 ? array.get(zLo, t2) : array.get(zHi, t2)) : na
                         bool geomOK = t1 >= 0 and risk > 0 and risk <= maxRisk and math.abs(tp1 - entry) / risk >= minRR
                         float rk = array.get(zRank, z)
-                        if geomOK and f_gateOK(true, rk, array.get(zRankN, z))
+                        if not geomOK
+                            if diag
+                                f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: " + f_geomWhy(t1, risk, tp1, entry, minTgt, maxRisk))
+                        else if not f_gateOK(true, rk, array.get(zRankN, z))
+                            if diag
+                                f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: rank gate, this level type is in the bottom half for holding")
+                        else
                             int hist = array.get(zHist, z) == 0 ? 12 : array.get(zHist, z)
                             int hk = f_hookPoints(dir, true)
                             [sc, sRel, sStack, sHist, sBias] = f_score(rk, true, array.get(zN, z), hist, hk)
-                            if sc >= minScore and sc > bestScore
+                            if sc < minScore
+                                if diag
+                                    f_nearNote(nmPri, nmTxt, dir, sc, who + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk) + ")")
+                            else if sc > bestScore
                                 bestScore := sc
                                 bestDir   := dir
                                 bestSetup := 1
@@ -1295,6 +1346,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 bestTp2   := tp2
                                 bestCode  := array.get(zCode, z)
                                 bestTip   := f_tip(sRel, sStack, sHist, sBias, hk)
+                    else if diagAll and rej1 and zOK and not zBl
+                        f_nearNote(nmPri, nmTxt, dir, 0, who + ": rejection candle on the previous bar, but this candle did not follow through, it needs a " + (dir > 0 ? "green close above " + str.tostring(zhi, format.mintick) : "red close below " + str.tostring(zlo, format.mintick)))
     // New breaks: a close through a zone by the break distance, from the other side, with enough
     // body, rests a retest limit at the broken edge.
     if brkOn
@@ -1366,6 +1419,14 @@ if barstate.isconfirmed and array.size(zLo) > 0
                 if sl >= 0
                     array.set(lvSigBlock, sl, true)
                     array.set(lvSigBar, sl, bar_index)
+    // Explanation tags: one per direction on bars where a setup formed but no signal came.
+    if diag
+        for k = 0 to 1
+            int nd = k == 0 ? 1 : -1
+            if array.get(nmPri, k) >= 0 and not (bestScore >= 0 and bestDir == nd)
+                array.push(nmLabels, label.new(bar_index, nd > 0 ? low : high, "?", xloc = xloc.bar_index, style = nd > 0 ? label.style_label_up : label.style_label_down, color = color.new(color.gray, 30), textcolor = color.white, size = size.tiny, tooltip = array.get(nmTxt, k)))
+                if array.size(nmLabels) > nearKeep
+                    label.delete(array.shift(nmLabels))
     // Re-arm signal blocks once a whole bar trades clear of the level's band.
     for i = 0 to NTOT - 1
         if array.get(lvSigBlock, i)
@@ -1556,7 +1617,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.6")
+    f_cell(0, "L2L M3", "v0.7")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1587,5 +1648,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.6). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.7). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

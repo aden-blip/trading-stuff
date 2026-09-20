@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.6`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.7`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -24,6 +24,9 @@ comes in M6. The info box must read `L2L M3 v0.6`. Verdict distances are 0.05 an
 8. **Replay.** Bar replay: labels appear on the bar after the follow-through closes and never
    move or vanish.
 9. **CL and SIL.** Signals appear at levels, no errors, volume confirmation off automatically.
+10. **Explanations.** Settings, Signals, set "Explain missed signals" to "Rule rejections". Grey
+    `?` tags appear on some candles; hover one and the box says which trade nearly happened and
+    the rule that stopped it. Set it back to Off when you are done reviewing.
 
 ## Report back
 

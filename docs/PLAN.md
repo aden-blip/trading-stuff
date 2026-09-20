@@ -1,6 +1,10 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.16, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.17, 2026-09-20.
+
+Changes in 0.17, first manual-versus-script comparison (D-74):
+- "Explain missed signals" mode: grey `?` tags with the rule that stopped a setup. Findings from
+  the review recorded in D-74; open question on 5-minute swing levels as a level type.
 
 Changes in 0.16, score display (D-73):
 - Signal tags show the score out of 10, for example `▲ 8/10`; the hover box adds the exact 0 to

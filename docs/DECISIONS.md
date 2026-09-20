@@ -456,6 +456,30 @@ point (76 becomes 8/10, 64 becomes 6/10). The hover box shows both, for example
 `LONG REV PDH  8/10 (76 of 100)`. The alert message keeps the 0 to 100 number for the bridge.
 With the minimum at 60, tags read 6/10 to 10/10.
 
+### D-74  First manual-versus-script comparison, MNQ 18 Sep  (DECIDED, one item OPEN)
+You marked seven trades you would have taken by hand on Friday 18 September (MNQ 5-minute);
+the script signalled four that day and only one of them was on your list (the short at London
+Low / London Open, 08:35 CT [09:35 NY]). The other six fall into four groups.
+1. **Entries in the direction of a move with no retest and no rejection candle** (long at the
+   Daily Open about 22:30 CT [23:30 NY] as price climbed through it; long at the Midnight Open
+   about 23:25 CT [00:25 NY] out of a tight pause before the jump). The strategy never takes
+   these: a break trade needs the retest (D-23, D-66) and a reversal trade needs the rejection
+   candle plus follow-through (plan 4.4). Unchanged by design.
+2. **Sweep and reclaim** (long at the Asia Open about 11:35 CT [12:35 NY] after the dip to the
+   NY Low; short at the London High / NY High about 15:30 CT [16:30 NY] after price had closed
+   above the London High for half an hour). Price arrived from the wrong side, so the reversal
+   rule cannot fire. This is the sweep-reclaim-retest entry planned for M7. Also the NY High and
+   NY Low are still forming during the New York session, so they are targets only (plan 4.1).
+3. **A level the script does not know**: both shorts at 29,895, your own line on a 5-minute swing
+   low from the 00:15 CT [01:15 NY] pause. The script builds key levels and 4-hour pivot lines
+   only. Workaround now: type it into "Custom levels" (for example `29895.5:SW`) and it gets every
+   rule. **OPEN:** whether to add 5-minute swing levels as a level type. It would add many lines;
+   Socrates draws his untagged lines on the 4-hour chart.
+4. **Close calls that depend on the score or the volume rule** cannot be settled by eye, so the
+   script now explains itself: "Explain missed signals" puts a grey `?` on any candle where a
+   setup formed but a rule stopped it, with the reason in the hover box. Off by default; turn
+   it on for reviews. Built in M3 v0.7.
+
 ---
 
 ## L. New in round 4
