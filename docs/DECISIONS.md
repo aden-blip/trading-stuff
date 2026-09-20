@@ -456,29 +456,60 @@ point (76 becomes 8/10, 64 becomes 6/10). The hover box shows both, for example
 `LONG REV PDH  8/10 (76 of 100)`. The alert message keeps the 0 to 100 number for the bridge.
 With the minimum at 60, tags read 6/10 to 10/10.
 
-### D-74  First manual-versus-script comparison, MNQ 18 Sep  (DECIDED, one item OPEN)
-You marked seven trades you would have taken by hand on Friday 18 September (MNQ 5-minute);
-the script signalled four that day and only one of them was on your list (the short at London
-Low / London Open, 08:35 CT [09:35 NY]). The other six fall into four groups.
+### D-74  First manual-versus-script comparison, MNQ 18 Sep  (DECIDED, corrected in round 2)
+You marked seven boxes on Friday 18 September (MNQ 5-minute): six trades you would have taken by
+hand and one plan for the Sunday open. The script signalled four that day and only one of them
+was on your list (the short at London Low / London Open, 08:35 CT [09:35 NY]). The other five
+fall into four groups; item 5 is the plan.
 1. **Entries in the direction of a move with no retest and no rejection candle** (long at the
    Daily Open about 22:30 CT [23:30 NY] as price climbed through it; long at the Midnight Open
    about 23:25 CT [00:25 NY] out of a tight pause before the jump). The strategy never takes
    these: a break trade needs the retest (D-23, D-66) and a reversal trade needs the rejection
-   candle plus follow-through (plan 4.4). Unchanged by design.
-2. **Sweep and reclaim** (long at the Asia Open about 11:35 CT [12:35 NY] after the dip to the
-   NY Low; short at the London High / NY High about 15:30 CT [16:30 NY] after price had closed
-   above the London High for half an hour). Price arrived from the wrong side, so the reversal
-   rule cannot fire. This is the sweep-reclaim-retest entry planned for M7. Also the NY High and
-   NY Low are still forming during the New York session, so they are targets only (plan 4.1).
-3. **A level the script does not know**: both shorts at 29,895, your own line on a 5-minute swing
-   low from the 00:15 CT [01:15 NY] pause. The script builds key levels and 4-hour pivot lines
-   only. Workaround now: type it into "Custom levels" (for example `29895.5:SW`) and it gets every
-   rule. **OPEN:** whether to add 5-minute swing levels as a level type. It would add many lines;
-   Socrates draws his untagged lines on the 4-hour chart.
+   candle plus follow-through (plan 4.4). Unchanged by design. Round 2, your question whether a
+   switch was off: no. Break trades are ON by default in every M3 version and you had not touched
+   settings; the entry did not come because the pullback to the broken level never arrived
+   inside the retest window. The strong-rejection switch (OFF) only concerns reversal candles
+   and would not have changed this.
+2. **Sweep and reclaim** (long at the Asia Open about 11:35 CT [12:35 NY] after the three-candle
+   dip below it). Price arrived from the wrong side, so the reversal rule cannot fire. This is
+   the sweep-reclaim-retest entry planned for M7. The NY Low under that dip was still forming
+   during the New York session, so it was a target only (plan 4.1). Round 2, your reading: those
+   three 5-minute candles are one wick on the 15-minute, price came back quickly, and the
+   1-minute would have given the entry, after which the trailing stop rides the move. Agreed;
+   that is now the M7 sweep definition (D-76).
+3. **A level the script does not know**: both shorts at 29,895, a 4-hour pivot you marked by
+   hand. The SR finder keeps only 4-hour pivots with 3 or more touches inside 10 days, so a
+   single swing is not found. Resolved by D-75: your hand-drawn pivots go into the settings as
+   prices and get every rule. The earlier question about 5-minute swing levels is closed, not
+   needed.
 4. **Close calls that depend on the score or the volume rule** cannot be settled by eye, so the
    script now explains itself: "Explain missed signals" puts a grey `?` on any candle where a
    setup formed but a rule stopped it, with the reason in the hover box. Off by default; turn
    it on for reviews. Built in M3 v0.7.
+5. **A plan, not a miss**: the short box at the NY High / London High sits to the right of
+   Friday's last candle. It is your plan for the Sunday open if there is no gap or big news.
+   Nothing to check until it trades. One thing to watch there: the volume rule compares a
+   candle with the average of the previous 20, which at the Sunday open are Friday's last hour,
+   so a thin Sunday-evening candle can fail it and get a grey tag saying volume.
+
+### D-75  My pivots: hand-drawn higher-timeframe pivots as inputs  (DECIDED)
+Your ask: when you draw a pivot line on a higher timeframe, the indicator should be able to use
+it. A script cannot read chart drawings, so the closest thing is ten price boxes in the settings
+("My pivots"). Each price becomes a level of type PIV: it joins zones, counts toward the stack,
+gets its own hold-rate row in the statistics table, and can give reversal and break signals and
+grey tags. Pink lines tagged Pivot 1 to Pivot 10, starting at today's open; 0 means empty.
+Custom levels (POC, VAH, options) stay a separate type so the two hold rates are not mixed. To
+catch more pivots automatically, "Touches needed" under SR can be lowered from 3 to 2. Built in
+M3 v0.8.
+
+### D-76  Sweep definition for M7: a higher-timeframe wick  (DECIDED)
+Your reasoning on the Asia Open long: three 5-minute candles below the level are one wick on the
+15-minute, price came back quickly, and the 1-minute gave the entry. So the M7 sweep-reclaim
+entry is defined as: price closes beyond a level for up to `sweepBars` chart candles (default 3
+on the 5-minute, one 15-minute candle), then closes back through it. That reclaim candle is the
+rejection candle; the entry comes from the 1-minute trigger (M6) or the follow-through candle.
+Open for M7: whether such a short excursion should count as HELD rather than BROKE in the
+statistics. Order unchanged: M4 backtests first, then M5, M6, M7.
 
 ---
 

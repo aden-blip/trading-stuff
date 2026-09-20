@@ -1,7 +1,7 @@
 # M3 checklist: setups, score, signals
 
 Same install as before. Use the **5-minute** chart for signals (D-21); the 1-minute trigger mode
-comes in M6. The info box must read `L2L M3 v0.7`. Verdict distances are 0.05 and 0.05.
+comes in M6. The info box must read `L2L M3 v0.8`. Verdict distances are 0.05 and 0.05.
 
 ## Checks
 
@@ -27,6 +27,9 @@ comes in M6. The info box must read `L2L M3 v0.7`. Verdict distances are 0.05 an
 10. **Explanations.** Settings, Signals, set "Explain missed signals" to "Rule rejections". Grey
     `?` tags appear on some candles; hover one and the box says which trade nearly happened and
     the rule that stopped it. Set it back to Off when you are done reviewing.
+11. **My pivots.** Settings, My pivots, type `29895.5` into Pivot 1. A pink line appears with the
+    tag Pivot 1, the info box row My pivots reads 1 of 10, and after its first test the
+    statistics table gets a PIV row.
 
 ## Report back
 

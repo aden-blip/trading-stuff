@@ -1,5 +1,14 @@
 # Changelog
 
+## M3 v0.8, 2026-09-20
+
+- "My pivots": ten price boxes in the settings for pivot lines you draw by hand on a higher
+  timeframe (D-75). Each is a level with every rule: zones, stack, its own hold-rate row (PIV),
+  reversal and break signals, explanation tags. Pink lines tagged Pivot 1 to 10; 0 means empty.
+  Info box row "My pivots".
+- D-74 corrected from your notes: 29,895 was a 4-hour pivot you marked by hand, and the NY High
+  short box is a plan for the Sunday open, not a Friday trade. Break trades were never off.
+
 ## M3 v0.7, 2026-09-20
 
 - "Explain missed signals" switch (D-74): grey `?` tags on candles where a setup formed but a

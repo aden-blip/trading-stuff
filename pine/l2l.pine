@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.7
+//  Level-to-Level (L2L)  |  Milestone 3: Setups and Score (indicator)  |  M3 v0.8
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [E].
 //  Module map for the finished script:
@@ -78,6 +78,19 @@ nOpenOn  = input.bool(true, "NY Open", group = gSe, inline = "s3")
 gCu = "Custom levels"
 onCustom  = input.bool(true, "Show custom levels", group = gCu)
 customTxt = input.string("", "Custom levels", group = gCu, tooltip = "Comma separated, up to 20. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
+
+gPv = "My pivots (lines you drew on a higher timeframe)"
+pivOn = input.bool(true, "Use my pivots", group = gPv, tooltip = "Type the price of each pivot line you drew by hand, for example on the 4-hour chart. Each becomes a level with every rule: it joins zones, counts toward the stack, gets its own hold-rate row (PIV) in the statistics table, and can give reversal and break signals. 0 means empty. Retype them when you redraw your lines.")
+piv1  = input.price(0.0, "Pivot 1", group = gPv, inline = "pv1")
+piv2  = input.price(0.0, "Pivot 2", group = gPv, inline = "pv1")
+piv3  = input.price(0.0, "Pivot 3", group = gPv, inline = "pv2")
+piv4  = input.price(0.0, "Pivot 4", group = gPv, inline = "pv2")
+piv5  = input.price(0.0, "Pivot 5", group = gPv, inline = "pv3")
+piv6  = input.price(0.0, "Pivot 6", group = gPv, inline = "pv3")
+piv7  = input.price(0.0, "Pivot 7", group = gPv, inline = "pv4")
+piv8  = input.price(0.0, "Pivot 8", group = gPv, inline = "pv4")
+piv9  = input.price(0.0, "Pivot 9", group = gPv, inline = "pv5")
+piv10 = input.price(0.0, "Pivot 10", group = gPv, inline = "pv5")
 
 gSR = "Untagged support and resistance (SR)"
 srOn         = input.bool(true, "Find SR levels from higher-timeframe pivots", group = gSR, tooltip = "The untagged lines Socrates draws on the 4-hour chart: prices where the market pivoted more than once. A pivot is a bar whose high (or low) beats its neighbours on the pivot timeframe. Pivots within the SR tolerance of each other are touches of one level, and a level needs the touch count below inside the lookback.")
@@ -208,6 +221,7 @@ colLondon  = input.color(color.rgb(76, 175, 80), "London", group = gD, inline = 
 colNY      = input.color(color.rgb(3, 169, 244), "New York", group = gD, inline = "c3")
 colCustom  = input.color(color.rgb(255, 255, 255), "Custom", group = gD, inline = "c4")
 colSR      = input.color(color.rgb(0, 229, 255), "SR", group = gD, inline = "c4")
+colPiv     = input.color(color.rgb(255, 64, 129), "Pivots", group = gD, inline = "c4")
 
 // ───────────────────────────── [A1] PROFILE ─────────────────────────────
 string root    = syminfo.root
@@ -432,30 +446,34 @@ int   mnhSB = monLive ? monRunHb : mnhB
 int   mnlSB = monLive ? monRunLb : mnlB
 
 // ───────────────────── [A5] LEVEL TABLE AND FRESH STATE ─────────────────────
-// One slot table for every level: 38 labeled slots, then custom slots, then SR slots. A slot keeps
-// its touched flag and its interaction state from bar to bar. A new value in a slot is a new level
-// instance and resets both.
+// One slot table for every level: 38 labeled slots, then custom slots, SR slots and the owner's
+// hand-typed pivots. A slot keeps its touched flag and its interaction state from bar to bar. A new
+// value in a slot is a new level instance and resets both.
 int NLAB   = 38
 int NCUS   = 20
 int NSR    = 30
+int NPIV   = 10
 int CUS0   = NLAB
 int SR0    = NLAB + NCUS
-int NTOT   = SR0 + NSR
+int PIV0   = SR0 + NSR
+int NTOT   = PIV0 + NPIV
 int TY_CUS = 38
 int TY_SR  = 39
-int NTYPE  = 40
+int TY_PIV = 40
+int NTYPE  = 41
 var string[] lvCode = array.from("PDH", "PDL", "PDM", "DO", "MO", "PWH", "PWL", "PWM", "WO", "PMH", "PML", "PMM", "MOO", "PQH", "PQL", "PQM", "QO", "YH", "YL", "YM", "YO", "P4H", "P4L", "P4M", "P4O", "4HO", "MNH", "MNL", "MNM", "AH", "AL", "AO", "LH", "LL", "LO", "NH", "NL", "NO")
 var string[] lvName = array.from("Prev Day High", "Prev Day Low", "Prev Day Mid", "Daily Open", "Midnight Open", "Prev Week High", "Prev Week Low", "Prev Week Mid", "Weekly Open", "Prev Month High", "Prev Month Low", "Prev Month Mid", "Monthly Open", "Prev Quarter High", "Prev Quarter Low", "Prev Quarter Mid", "Quarterly Open", "Year High", "Year Low", "Year Mid", "Yearly Open", "Prev 4H High", "Prev 4H Low", "Prev 4H Mid", "Prev 4H Open", "4H Open", "Monday High", "Monday Low", "Monday Mid", "Asia High", "Asia Low", "Asia Open", "London High", "London Low", "London Open", "NY High", "NY Low", "NY Open")
 var int[]    lvFam  = array.from(0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8)
-// Statistics are kept per level type: the 38 codes, then CUS and SR.
+// Statistics are kept per level type: the 38 codes, then CUS, SR and PIV.
 var string[] tyCode = array.copy(lvCode)
 if barstate.isfirst
     for i = NLAB to NTOT - 1
-        array.push(lvCode, "")
-        array.push(lvName, "")
-        array.push(lvFam, i >= SR0 ? 10 : 9)
+        array.push(lvCode, i >= PIV0 ? "PV" + str.tostring(i - PIV0 + 1) : "")
+        array.push(lvName, i >= PIV0 ? "Pivot " + str.tostring(i - PIV0 + 1) : "")
+        array.push(lvFam, i >= PIV0 ? 11 : i >= SR0 ? 10 : 9)
     array.push(tyCode, "CUS")
     array.push(tyCode, "SR")
+    array.push(tyCode, "PIV")
 var float[] lvVal      = array.new<float>(NTOT, na)
 var int[]   lvAnchor   = array.new<int>(NTOT, 0)
 var bool[]  lvTouched  = array.new<bool>(NTOT, false)
@@ -559,6 +577,13 @@ int ncu = array.size(cuV)
 if ncu > 0
     for k = 0 to ncu - 1
         f_set(CUS0 + k, array.get(cuV, k), dOpenB)
+
+// My pivots: prices typed in from pivot lines drawn by hand on a higher timeframe (D-75). 0 means
+// empty. Their lines start at the current day's open bar, like custom levels.
+var float[] pivV = array.from(piv1, piv2, piv3, piv4, piv5, piv6, piv7, piv8, piv9, piv10)
+for k = 0 to NPIV - 1
+    float pv = array.get(pivV, k)
+    f_set(PIV0 + k, (pivOn and pv > 0) ? pv : na, dOpenB)
 
 // Tolerances in daily-ATR units with tick floors. Early in history, before a daily ATR exists,
 // the last 50 bars' range stands in.
@@ -736,7 +761,7 @@ for i = 0 to NTOT - 1
         array.set(lvTouched, i, true)
 
 // Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter and year, 4 four-hour,
-// 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom, 10 SR.
+// 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom, 10 SR, 11 my pivots.
 f_slotOn(int i) =>
     switch i
         0 => dRangeOn
@@ -777,17 +802,17 @@ f_slotOn(int i) =>
         35 => nRangeOn
         36 => nRangeOn
         37 => nOpenOn
-        => i >= SR0 ? srOn : onCustom
+        => i >= PIV0 ? pivOn : i >= SR0 ? srOn : onCustom
 f_typeOf(int i) =>
-    i >= SR0 ? TY_SR : i >= CUS0 ? TY_CUS : i
+    i >= PIV0 ? TY_PIV : i >= SR0 ? TY_SR : i >= CUS0 ? TY_CUS : i
 f_famColor(int f) =>
-    color c = f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : f == 10 ? colSR : colCustom
+    color c = f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : f == 10 ? colSR : f == 11 ? colPiv : colCustom
     useGlobalColor ? globalColor : c
 f_lineStyle() =>
     lineStyleIn == "Dashed" ? line.style_dashed : lineStyleIn == "Dotted" ? line.style_dotted : line.style_solid
 // Which family names a shared tag: the higher timeframe wins.
 f_famRank(int f) =>
-    f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 10 ? 6 : f == 9 ? 7 : 8
+    f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 10 ? 6 : f == 11 ? 7 : f == 9 ? 8 : 9
 f_labelSize() =>
     labelSizeIn == "tiny" ? size.tiny : labelSizeIn == "small" ? size.small : labelSizeIn == "normal" ? size.normal : size.large
 
@@ -1528,12 +1553,12 @@ if barstate.islast
         float v = array.get(lvVal, i)
         bool near = not limitRange or math.abs(v - close) <= drawRange * unit
         if not na(v) and f_slotOn(i) and near
-            bool isCustom = i >= CUS0 and i < SR0
+            bool isManual = (i >= CUS0 and i < SR0) or i >= PIV0
             array.push(px, v)
             array.push(cd, useShort ? array.get(lvCode, i) : array.get(lvName, i))
             array.push(fm, array.get(lvFam, i))
             array.push(tc, array.get(lvTouched, i))
-            array.push(an, isCustom ? dOpenB : array.get(lvAnchor, i))
+            array.push(an, isManual ? dOpenB : array.get(lvAnchor, i))
     int n = array.size(px)
     levelsDrawn := n
     if n > 0
@@ -1612,12 +1637,12 @@ if barstate.islast
             f_drawLabel(array.get(gPrice, gi), array.get(gShow, gi), array.get(gFam, gi), xEnd)
 
 // ───────────────────────────── [A7] INFO BOX ─────────────────────────────
-var table info = table.new(position.top_right, 2, 11, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+var table info = table.new(position.top_right, 2, 12, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
 f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M3", "v0.7")
+    f_cell(0, "L2L M3", "v0.8")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -1628,6 +1653,11 @@ if barstate.islast and showInfo
     f_cell(8, "Interactions", str.tostring(countedTotal) + " counted, " + str.tostring(touchCount) + " touches")
     f_cell(9, "Zones", str.tostring(array.size(zLo)) + " hidden")
     f_cell(10, "Signals", str.tostring(revCount) + " REV, " + str.tostring(brkCount) + " BRK")
+    int pivCount = 0
+    for k = 0 to NPIV - 1
+        if not na(array.get(lvVal, PIV0 + k))
+            pivCount += 1
+    f_cell(11, "My pivots", str.tostring(pivCount) + " of " + str.tostring(NPIV))
 
 // ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
 plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
@@ -1648,5 +1678,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M3 v0.7). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M3 v0.8). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

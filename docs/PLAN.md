@@ -1,6 +1,12 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.17, 2026-09-20.
+Status: BUILDING. Milestone 3 in review. Version 0.18, 2026-09-20.
+
+Changes in 0.18, hand-drawn pivots and the M7 sweep definition (D-75, D-76):
+- "My pivots": ten price boxes for pivot lines drawn by hand; level type PIV with its own hold
+  rate. M7 sweep defined as a higher-timeframe wick: up to 3 chart candles beyond the level,
+  then a close back. D-74 corrected: 29,895 was a hand-marked 4-hour pivot; the NY High short was
+  a plan for Sunday.
 
 Changes in 0.17, first manual-versus-script comparison (D-74):
 - "Explain missed signals" mode: grey `?` tags with the rule that stopped a setup. Findings from
@@ -241,6 +247,7 @@ Level types. Each has a short code used on labels and in the stats table.
 | LH / LL / LO | London session high / low / open | chart bars + session window | per session |
 | NH / NL / NO | New York (main) session high / low / open, per instrument profile | chart bars + session window | per session |
 | CUS | Custom levels typed in (options levels, POC, VAH, VAL, anything) | text input | manual |
+| PIV | My pivots: up to ten prices typed in from pivot lines drawn by hand on a higher timeframe (D-75). Entry-eligible like any labeled level, own hold-rate row. | price inputs | manual |
 | SR | Untagged support / resistance: a price where swing highs and lows on the `srPivotTF` chart (default 4-hour, where Socrates draws his "blue lines") have clustered `srMinTouches` or more times within the last `srLookbackDays` days. Entry-eligible like any labeled level; the touch count feeds the stack score, and an SR line that sits on a labeled level makes a stronger zone, which is exactly the alignment he checks on the 1-hour. | 4h pivots, clustered | rolling |
 | STR | Structure swing high / low from 15m pivots. **Targets only**, never entries. | pivots | rolling |
 | HOD / LOD | Today's developing high / low. **Targets only**, never entries. | chart bars | live |
@@ -379,8 +386,11 @@ Two more entry triggers are planned as options, not defaults:
 - **HTF rejection plus 1-minute trigger (M6).** Chart on 1m; the rejection bar is detected on the
   5m or 15m; entry when the first 1m bar after that candle closes in the rejection direction.
   Closest to your manual timing.
-- **Sweep, reclaim, retest (M7).** Price wicks through the zone, closes back inside, then a limit
-  order rests at the zone edge for `retestBars` bars. This is the Socrates-style entry.
+- **Sweep, reclaim, retest (M7).** Price closes beyond the zone for up to `sweepBars` chart
+  candles (default 3 on the 5-minute, one 15-minute candle) and then closes back through it: a
+  higher-timeframe wick (D-76). The reclaim candle is the rejection candle; the entry comes from
+  the 1-minute trigger or the follow-through candle, or a limit at the zone edge for
+  `retestBars` bars. This is the Socrates-style entry.
 
 Stop (D-22): the far edge of the zone plus `stopBuffer`, default 0.03 daily ATR with a 4-tick floor
 (about 9 NQ points on a 300-point ATR day). Options: the rejection bar's extreme, or the farther of
@@ -703,7 +713,7 @@ its acceptance list before we move on. Nothing from a later milestone leaks into
 | M4 | Strategy v1: entries, initial stop, hard TP1, filters, caps, flatten, costs, bridge JSON checked on a sim account | Backtest runs. Trade list matches the labels. Flat at the profile's flatten time every day. |
 | M5 | Trade manager: staged stops, ladder, soft targets, trailing, partials | Replay 5 trades and confirm every stop move and promotion by hand. |
 | M6 | HTF rejection, bias inputs, score integration, 1-minute trigger mode | Labels show HTF x/4. Bias toggles change scores as expected. |
-| M7 | Flip, VWAP / 200 EMA weights set from the backtest split, sweep-reclaim-retest entry | A flip opens only when the target zone shows a qualifying REV setup. |
+| M7 | Flip, VWAP / 200 EMA weights set from the backtest split, sweep-reclaim-retest entry (sweep = higher-timeframe wick, D-76) | A flip opens only when the target zone shows a qualifying REV setup. |
 | M8 | Python study for priors (optional) | A priors table produced from real data. |
 
 Repo layout once code starts: `pine/l2l.pine` (the script), `pine/CHANGELOG.md`, `docs/`
