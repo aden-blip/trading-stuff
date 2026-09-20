@@ -511,6 +511,27 @@ rejection candle; the entry comes from the 1-minute trigger (M6) or the follow-t
 Open for M7: whether such a short excursion should count as HELD rather than BROKE in the
 statistics. Order unchanged: M4 backtests first, then M5, M6, M7.
 
+### D-77  Alerts, named trade-management alerts, and running unattended  (DECIDED, explained in chat)
+Your three questions after the script is done.
+1. **Alerts tied to signals.** Already there: the indicator fires one alert message per signal.
+   One TradingView alert on the script with the condition "Any alert() function call" catches
+   them all; delivery to the phone app, email and the webhook. Alerts run on TradingView's
+   servers, so the PC can be off. Two chores are yours: re-create the alert after every new paste
+   (an alert keeps running the version it was created on), and make it open-ended (Premium)
+   or it expires after two months.
+2. **Named alerts for trade management.** The M5 trade manager emits one message per event
+   (entry, TP1 reached, stop to break-even, trailing move, partial, exit, flatten, flip), each
+   with the level names and prices. Built two ways so you can pick: the single catch-all alert
+   whose message text names the event, and separate named alert conditions ("L2L: TP1 hit",
+   "L2L: stop moved", and so on) so each event can be its own alert with its own sound.
+3. **Running while away.** The chart and alerts already run on TradingView's servers. Orders
+   need the bridge (D-03, PickMyTrade): the alert goes to its web address and it places, moves and
+   closes the orders at Tradovate. Stops and targets are sent with the entry, so they rest at the
+   broker even if TradingView or the bridge hiccup later. The 15:55 CT flatten and the daily loss
+   limit (D-44) guard an unattended run. Cash account: no rule against it. Prop firms: Apex bans
+   unattended 24/7 bots and allows supervised alert-driven automation; confirm in writing before
+   running live (RESEARCH 4). Set up in M4 on a Tradovate demo account, which costs nothing.
+
 ---
 
 ## L. New in round 4
