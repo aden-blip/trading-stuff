@@ -33,6 +33,58 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 13  (M4 v0.5, defaults on the chart range: tags confirmed, same trades as v0.3)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to 20 Sep 2026, the chart's
+loaded history (the tester's date chip reads "Jun 7, 2026 - Sep 20, 2026" with no DEEP mark;
+the capital chip reads "50K USD"). Not the Deep Backtesting run yet.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 50,000.
+Settings changed from defaults: none (the owner pressed Defaults after the switch tests).
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 769 | 206 won, 26.79 % | 0.864 | -16,929.80 USD, -33.86 %; -22.02 USD a trade | 24,103.40 USD, 44.46 % | 522.55 USD (gross profit 107,645.80 over 206) | 221.27 USD (gross loss 124,575.60 over 563) | not measured |
+
+Identical to session 7 to the cent: gross profit 107,645.80 (215.29 %), gross loss 124,575.60
+(249.15 %), commission load 2.29 %, expectancy -22.02 USD (-0.02 %), outliers 31,194.60 USD
+(62.39 %), largest profit 3,064.80, largest loss 747.20, buy and hold +2.69 %.
+
+By setup / by level type / by session: the tester's new "Profits and losses, by signals" panel
+groups trades by the v0.5 order comment. Five groups named, the rest folded into "Other, 707"
+at -26,056.80 USD (each tag carries the score, so almost every tag is its own group; the panel
+is not a useful breakdown, the export is):
+| Tag | Reading | Net |
+|---|---|---|
+| REV MO+P4M s77 k2 h1x | reversal at the midnight open stacked with the previous 4-hour mid, score 77, history 12 or 15 (cut off), window cut off | +3,064.80 |
+| REV NL s51 k1 h3 ASIA | reversal at the New York low alone, score 51, the level had broken before, Asia | +2,074.80 |
+| REV DO+P4O+P4M s61 k... | reversal at the daily open stacked with the previous 4-hour open and mid, score 61, rest cut off | +1,496.80 |
+| REV 4HO s52 k1 h6 ASIA | reversal at the 4-hour open alone, score 52, level touched before, Asia | +1,343.80 |
+| REV NO+LO s63 k2 h15 NY | reversal at the New York open stacked with the London open, score 63, level had held, New York | +1,146.80 |
+The five sum to 9,127.00 USD, the "five best trades made 9,127" of session 7. All five are
+reversal trades; two are Asia, one New York.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+A confirmation run, nothing else: v0.5 (order comments only) produces the same 769 trades and
+the same figures as v0.3, as it should. The tags reach the tester, so the exported list will
+carry them.
+
+Issues found (bugs, repainting, alerts, drawing problems): none. The run was made on the
+chart range at 50,000 rather than under Deep Backtesting at 500,000, so it is the
+confirmation and not the export run. The tester header's "Script execution" chip shows a
+badge of 2; not investigated, the figures match the earlier run.
+
+Changes made before the next session (setting or code, and why): none. Next: the date chip
+to "Last 365 days" (the chip then shows DEEP), the capital chip to 500,000, then export the
+list of trades and send the file. If the export is not offered under Deep Backtesting, export
+this chart-range run instead (769 trades) and the long sample waits.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 12  (M4 v0.3, switch test 4: stacked zones only, all hours; Last 365 days)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days".

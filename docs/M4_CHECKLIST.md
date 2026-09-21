@@ -34,7 +34,11 @@ box must read `L2L M4 v0.5`. Every filter is off by default: that is the base ru
    are unchanged.
 9. **Export the trade list (v0.5, D-89).** With Deep Backtesting on, the range at its longest
    and the settings at defaults (initial capital 500,000), open the tester's export (the
-   download button in the tester's header) and export the list of trades. Send the file. Each
+   download button in the tester's header) and export the list of trades. Send the file. In the
+   tester's header the date chip picks the range ("Last 365 days" shows a DEEP mark) and the
+   capital chip ("50K USD") sets the initial capital without opening Properties. The tags are
+   confirmed on the chart-range run (session 13): the "Profits and losses, by signals" panel
+   lists them and the figures match v0.3 to the cent. Each
    entry row's Signal column reads like "REV PDH+P4H s72 k2 h12 NY" (setup, zone, score, stack,
    level-history points, window) and each exit row says T1, stop or flat, so one file gives
    the breakdown by every dimension plus each trade's run-up and drawdown.
