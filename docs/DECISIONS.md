@@ -975,6 +975,26 @@ least 3" is 106 trades, +635 (-913, then +1,548).
    skipped signal frees up. It tells whether the count-2 group is break-even on the
    tester, not whether it is a strategy, and it is not needed before the owner's choice.
 
+### D-95  A "Signals only" switch: labels without trades, for watching the chart  (DECIDED)
+The owner asked how to stop the chart showing a trade they are not in: the tester's pretend
+position, its stop line and the "in a long" text, and the fact that no new signal shows while
+that pretend trade runs. M6 v0.2 adds one switch in the Signals group, "Signals only: labels,
+no trades", off by default.
+1. **On:** every setup that passes the entry rules gets its label, and nothing else happens:
+   no order to the Strategy Tester, no paper trade, no stop line, no exit marks, no stage
+   marks and no alerts (an entry alert with no exit alert behind it must never reach a
+   bridge). Setups that would rest a limit order (the limit reversal styles and the break
+   retests) still label at the candle where the order would have filled, so a label sits
+   where a trade would have started. The same-level quiet time and the level re-arm still
+   apply, so a level does not repeat its label; the daily signal cap counts the labels; the
+   daily loss cap cannot apply. Because no pretend trade blocks the next setup, the chart
+   shows more labels than the tester would have traded.
+2. **Off (default):** as before, one trade at a time in step with the tester, and the chart
+   shows the tester's trade while it is open. Backtests run with the switch off; it changes
+   nothing in them.
+3. The M6 measurement (D-94) stands. This is a display convenience for watching the chart or
+   trading by hand, not a change to the rules.
+
 ---
 
 ## L. New in round 4

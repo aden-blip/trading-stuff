@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.1
+//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.2
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -195,6 +195,7 @@ showHookLines  = input.bool(false, "Show VWAP and EMA lines", group = gHk)
 
 gSg = "Signals"
 sigLabelsOn = input.bool(true, "Signal labels", group = gSg)
+sigOnly     = input.bool(false, "Signals only: labels, no trades", group = gSg, tooltip = "On: the script only marks the setups. No order goes to the Strategy Tester, no paper trade is kept, so no stop line, no exit marks and no alerts. Every setup that passes the entry rules gets a label, even while another level's trade would still be running; a level still keeps its quiet time, and the daily signal cap counts the labels (the loss cap cannot apply). Setups that would rest a limit order label at the candle where it would have filled. Off: one trade at a time, in step with the tester, and the chart shows the tester's trade while it is open.")
 sigKeep     = input.int(100, "Labels kept", minval = 10, maxval = 300, group = gSg)
 sigSizeIn   = input.string("normal", "Label size", options = ["tiny", "small", "normal", "large"], group = gSg)
 sigDetail   = input.string("Minimal", "Label detail", options = ["Minimal", "Compact", "Full"], group = gSg, tooltip = "Minimal shows an arrow and the score; everything else is in the hover box. Compact adds the setup and the level. Full prints entry, stop and targets on the tag too.")
@@ -1504,8 +1505,9 @@ f_placePending(int dir, float lim, float zlo, float zhi, string code, int stack,
     array.push(pScore, sc)
     array.push(pTip, tip)
     array.push(pId, id)
-    strategy.entry("E" + str.tostring(id), dir > 0 ? strategy.long : strategy.short, qty = baseQty, limit = lim, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = tag)
-    strategy.exit("X" + str.tostring(id), from_entry = "E" + str.tostring(id), stop = stopPx, limit = tp1, comment_profit = "T1", comment_loss = "stop")
+    if not sigOnly
+        strategy.entry("E" + str.tostring(id), dir > 0 ? strategy.long : strategy.short, qty = baseQty, limit = lim, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = tag)
+        strategy.exit("X" + str.tostring(id), from_entry = "E" + str.tostring(id), stop = stopPx, limit = tp1, comment_profit = "T1", comment_loss = "stop")
 
 var label[] sigLabels = array.new<label>()
 var label[] nmLabels  = array.new<label>()
@@ -2044,14 +2046,16 @@ if barstate.isconfirmed and array.size(zLo) > 0
             array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + " (" + str.tostring(bestScore) + " of 100)\n" + details + "\n" + bestTip))
             if array.size(sigLabels) > sigKeep
                 label.delete(array.shift(sigLabels))
-        if alertsOn
+        if alertsOn and not sigOnly
             string js = '{"symbol":"' + sym + '","data":"' + (bestDir > 0 ? "buy" : "sell") + '","quantity":' + str.tostring(baseQty) + ',"sl":' + str.tostring(bestStop, format.mintick) + ',"event":"ENTRY","setup":"' + setupTxt + '","level":"' + bestCode + '","score":' + str.tostring(bestScore) + ',"entry":' + str.tostring(bestEntry, format.mintick) + ',"tp1":' + str.tostring(bestTp1, format.mintick) + (na(bestTp2) ? "" : ',"tp2":' + str.tostring(bestTp2, format.mintick)) + '}'
             alert(js, alert.freq_once_per_bar_close)
         if bestSetup == 1
             revCount += 1
         else
             brkCount += 1
-        if bestLimit
+        if sigOnly
+            dayTrades += 1
+        if bestLimit and not sigOnly
             // The resting order filled on this candle: the paper position opens at its price now,
             // as the tester's did. A stop or target the rest of the candle's path crossed after
             // the fill counts at the next check.
@@ -2086,7 +2090,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         alert('{"symbol":"' + sym + '","data":"stop","event":"STOP","stage":' + str.tostring(posStage) + ',"level":"' + posCode + '","price":' + str.tostring(posStop, format.mintick) + '}', alert.freq_once_per_bar_close)
                 if stageUp3
                     f_mgrMark(posStop, f_stageWord(posStage) + " " + str.tostring(posStop, format.mintick))
-        else
+        else if not sigOnly
             // Market entry: the tester fills it at the next candle's open, and so does the tally.
             ordSeq += 1
             pendId    := ordSeq
@@ -2333,7 +2337,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M6", "v0.1")
+    f_cell(0, "L2L M6", "v0.2")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2354,7 +2358,7 @@ if barstate.islast and showInfo
         f_cell(13, "Paper points", (ptNet >= 0 ? "+" : "") + str.tostring(ptNet, format.mintick) + (posDir != 0 ? "  (in a " + (posDir > 0 ? "long" : "short") + (posStage > 0 ? ", stage " + str.tostring(posStage) : "") + ")" : ""))
     // The tester's own count and net after costs, for the cross-check with the paper rows.
     float testerPts = syminfo.pointvalue > 0 ? strategy.netprofit / (syminfo.pointvalue * baseQty) : na
-    f_cell(14, "Tester", str.tostring(strategy.closedtrades) + " closed, " + str.tostring(strategy.wintrades) + " won" + (strategy.position_size != 0 ? ", 1 open" : ""))
+    f_cell(14, "Tester", sigOnly ? "signals only, no orders" : (str.tostring(strategy.closedtrades) + " closed, " + str.tostring(strategy.wintrades) + " won" + (strategy.position_size != 0 ? ", 1 open" : "")))
     f_cell(15, "Tester net", str.tostring(strategy.netprofit, "#.##") + " " + syminfo.currency + " (" + (testerPts >= 0 ? "+" : "") + str.tostring(testerPts, format.mintick) + " pts after costs)")
 
 // ───────────────────── [A7b] PAPER BREAKDOWN TABLE (D-82) ─────────────────────
@@ -2415,5 +2419,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M6 v0.1). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M6 v0.2). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

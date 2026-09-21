@@ -1,5 +1,16 @@
 # Changelog
 
+## M6 v0.2, 2026-09-21
+
+- "Signals only: labels, no trades", a switch in the Signals group, off by default (D-95). On,
+  the script marks every setup that passes the entry rules and does nothing else: no order to
+  the Strategy Tester, no paper trade, no stop line, no exit or stage marks, no alerts. Setups
+  that would rest a limit order (the limit reversal styles, the break retests) label at the
+  candle where that order would have filled. The same-level quiet time and the level re-arm
+  still apply; the daily signal cap counts the labels. The info box's Tester row reads
+  "signals only, no orders" while the switch is on. Off, nothing changes: the trades, the
+  tally and the tester are M6 v0.1's. The info box reads v0.2.
+
 ## M6 v0.1, 2026-09-21
 
 - Higher-timeframe rejection (plan 4.8, D-93). For every reversal setup the last completed

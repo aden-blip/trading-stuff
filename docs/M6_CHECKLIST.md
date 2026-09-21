@@ -28,6 +28,21 @@ manager's switch is now OFF by default.
    export said -4,933 on 547 trades for that group; the tester run shows what the freed-up
    slots add. It tells whether the group is break-even, not whether it is a strategy.
 
+## v0.2: the "Signals only" switch
+
+Same paste. The info box must read `L2L M6 v0.2`.
+
+1. **Compiles and runs with the switch off:** the tester shows the same trades as before
+   (Deep Backtesting "Last 365 days" at 500,000: 2,963 trades, net -57,794.60).
+2. **Switch on** (Signals group, "Signals only: labels, no trades"): the entry arrows, the
+   stop line and the "in a long" text go; the Strategy Tester panel shows no trades; the info
+   box's Tester row reads "signals only, no orders"; the signal labels stay, and more of them
+   appear, because no running trade blocks the next setup.
+3. **Switch off again:** the trades come back exactly as in step 1.
+
+Report the first error line if it does not compile, and a screenshot of the chart with the
+switch on.
+
 ## Report back
 
 - Done: the Overview and the exported list of the base run (sessions 18 and 19).
