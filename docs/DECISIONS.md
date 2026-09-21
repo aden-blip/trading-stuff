@@ -775,7 +775,10 @@ buffer's limit (300)"), which the indicator version had accepted, and because th
 before the info box and the tables, all of them were missing. Level lines and their tags are
 placed by time, from a list of one time per candle, so a line still starts at the candle that
 made its level and the longest-line setting keeps its meaning. Signal, exit and explanation
-tags stay on their own candle by count. No trading rule changed.
+tags stay on their own candle by count. No trading rule changed. From v0.4 the strategy
+recalculates on every tick (the tester's "On realtime bar tick" setting), so the drawings
+refresh live as the indicator did instead of only at each candle close; orders and the tally
+are placed on confirmed candles only, so the tester's history is the same either way.
 
 ---
 

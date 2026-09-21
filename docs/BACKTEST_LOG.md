@@ -33,6 +33,50 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 6  (M4 v0.3, the tester trades; cross-check of six trades)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, the chart's loaded history; screenshot of
+17 and 18 Sep with the Sunday 20 Sep evening session at the right edge, 20:33 CT [21:33 NY].
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, set in
+the script.
+Settings changed from defaults: none.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| not measured (order ids reach 1025) | not measured | not measured | not measured | not measured | not measured | not measured | not measured |
+
+The tester's report and the info box were not in the screenshot (taken inside a candle right
+after the paste, before the strategy's first recalculation), so no figures.
+
+By setup: not measured.
+By level type (top 3 and bottom 3 by net P&L): not measured.
+By session (Asia / London / New York) where relevant: not measured.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The tester's own entry and exit marks (E1020 to E1025, two contracts each) land on the tally's
+marks: the exit of trade 1020 on "T1 +183.50" at 12:00 on the 17th; trade 1021 (7/10 long at
+12:05) closed by the flatten at the close; trade 1022 (7/10 short at the 17:00 reopen) out at
+22:20 on "stop −38.00"; trade 1023 (7/10 long at 22:25) held overnight, out at 09:45 on the 18th
+on the −28.00 stop, its first target being the 29,996 zone that the overnight rally never
+reached; trade 1024 (8/10 long) out at 11:45 on "stop −52.25"; trade 1025 (5/10 long at 12:00)
+out at 13:10 on "T1 +76.75". Six trades, six matches in candle and outcome.
+
+Issues found (bugs, repainting, alerts, drawing problems): the level lines, info box and tables
+were absent in the screenshot. A strategy recalculates the live candle only at its close, so a
+paste mid-candle shows none of the last-candle drawings until then. Not confirmed as the cause;
+if v0.4 shows the same, the owner sends the error text from the script's status line.
+
+Changes made before the next session (setting or code, and why): M4 v0.4 recalculates on every
+tick so the drawings refresh live (orders and the tally stay on confirmed candles); the
+tester-net figure uses a plain number format. Next run: the base run with the tester's Overview,
+Performance Summary and the info box Tester and Paper rows, then Deep Backtesting.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 5  (M4 v0.2, first strategy run that drew; the tester made no trades)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to the Sunday 20 Sep evening

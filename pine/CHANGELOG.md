@@ -1,5 +1,14 @@
 # Changelog
 
+## M4 v0.4, 2026-09-21
+
+- The v0.3 run traded, and the tester's marks land on the tally's marks (17 and 18 Sep: six
+  trades, six matches). The strategy now recalculates on every tick, so the level lines, the
+  info box and the tables refresh live as the indicator did; before, a strategy pasted mid-candle
+  showed none of them until that candle closed. Orders and the tally still happen on confirmed
+  candles only, so the backtest is unchanged. The tester-net figure uses a plain number format.
+  The info box reads v0.4.
+
 ## M4 v0.3, 2026-09-21
 
 - The tester made no trades on the v0.2 run (info box: 0 closed) while the paper tally made

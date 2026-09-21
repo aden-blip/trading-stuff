@@ -2,7 +2,7 @@
 
 Same paste as before, but the script is now a strategy: when it is added to the chart,
 TradingView opens the Strategy Tester panel at the bottom. Use the 5-minute MNQ chart. The info
-box must read `L2L M4 v0.3`. Every filter is off by default: that is the base run.
+box must read `L2L M4 v0.4`. Every filter is off by default: that is the base run.
 
 ## Checks
 
