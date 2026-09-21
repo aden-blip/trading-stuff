@@ -57,7 +57,7 @@ def comp(title, fn, order=None, min_n=20):
         if any(len([t for t in trs if fn(t) == k]) >= min_n for _, trs in sets):
             print(f"| {k} | " + " | ".join(cells) + " |")
 
-comp("By exit reason", lambda t: t['exit'], ['T1', 'stop', 'half', 'be', 'flat'])
+comp("By exit reason", lambda t: t['exit'], ['T1', 'stop', 'half', 'be', 'trail', 'flat'])
 comp("By setup", lambda t: t['setup'], ['REV', 'BRK'])
 comp("By direction", lambda t: 'long' if t['dir'] > 0 else 'short', ['long', 'short'])
 comp("By window", lambda t: t['window'], ['ASIA', 'LON', 'NY', 'OTH'])

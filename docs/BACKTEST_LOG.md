@@ -33,6 +33,71 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 16  (M5 v0.1, staged stops, Last 365 days at 500,000; the OFF check and the ON export)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", trades
+21 Sep 2025 to 18 Sep 2026 CT. Files under `reference/backtests/2026-09-21/`:
+`trades_M5v0.1_stages_deep-365d_500k.csv`, `report_M5v0.1_deep-365d.md`, and the trade-by-trade
+comparison with the M4 run `compare_M4_M5v0.1.md` (tool `tools/compare_runs.py`, matching on
+entry time and tag).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000 for the ON run.
+Settings changed from defaults: none for the ON run (manager on, halve the risk at +0.5R,
+breakeven at +1R, cushion 2 ticks or 0.02 execution ATRs). The OFF check was run at 50,000 (the
+owner's report: "about -44k"), which is session 9's M4 figure on that range at that capital
+(-44,558.40, the account hits the margin floor in June), so the switch OFF reproduces M4.
+
+Headline stats (ON):
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 3,926 (M4: 2,963) | 18.24 %, 716 won | 0.802 (M4 0.84) | -65,643.20 USD, -13.13 %; -16.72 a trade (M4 -19.51) | 68,240.00 USD, 13.61 % | 371.64 USD | 103.35 USD | median 4 candles, winners 10, losers 3 |
+
+Gross profit 266,095.80, gross loss 331,739.00, commission load 4.72 %, outliers 110,188.20
+(22.04 %), largest profit 3,064.80, largest loss 734.20, buy and hold +19.96 %. Exits: T1 633
+(+240,569), stop 1,528 (-246,898), half 738 (-77,965, -26 points each), be 932 (-4,713, -5 USD
+each), flat 95 (+23,363). The tester's "breakevens" reads 0 because every scratch carries costs.
+
+By setup: REV 3,140 trades, 20.3 %, PF 0.81, -57,979; BRK 786, 10.1 %, 0.74, -7,664.
+By level type / by session: as the M4 readout, nothing new; the monthly table in the
+comparison file: the manager helped December (-8,413 to -3,757), February (-11,995 to -7,405)
+and July (-18,304 to -12,049) and hurt March, April, May, August.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+1. On the same entries the stages help a little. 2,671 trades appear in both runs (same entry
+   time and tag). As M4 traded them: -52,188. As M5 traded them: -41,836, +10,352. The half
+   stage: 482 exits; 412 of them were M4 stops (saved 39,447), 52 were M4 winners (cost
+   27,492), 18 were flats (cost 2,937): +9,018. The breakeven stage: 611 exits; 445 M4 stops
+   (saved 60,107), 126 M4 winners (cost 52,429), 40 flats (cost 6,344): +1,334, a wash. In
+   all the stages saved 99,554 on losers and gave back 89,202 on winners; the M4 export's
+   ceiling (+59,412) counted only the first half of that.
+2. The extra trades eat it. Scratching early frees the strategy, and it took 1,255 trades the
+   M4 run could not take: -23,807 at -19.0 a trade, the same rate as every other trade (292
+   M4 trades disappeared, worth -5,606). Net: -65,643 against -57,795. The manager makes the
+   same trade about 20 % less bad; the entries lose on average, so more of them is worse.
+3. Where the breakeven stage loses: the entries that ran two stops or more in profit in the
+   M4 run and came back to the entry. 323 of the 611 breakeven exits; M4 made +33,706 on them
+   (110 reached the target, the rest ran and stopped out), M5 scratched all of them. The
+   entries that ran less than two stops before coming back: 264 trades, M4 -34,969, M5
+   scratched. So the breakeven stop pays on the small runs and costs on the big ones, and
+   the missing piece is the third stage of D-32, the trail, which keeps part of a big run
+   instead of giving it all back.
+4. A wait after an exit is not a fix. Trades entered 5 to 15 minutes after the previous exit
+   lose at the same rate as trades entered two hours later (PF 0.82 to 0.83 either way), so a
+   wait only trades less. Not built.
+
+Issues found (bugs, repainting, alerts, drawing problems): none reported; the chart itself
+was not screenshotted, so the navy stop tags and the info box rows are unchecked.
+
+Changes made before the next session (setting or code, and why): D-92. M5 v0.2 adds the
+third stage, the trail (+1.5R: the stop follows the higher of the last confirmed swing and a
+chase stop two execution ATRs behind the close), a "trail" exit tag, and a plotted line of the
+stop in force. Thresholds unchanged. The v0.2 run is judged on the same-entries comparison
+against the M4 file, not on the headline alone.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : saved, see above.
+
+---
+
 ## 2026-09-21  Session 15  (M4 v0.5, the 365-day exported trade list, split in halves)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", trades

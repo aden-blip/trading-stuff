@@ -885,6 +885,33 @@ files under `reference/backtests/2026-09-21/`).
    0.66); the other eight are near flat (-9,008, PF 0.96). The manager is judged on those
    four months as much as on the total.
 
+
+### D-92  The staged stops measured: a fifth less bad per trade, more trades; the trail is next  (DECIDED)
+Session 16, the M5 v0.1 run against the M4 run trade by trade (`tools/compare_runs.py`).
+1. **What the stages did.** On the 2,671 entries both runs took, the stages turned -52,188
+   into -41,836. The half stage is worth +9,018 (412 stops caught for 39,447, 52 winners cut
+   for 27,492); the breakeven stage +1,334 (445 stops caught for 60,107, 126 winners
+   scratched for 52,429). The export's ceiling counted only the catches; the scratched
+   winners cost almost as much.
+2. **Why the headline got worse.** Scratching early frees the strategy for 1,255 more
+   trades, and they lose at the usual -19 a trade: -23,807. The manager changes what a trade
+   costs, not whether the entry has an edge; while the entry loses on average, more trades
+   is worse. A wait after an exit would only trade less (the early re-entries lose at the
+   same rate as the rest) and is not built.
+3. **The trail is the missing stage.** 323 of the 611 breakeven exits were entries that had
+   run two stops or more in profit in the M4 run before coming back: M4 made +33,706 on
+   them, M5 scratched them all. D-32's third stage keeps part of such a run. M5 v0.2 builds
+   it as the plan has it: from +1.5R the stop follows the higher (long) of the last confirmed
+   swing low minus half an execution ATR and the close minus two execution ATRs, only ever
+   tightening, checked every closed candle; exits at it are tagged "trail"; the stop in force
+   is drawn as a line. Stage thresholds and the hard first target stay; the ladder, soft
+   targets and partials (D-33, D-34) wait for the trail's reading.
+4. **How v0.2 is judged.** Not on the headline: on the same-entries comparison against the
+   M4 file (matched net, the transition table) plus the extra trades' cost. If the manager
+   with the trail does not beat the hard-target M4 trades by a clear margin on the same
+   entries, its default goes OFF and the work moves to the entries (M6, the higher-timeframe
+   rejection, D-88).
+
 ---
 
 ## L. New in round 4
