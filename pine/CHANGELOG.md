@@ -1,5 +1,22 @@
 # Changelog
 
+## M5 v0.2, 2026-09-21
+
+- The third stage of D-32, the trail. From one and a half R of run-up on a closed candle the
+  stop follows the higher (for a long) of two prices, re-checked every closed candle: the last
+  confirmed swing low minus half a chart ATR, and the close minus two chart ATRs. A swing low
+  is a candle whose low is lower than the five candles on each side, known once those five
+  have closed, so it never repaints. The stop only ever tightens. Exits at it are tagged
+  "trail" in the tester's list, the exit marks and the EXIT alert; the stage change gets a
+  navy TRAIL tag. Inputs in the Trade manager group: the trail threshold (1.5 R), the swing
+  width (5 candles), the two distances (0.5 and 2.0 chart ATRs).
+- A navy line draws the stop in force while a trade is open, as of each candle's close (switch
+  "Draw the stop in force"), so the stages and the trail can be checked by eye.
+- Why (session 16, D-92): the v0.1 breakeven stage scratched 323 entries that had run two stops
+  or more in profit before coming back; the M4 run made +33,706 on them. The trail is meant to
+  keep part of such a run. Same trades and thresholds otherwise; the info box counts trail
+  exits and reads v0.2.
+
 ## M5 v0.1, 2026-09-21
 
 - The trade manager, first piece (D-32, D-91): the stop moves in stages. R is the distance
