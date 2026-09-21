@@ -193,7 +193,7 @@ def main():
     print(f"Trades: {s['n']}, {first:%Y-%m-%d %H:%M} to {last:%Y-%m-%d %H:%M}, size {qty:g}, {upp:g} USD per point, commission {comm:.2f} a round trip.")
     print(f"Win {s['win']:.2f} %, PF {pf_str(s['pf'])}, net {s['net']:,.2f} USD, {s['avg']:.2f} USD a trade, {s['pts']:.2f} points a trade per contract.")
     print(f"Avg win {s['avgwin']:.2f} USD, avg loss {s['avgloss']:.2f} USD, closed-trade max drawdown {drawdown([t['net'] for t in trs]):,.2f} USD.")
-    stops = [t for t in trs if t["exit"] == "stop"]
+    stops = [t for t in trs if t["exit"] in ("stop", "half", "be")]
     t1s = [t for t in trs if t["exit"] == "T1"]
     if stops:
         print(f"Median stop-out loss {statistics.median(-t['pts'] for t in stops):.1f} points, mean {statistics.mean(-t['pts'] for t in stops):.1f}.")
@@ -202,7 +202,7 @@ def main():
     hold = [t["bars"] for t in trs]
     print(f"Hold: median {statistics.median(hold):.0f} bars, mean {statistics.mean(hold):.1f}; winners median {statistics.median([t['bars'] for t in trs if t['net'] > 0]):.0f}, losers median {statistics.median([t['bars'] for t in trs if t['net'] <= 0]):.0f}.")
 
-    table("By exit reason", group(trs, lambda t: t["exit"]), ["T1", "stop", "flat"])
+    table("By exit reason", group(trs, lambda t: t["exit"]), ["T1", "stop", "half", "be", "flat"])
     table("By setup", group(trs, lambda t: t["setup"]), ["REV", "BRK"])
     table("By direction", group(trs, lambda t: "long" if t["dir"] > 0 else "short"), ["long", "short"])
     table("By window (script's tag)", group(trs, lambda t: t["window"]), ["ASIA", "LON", "NY", "OTH"])

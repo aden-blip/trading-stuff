@@ -1,5 +1,23 @@
 # Changelog
 
+## M5 v0.1, 2026-09-21
+
+- The trade manager, first piece (D-32, D-91): the stop moves in stages. R is the distance
+  from the entry to the first stop. Once a closed candle has run half an R in profit the stop
+  moves halfway to the entry; once it has run a full R the stop moves to the entry plus a
+  cushion (2 ticks or 0.02 execution ATRs, the larger). Each move applies from the next
+  candle, in the paper tally and in the tester alike, so the two keep matching. A resting
+  order's fill candle counts only the path after the fill. Exits at a moved stop are tagged
+  "half" or "be" in the tester's list of trades, in the exit marks and in the EXIT alert; a
+  navy tag marks each stop move on the chart (1/2R or BE) and a STOP alert reports it.
+  Settings group "Trade manager (M5)": the switch (ON; OFF gives the M4 trades), the two R
+  thresholds, the cushion, the marks.
+- Paper tally: an open that gaps through the target or the stop now fills at the open, as the
+  tester fills it (before, the tally used the stop or target price). The info box counts
+  "moved stop" exits in the Paper trades row and shows the stage of an open trade.
+- Not yet: the +1.5R trail, the target ladder with soft targets and promotions, and the
+  partial option (v0.2), so v0.1 measures the two stages alone against the M4 base.
+
 ## M4 v0.5, 2026-09-21
 
 - Order comments for the trade-list export (D-89). Every entry order now carries the trade's

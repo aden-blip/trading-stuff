@@ -856,11 +856,14 @@ files under `reference/backtests/2026-09-21/`).
    only lever with a large upside is the stop that moves after a run-up, and its cost on the
    winners (47 % of them went half a stop against first) can only be measured in the script.
    Ceiling for the D-32 stages, losers exact and winners untouched: +59,412 for the year,
-   positive in both halves. M5 v0.1 builds the stages (D-32) with a manager switch whose OFF
-   position reproduces the M4 trades, and the partial option (D-33); the ladder, soft
-   targets and trail (D-34) follow in v0.2 so each piece is measured on its own. With the
-   manager on, the paper tally cannot mirror the tester and its rows read "n/a"; the tester
-   and its export are the measure (D-89).
+   positive in both halves. M5 v0.1 builds the first two stages of D-32 (half the risk after
+   +0.5R, breakeven plus cushion after +1R) behind a manager switch whose OFF position
+   reproduces the M4 trades; the +1.5R trail, the ladder with soft targets (D-34) and the
+   partial option (D-33) follow in v0.2, so each piece is measured on its own. The paper
+   tally keeps mirroring the tester: both get the same moved stop at the same candle close,
+   and the tally now fills a gapped open at the open as the tester does. Exits at a moved
+   stop carry "half" or "be" in the export, so the next trade list shows what each stage
+   did to the losers it was meant to catch and to the winners it scratches.
 2. **D-90 point 2 is withdrawn.** The "held today" tag is usually set by the rejection candle
    of the very trade (verdicts are judged on 5-minute closes), so it marks a rejection that
    closed at least the hold distance away from the level, not a second test of the day. A
