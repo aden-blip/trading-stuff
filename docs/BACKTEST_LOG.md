@@ -40,10 +40,9 @@ Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % ma
 contracts, initial capital 500,000 (first run at the test capital).
 Settings changed from defaults: Score group, Reliability 0 and Level history 0 (the stack is
 then the whole score, so single-level zones fall under the minimum and only zones with two or
-more levels trade). Whether the Asia window from session 10 was still ticked is not
-confirmed: 448 trades is below the Asia-only count of 532, while an all-hours stacked-only run
-should land well above 1,000 (stacked zones held 63 % of the 73-day base trades). Treated as
-Asia plus stacked until the owner confirms; the all-hours version is the next run.
+more levels trade). The Asia window from session 10 was still ticked (owner confirmed), so
+this run is Asia plus stacked zones: 448 trades against 532 for Asia alone. The all-hours
+stacked-only run follows as session 12.
 
 Headline stats:
 | Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
@@ -62,9 +61,9 @@ runs so far (base 0.843, Asia 0.841). If the Asia window was on, this says stack
 help inside Asia; the all-hours version decides the stack question. Either way the 73-day
 "two-level zones in the black" reading looks like sample noise, as the Asia one did.
 
-Issues found (bugs, repainting, alerts, drawing problems): the configuration of this run is
-uncertain (above). From here every test report states the trade count and the grey settings
-line, and the Filters top box is off unless the test is about windows.
+Issues found (bugs, repainting, alerts, drawing problems): the run carried the previous
+test's window filter (above). From here every test report states the trade count and the grey
+settings line, and the Filters top box is off unless the test is about windows.
 
 Changes made before the next session (setting or code, and why): none. Next: the same
 weights with the Filters top box off (all hours, stacked only), then fewer levels, stronger
