@@ -33,6 +33,47 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 12  (M4 v0.3, switch test 4: stacked zones only, all hours; Last 365 days)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days".
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000.
+Settings changed from defaults: Score group, Reliability 0 and Level history 0; Filters top
+box off (all hours). Owner confirmed the window filter was off this time.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 2,344 | 628 won, 26.79 % | 0.880 | −33,259.80 USD, −6.65 % of 500,000; −14.19 USD a trade | 44,028.60 USD, 8.71 % | 387.71 USD (gross profit 243,481.40 over 628) | 161.27 USD (gross loss 276,741.20 over 1,716) | not measured |
+
+Commission load 3.08 %. Buy and hold +19.73 %. Outliers 62,115.40 USD. Largest profit
+3,064.80, largest loss 872.20. Payoff 2.4 to 1, break-even near 29 % winners, the run wins
+26.8 %.
+
+By setup / by level type / by session: not measured (Deep Backtesting draws nothing).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The best of the four long-sample runs (0.880 against 0.843 for the base) and still a loser
+at −14 USD a trade. The trade count barely moved (2,344 against 2,510) although single-level
+zones were 37 % of the 73-day base: with the ranking and history weights at zero, stacked
+zones that the old score had rejected for a low rank or a broke-today history now pass, and
+they replace the single-level trades almost one for one. So this is "stacked regardless of
+rank and history", not "the base minus singles", and the gain is within what noise could
+give. The equity curve is flat until March and slides after.
+
+Issues found (bugs, repainting, alerts, drawing problems): none.
+
+Changes made before the next session (setting or code, and why): M4 v0.5 adds order comments
+so the tester's exported trade list carries every trade's setup, zone, score, stack, history
+and window, plus T1 / stop / flat on exits (D-89). Next: paste v0.5, Deep Backtesting at the
+longest range with defaults and capital 500,000, export the trade list, send the file; the
+switch tests pause until that file is read.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 11  (M4 v0.3, switch test 3: stacked zones only; Last 365 days)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days".

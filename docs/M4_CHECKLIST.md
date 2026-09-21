@@ -2,7 +2,7 @@
 
 Same paste as before, but the script is now a strategy: when it is added to the chart,
 TradingView opens the Strategy Tester panel at the bottom. Use the 5-minute MNQ chart. The info
-box must read `L2L M4 v0.4`. Every filter is off by default: that is the base run.
+box must read `L2L M4 v0.5`. Every filter is off by default: that is the base run.
 
 ## Checks
 
@@ -32,6 +32,12 @@ box must read `L2L M4 v0.4`. Every filter is off by default: that is the base ru
    Overview, turn it off. New York only, opening blackout, news blackout, chop band.
 8. **Alerts.** One alert with "Any alert() function call", as before; the ENTRY and EXIT messages
    are unchanged.
+9. **Export the trade list (v0.5, D-89).** With Deep Backtesting on, the range at its longest
+   and the settings at defaults (initial capital 500,000), open the tester's export (the
+   download button in the tester's header) and export the list of trades. Send the file. Each
+   entry row's Signal column reads like "REV PDH+P4H s72 k2 h12 NY" (setup, zone, score, stack,
+   level-history points, window) and each exit row says T1, stop or flat, so one file gives
+   the breakdown by every dimension plus each trade's run-up and drawdown.
 
 ## Report back
 

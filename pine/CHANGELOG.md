@@ -1,5 +1,14 @@
 # Changelog
 
+## M4 v0.5, 2026-09-21
+
+- Order comments for the trade-list export (D-89). Every entry order now carries the trade's
+  setup (REV or BRK), zone code, score, stack, level-history points and session window, for
+  example "REV PDH+P4H s72 k2 h12 NY", and every exit order says T1, stop or flat. The tester's
+  exported trade list of a Deep Backtesting run therefore holds the whole breakdown at once,
+  with each trade's run-up and drawdown, instead of one screenshot per switch. No trading
+  rule changed; the info box reads v0.5.
+
 ## M4 v0.4, 2026-09-21
 
 - The v0.3 run traded, and the tester's marks land on the tally's marks (17 and 18 Sep: six

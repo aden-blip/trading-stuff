@@ -797,6 +797,19 @@ sample with initial capital 500,000 in the Properties tab so no run is cut short
 margin floor; profit factor, trade count and net in USD are compared, and a keeper must hold
 on both halves of the range.
 
+### D-89  The exported trade list is the analysis path  (DECIDED)
+Four long-sample runs (base, Asia only, Asia plus stacked, stacked only) came back with
+profit factors between 0.81 and 0.88, one screenshot each. Slicing by switch is slow and
+answers one question per run. From M4 v0.5 every entry order carries a comment with the
+trade's setup, zone code, score, stack, level-history points and session window, and every
+exit says T1, stop or flat. The tester's export of a Deep Backtesting run then holds every
+trade with those tags plus its run-up and drawdown, and one file answers the whole list:
+expectancy by setup, window, stack, score, history and level type; how far winners and
+losers travel before they resolve, which sets what a partial, a breakeven stop or a tighter
+stop would have done; hold times; hour of day. Switch tests continue only for changes the
+export cannot answer (entry at the level, stop at the wick, the rejection candle rules,
+fewer levels), because those change the trades themselves.
+
 ---
 
 ## L. New in round 4

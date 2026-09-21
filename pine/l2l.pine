@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.4
+//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.5
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -25,7 +25,10 @@
 //  is 100 %, which treats one MNQ contract as 60,000 of cash and rejects every order on a
 //  50,000 account (the v0.2 run: zero tester trades). The script recalculates on every tick
 //  so the lines and tables refresh live as the indicator did; orders and the tally are placed
-//  on confirmed candles only, so the tester's history is the same either way.
+//  on confirmed candles only, so the tester's history is the same either way. Every entry order
+//  carries a comment with the trade's setup, zone, score, stack, level history and session
+//  window, and every exit says T1, stop or flat, so the tester's exported trade list holds the
+//  whole breakdown of a Deep Backtesting run (D-89).
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
@@ -1370,6 +1373,15 @@ f_gateOK(bool isRev, float rk, int rkN) =>
 f_sigSize() =>
     sigSizeIn == "tiny" ? size.tiny : sigSizeIn == "small" ? size.small : sigSizeIn == "normal" ? size.normal : size.large
 
+// ---- Order comments (D-89): the tester's trade list shows an order's comment in its Signal
+// column, so each entry carries the trade's setup, zone code, score, stack, level history
+// points (12 first test, 6 touched, 15 held today, 3 broke today) and session window, and each
+// exit says T1, stop or flat. One export of a Deep Backtesting run then holds the breakdown.
+f_winTag() =>
+    inNYS ? "NY" : inLondonS ? "LON" : inAsiaS ? "ASIA" : "OTH"
+f_tradeTag(bool isRev, string code, int sc, int stack, int hist) =>
+    (isRev ? "REV " : "BRK ") + code + " s" + str.tostring(sc) + " k" + str.tostring(stack) + " h" + str.tostring(hist) + " " + f_winTag()
+
 // ---- Resting limit orders: reversal limits (kind 1) and break retests (kind 2). Geometry,
 // gate, score and filters are checked when the order is placed, as the tester requires, so a
 // fill is the signal. Each order carries its tester id (E1, E2, ...) so it can be cancelled.
@@ -1416,7 +1428,7 @@ f_pendingExists(int dir, float lim) =>
             if array.get(pDir, q) == dir and math.abs(array.get(pLimit, q) - lim) <= clusterTol
                 found := true
     found
-f_placePending(int dir, float lim, float zlo, float zhi, string code, int stack, int kind, float stopPx, float tp1, float tp2, int sc, string tip, int id) =>
+f_placePending(int dir, float lim, float zlo, float zhi, string code, int stack, int kind, float stopPx, float tp1, float tp2, int sc, string tip, int id, string tag) =>
     array.push(pDir, dir)
     array.push(pLimit, lim)
     array.push(pLo, zlo)
@@ -1431,8 +1443,8 @@ f_placePending(int dir, float lim, float zlo, float zhi, string code, int stack,
     array.push(pScore, sc)
     array.push(pTip, tip)
     array.push(pId, id)
-    strategy.entry("E" + str.tostring(id), dir > 0 ? strategy.long : strategy.short, qty = baseQty, limit = lim, oca_name = "L2L", oca_type = strategy.oca.cancel)
-    strategy.exit("X" + str.tostring(id), from_entry = "E" + str.tostring(id), stop = stopPx, limit = tp1)
+    strategy.entry("E" + str.tostring(id), dir > 0 ? strategy.long : strategy.short, qty = baseQty, limit = lim, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = tag)
+    strategy.exit("X" + str.tostring(id), from_entry = "E" + str.tostring(id), stop = stopPx, limit = tp1, comment_profit = "T1", comment_loss = "stop")
 
 var label[] sigLabels = array.new<label>()
 var label[] nmLabels  = array.new<label>()
@@ -1611,6 +1623,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
     bool   fillForce   = false   // the resting order's stop was hit later on its fill candle
     bool   fillForceTp = false   // its target was
     int    bestStack = 1
+    int    bestHist  = 12
     bool diag    = nearMiss != "Off"
     bool diagAll = nearMiss == "Rules and candles"
     bool revLimitOn  = revEntry != "Close of the follow-through candle"
@@ -1784,7 +1797,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 // Rest a limit at the zone's near edge; the fill is the signal (D-83).
                                 if not f_pendingExists(dir, entry)
                                     ordSeq += 1
-                                    f_placePending(dir, entry, zlo, zhi, array.get(zCode, z), array.get(zN, z), 1, stop, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw), ordSeq)
+                                    f_placePending(dir, entry, zlo, zhi, array.get(zCode, z), array.get(zN, z), 1, stop, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw), ordSeq, f_tradeTag(true, array.get(zCode, z), sc, array.get(zN, z), hist))
                             else if sc > bestScore
                                 bestScore := sc
                                 bestDir   := dir
@@ -1792,6 +1805,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 bestZone  := z
                                 bestLimit := false
                                 bestStack := array.get(zN, z)
+                                bestHist  := hist
                                 bestEntry := entry
                                 bestStop  := stop
                                 bestTp1   := tp1
@@ -1844,7 +1858,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                         f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not placed: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw) + ")")
                                 else
                                     ordSeq += 1
-                                    f_placePending(dir, lim, zlo, zhi, array.get(zCode, z), array.get(zN, z), 2, stopB, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw), ordSeq)
+                                    f_placePending(dir, lim, zlo, zhi, array.get(zCode, z), array.get(zN, z), 2, stopB, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw), ordSeq, f_tradeTag(false, array.get(zCode, z), sc, array.get(zN, z), histB))
     // 4. One signal per candle: the fill from step 1, or the best market candidate from step 2.
     if bestScore >= 0
         string dirTxt   = bestDir > 0 ? "LONG" : "SHORT"
@@ -1900,8 +1914,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
             pendScore := bestScore
             pendSetup := bestSetup
             pendStack := bestStack
-            strategy.entry("E" + str.tostring(ordSeq), bestDir > 0 ? strategy.long : strategy.short, qty = baseQty, oca_name = "L2L", oca_type = strategy.oca.cancel)
-            strategy.exit("X" + str.tostring(ordSeq), from_entry = "E" + str.tostring(ordSeq), stop = bestStop, limit = bestTp1)
+            strategy.entry("E" + str.tostring(ordSeq), bestDir > 0 ? strategy.long : strategy.short, qty = baseQty, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = f_tradeTag(bestSetup == 1, bestCode, bestScore, bestStack, bestHist))
+            strategy.exit("X" + str.tostring(ordSeq), from_entry = "E" + str.tostring(ordSeq), stop = bestStop, limit = bestTp1, comment_profit = "T1", comment_loss = "stop")
         f_cancelAllPending()
         int bz = bestZone
         if bz < 0
@@ -2133,7 +2147,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M4", "v0.4")
+    f_cell(0, "L2L M4", "v0.5")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2215,5 +2229,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M4 v0.4). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M4 v0.5). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
