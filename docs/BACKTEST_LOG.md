@@ -33,6 +33,94 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 15  (M4 v0.5, the 365-day exported trade list, split in halves)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", trades
+from 21 Sep 2025 21:25 to 18 Sep 2026 13:50 CT [22:25 NY to 14:50 NY]. 2,963 trades against
+2,510 in session 9: that run at 50,000 hit the margin floor in June, this one at 500,000
+trades the whole year. The trades in the overlap with the chart-range run are not the same
+set (the level ranks accumulate from the start of the data). File and readouts saved under
+`reference/backtests/2026-09-21/` (`trades_M4v0.5_defaults_deep-365d_500k.csv`,
+`report_deep-365d.md`, `compare_365d_halves_summer.md`); the halves split is
+`tools/compare_trade_lists.py`. Halves: to 20 Mar 2026 (1,609 trades) and from 21 Mar
+(1,354).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000.
+Settings changed from defaults: none.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 2,963 | 26.46 % | 0.84 (halves 0.84 and 0.84) | -57,794.60 USD, -11.56 % of 500,000; -19.51 a trade, -4.1 points a trade | 63,245.40 USD closed-trade | 375.81 USD | 161.74 USD | median 6 candles; winners 13, losers 4 |
+
+Exits: 689 at the target (median 89 points), 2,142 at the stop (median 34 points), 132
+flattened (95 in profit, +25,347).
+
+By setup: REV 2,276 trades, 30 %, PF 0.83 (0.83 / 0.82 by half), -54,810; BRK 687, 15 %,
+0.92 (0.86 / 0.99), -2,984.
+By level type: 4-hour open the worst in every sample, 620 trades, PF 0.65 (0.71 / 0.61),
+-27,174; daily open -11,438 (0.77 / 0.67); previous 4-hour high -8,608; London high -8,143;
+Monday mid -8,114; weekly open -7,262; previous week mid -6,701 (PF 0.42); New York open
+-6,847. The 4-hour family -38,401 on 1,539 trades, PF 0.80 in both halves; zones holding a
+4-hour open PF 0.74 in both halves against 0.88 without. Positive in both halves: the New
+York low, +6,047 (1.70 / 1.39). The summer winners (previous 4-hour mid, midnight open) are
+losers or flat over the year.
+By session (Asia / London / New York) where relevant: New York 1,268 trades, PF 0.79
+(0.83 / 0.75), -33,396; Asia 0.90 (0.72 / 0.98), -5,028; London 0.88 (0.90 / 0.85); other
+hours 0.86 (0.86 / 0.87). The summer's Asia edge is gone. By hour, losing in both halves:
+08:00-09:59 CT [09:00-10:59 NY] -20,173; 13:00 -6,653; 17:00-18:59 [18:00-19:59 NY], the
+Globex reopen, -15,034; 21:00 -7,559. Winning in both halves: 04:00, +3,178. Wednesday
+-27,196, PF 0.65 (0.70 / 0.62); the other five days -30,600 between them.
+By level history: h15 -39,998 (PF 0.75 / 0.79), h6 -13,586 (0.69 / 0.84), h3 -3,190
+(1.05 / 0.91), h12 -1,020 (break trades). Correction to session 14: the verdicts are judged
+on 5-minute closes (the "Verdict closes on" input, 5), so the rejection candle itself
+usually records the "held" verdict before the follow-through signal: 989 of the 1,215
+held-tagged reversals were the first trade at their zone that day. The tag mostly says
+whether the rejection candle closed at least the hold distance away from the level (h15) or
+not (h6), or whether the level broke earlier today (h3); it is not "a second test of a level
+that already held". The direct test of that idea: a reversal after a losing trade at the
+same zone earlier that day, 403 trades, PF 0.85, the same as first trades (0.83); after a
+winning trade at the same zone that day, 56 trades, PF 0.49 (0.66 / 0.29), too few to act on.
+By score and by stack: noise, the halves disagree (60s +3,335 then -12,400; 70s -14,983
+then +707; 90s +5,006 then -8,774). Retries within two hours: PF 0.94 against 0.83 for first
+attempts, the summer reading did not hold.
+By month: December -8,413, February -11,995, March -10,075 and July -18,304 carry
+-48,786 (PF 0.66 on 992 trades); the other eight months together -9,008 (PF 0.96 on 1,971).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+1. Stable in every sample: 47 % of losing trades were half a stop in profit first, 26 % a
+   full stop, 17 % one and a half stops (26 / 27 / 27 % at a full stop by sample). The
+   losers that had reached a full stop in profit cost 79,138 USD over the year, more than
+   the whole loss. The other side is just as stable: 47 % of winners went half a stop
+   against first and 18 % a full stop against before winning.
+2. Exact what-ifs in R (the trade's own stop for stop-outs, the month's median stop for the
+   rest): every one is worse. Target at 1R / 1.5R / 2R / 3R: -89,892 / -88,297 / -69,131 /
+   -50,476. Stop at 0.5R / 0.75R: -60,384 / -88,676. One contract off at +0.5R / +1R:
+   -57,244 / -73,843. Ceilings with the losers exact and the winners untouched: the D-32
+   stages (stop to -0.5R after +0.5R, to entry after +1R) +59,412 with a closed-trade
+   drawdown of 6,393, positive in both halves (+24,933 / +34,479); breakeven after +1R
+   +18,358; after +1.5R -16,500. What the stages cost on winners the export cannot show and
+   only the script can measure.
+3. Removal-only filters that hold in both halves make it less bad, not good: no entries
+   08:00-09:59 and 17:00-18:59 -22,587 (PF 0.90; halves 0.82 / 0.97); that plus no zones
+   with a 4-hour open -8,950 (0.95; -10,001 / +1,052); no zones with any 4-hour level
+   -19,394 (0.88 / 0.89). The best of them is break-even in one half and a loser in the
+   other, on half the trades.
+4. Without the ten best trades the year is -73,321; without the fifty best -107,192. 307
+   days traded, 129 positive; the worst 28 Jul -3,448, 29 Jul -3,047, 24 Jun -2,938, 21 Nov
+   -2,901.
+
+Issues found (bugs, repainting, alerts, drawing problems): none in the trades.
+
+Changes made before the next session (setting or code, and why): none to the script. D-91:
+the trade manager (M5) is built next, the level-history switch of D-90 is withdrawn, and the
+hour and level-type filters wait to be re-read on the managed trades.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : the export and both
+readouts are saved under `reference/backtests/2026-09-21/`.
+
+---
+
 ## 2026-09-21  Session 14  (M4 v0.5, the exported trade list of the chart-range run read trade by trade)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 20:25 to 18 Sep 2026 13:45 CT

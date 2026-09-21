@@ -811,7 +811,7 @@ export cannot answer (entry at the level, stop at the wick, the rejection candle
 fewer levels), because those change the trades themselves.
 
 
-### D-90  What the first trade list says: the manager comes first, the level's day history second  (DECIDED)
+### D-90  What the first trade list says: the manager comes first, the level's day history second  (DECIDED; point 2 withdrawn by D-91)
 The 769-trade export of the chart-range run (session 14, tool `tools/trade_list_report.py`,
 file and readout under `reference/backtests/2026-09-21/`) decides the order of work.
 1. **M5, the trade manager, is the next build.** Half the stop-outs had been half a stop in
@@ -844,6 +844,43 @@ file and readout under `reference/backtests/2026-09-21/`) decides the order of w
 4. **Workflow.** Every export is saved under `reference/backtests/<date>/` with the tool's
    readout next to it, and the readout is what the log quotes. The long-sample readout is
    also split into halves (first six months against the last six) before any rule is kept.
+
+
+### D-91  The 365-day list: the manager first, the level-history reading withdrawn, filters wait  (DECIDED)
+The 2,963-trade export of the year (session 15, halves split with `tools/compare_trade_lists.py`,
+files under `reference/backtests/2026-09-21/`).
+1. **M5, the trade manager, is the next build, as the plan has it.** In every sample a
+   quarter of the losing trades had been a full stop in profit before they reversed to the
+   stop, and those trades cost 79,138 USD over the year. Every exact what-if from the file
+   (closer target, tighter stop, one contract off) is worse than the trades as taken; the
+   only lever with a large upside is the stop that moves after a run-up, and its cost on the
+   winners (47 % of them went half a stop against first) can only be measured in the script.
+   Ceiling for the D-32 stages, losers exact and winners untouched: +59,412 for the year,
+   positive in both halves. M5 v0.1 builds the stages (D-32) with a manager switch whose OFF
+   position reproduces the M4 trades, and the partial option (D-33); the ladder, soft
+   targets and trail (D-34) follow in v0.2 so each piece is measured on its own. With the
+   manager on, the paper tally cannot mirror the tester and its rows read "n/a"; the tester
+   and its export are the measure (D-89).
+2. **D-90 point 2 is withdrawn.** The "held today" tag is usually set by the rejection candle
+   of the very trade (verdicts are judged on 5-minute closes), so it marks a rejection that
+   closed at least the hold distance away from the level, not a second test of the day. A
+   reversal after a losing trade at the same zone earlier in the day performs like a first
+   trade. No "one reversal per level per day" switch is built. The history points in the
+   score stay as they are until the score is revisited with M6.
+3. **Filters that hold in both halves are recorded, not applied.** No entries in the two
+   hours after the cash open and the two hours after the 17:00 CT [18:00 NY] reopen, and no
+   zones with a 4-hour open, take the year from -57,795 to -8,950 by removal alone, break-even
+   in one half and a loser in the other, on half the trades. Wednesday loses in every sample
+   without a mechanism beyond news. The New York low is the one level positive in both
+   halves. None of this changes a default now: the manager changes what every slice is
+   worth, so the filters are re-read on the managed trades, through the existing switches
+   (opening blackout, news blackout with 1700 listed, the 4-hour Open and Prev Open boxes).
+4. **Noise, recorded so it is not re-asked:** score buckets, stack size, session windows
+   (Asia in particular), retries within two hours, and the summer's best level types all
+   flip sign between halves.
+5. **The year's loss sits in four months** (December, February, March, July: -48,786, PF
+   0.66); the other eight are near flat (-9,008, PF 0.96). The manager is judged on those
+   four months as much as on the total.
 
 ---
 
