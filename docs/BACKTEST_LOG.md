@@ -84,9 +84,8 @@ the statistics table's AO row at this zoom, cosmetic. With the tester panel open
 and the breakdown table overlap at the top right (the pane is shorter); move the breakdown
 table to "Middle left" or "Bottom left" in the paper-trade settings for tester screenshots.
 The Overview screenshot also shows an open short of 2 contracts at 30,110.25 in the connected
-Tradovate panel, right at the Monday High / Asia High zone where the script would take a
-short reversal; if the strategy's alert is wired to a bridge, it must point at the sim
-account while the base rules lose money (plan: bridge check on sim only).
+Tradovate panel; the owner confirmed it is a discretionary trade of their own, not the
+strategy's. No bridge is trading the script.
 
 Changes made before the next session (setting or code, and why): none to the rules. M4 v0.4
 (already pushed) only makes the strategy recalculate on every tick so the drawings refresh
