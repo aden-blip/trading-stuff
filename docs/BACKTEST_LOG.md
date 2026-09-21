@@ -33,6 +33,103 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 14  (M4 v0.5, the exported trade list of the chart-range run read trade by trade)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 20:25 to 18 Sep 2026 13:45 CT
+[21:25 NY to 14:45 NY], the same 769 trades as sessions 7 and 13, exported from the tester as a
+list of trades (two rows a trade: entry with the v0.5 tag, exit with T1 / stop / flat, and each
+trade's run-up and drawdown). File and full readout saved under `reference/backtests/2026-09-21/`
+(`trades_M4v0.5_defaults_chart-range_50k.csv`, `report_chart-range.md`), produced by
+`tools/trade_list_report.py`, which any later export runs through unchanged.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 50,000. Money figures below are for the 2 contracts (4 USD a point);
+points are per contract.
+Settings changed from defaults: none.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 769 | 26.79 % | 0.864 | -16,929.80 USD, -22.02 a trade, -4.7 points a trade | 23,946.80 USD closed-trade (tester 24,103.40 with open trades) | 522.55 USD | 221.27 USD | median 9 candles, mean 20; winners median 20, losers median 6 |
+
+Exits: 172 at the target (median 124 points, mean 137), 555 at the stop (median 48.5 points,
+mean 55), 42 flattened at 15:55 CT [16:55 NY] of which 34 in profit (+13,095 USD).
+
+By setup: REV 623 trades, 29.4 %, PF 0.86, -16,049 USD; BRK 146 trades, 15.8 %, PF 0.93,
+-881 USD (break trades lose 96 USD when wrong against 256 for reversals: tighter stops).
+By level history (the level's state today, before the trade): first test of the day 98
+trades, PF 1.00, +22; touched today 174 trades, 17.2 %, PF 0.60, -9,775; held today 297
+trades, 27.9 %, PF 0.72, -16,928; broke today 200 trades, 38.0 %, PF 1.30, +9,751. The
+"held" loss shows in every window but the off-hours (Asia -4,447, London -4,985, New York
+-9,894) and in every stack size; the "touched" loss shows in every window. The "broke" gain
+is mostly five big winners (without them +2,922 on 195 trades). The score gives held 15 points,
+first test 12, touched 6, broke 3: on this sample the points run the wrong way.
+By score: 50s PF 0.97 (-843), 60s 0.93, 70s 0.88, 80s 0.77, 90s 0.54 (-4,431 on 45 trades);
+the higher the score the worse, in a straight line, as D-83 and D-84 read on paper.
+By stack: one level PF 0.80 (-8,662), two levels 1.00 (+210), three or more 0.77 (-8,477).
+By level type (a trade counts once per level in its zone): worst 4H open -11,024 on 169
+trades (PF 0.63), London high -7,701 (0.47), previous 4H high -5,031, previous day mid -4,104
+(12.8 % winners), previous 4H low -3,459; best previous 4H mid +3,914 (1.25), midnight open
++3,209 (1.26), New York low +3,083 (1.53). The 4-hour family as a whole -13,440 on 436 trades;
+the two 4-hour opens (4HO, P4O) together -13,831.
+By session (Asia / London / New York) where relevant: Asia 132 trades, PF 1.16, +3,383;
+London 83, 0.64, -5,030; New York 308, 0.77, -12,020; other hours 246, 0.91, -3,263. The
+long sample (session 10) already showed Asia's edge does not hold, so every window and hour
+figure here is a hypothesis, not a result. By hour of entry the losing hours are 08:00-08:59
+(71 trades, -5,817, the cash open), 13:00-14:59 (-5,391), 17:00-18:59 (-7,078, the 17:00 CT
+[18:00 NY] Globex reopen) and 01:00-02:59 (-5,485); the winning hours 04:00, 10:00-11:59,
+20:00 and 22:00-00:59.
+Retries (same zone and direction within two hours of a losing attempt): 39 trades, PF 0.55,
+-3,570; first attempts PF 0.89.
+Days: 90 days traded, 42 positive. The worst three days (28 Jul, 24 Jun, 29 Jul) cost 10,430;
+28 Jul had twelve losses in a row. July alone -13,430 (weeks 29 and 31 -14,000 between them);
+June, August and September together -3,500. Without the worst ten days the run is +7,742.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+1. The losers are not trades that never worked. 80 % of losing trades were 5 points in
+   profit at some point, 56 % were 20 points up, 46 % were 30 up, 31 % were 50 up. Measured
+   against each trade's own stop, 48 % of stop-outs had been half a stop in profit and 26 %
+   a full stop in profit before they reversed and hit the stop. The exact part of the
+   arithmetic: the losers that had reached +25 points lost 68,976 USD between them; a stop at
+   entry after +25 would have scratched them (they all came back through entry). What the
+   same rule would have cost on winners the export cannot show (77 % of winners went 10
+   points against at some time, but not whether before or after their run-up), so the
+   breakeven table in the report is a ceiling: +50,569 at +25 points, +26,079 at +50 points.
+   One contract off at a run-up with the other left as traded is exact and does not turn the
+   sign: half off at +50 gives -11,385 against -16,930, drawdown 15,277 against 23,947.
+2. Closer targets alone do not turn the sign either (exact): a 40 to 50 point target gives
+   about -6,000 with 50 to 55 % winners. Tighter stops alone: 40 to 50 points gives about
+   -5,100, PF 0.95. Stop size: 20 % of stop-outs were 75 points or more and cost 53,294 USD,
+   43 % of all the gross loss; the ten worst trades are all New York morning reversals with
+   stops of 158 to 186 points.
+3. The one selection reading that is broad-based: a level that already held or was already
+   touched today loses on its next test, everywhere. The first test of the day and the retest
+   of a level that broke earlier are flat to positive. That is the trend-day signature
+   without a trend gate: the level holds in the morning, the move resumes, the second
+   reversal at it breaks.
+4. Hypotheses that need the long sample (each chosen after looking at this file, so each
+   must hold on the other nine months before it counts): skip touched-today levels (-7,155
+   instead of -16,930 on its own), no zones with a 4-hour open (-5,862), no entries in the
+   08:00 and 17:00-18:59 hours (-4,035), no scores of 80 and up (-7,103). Together they leave
+   211 trades at +5,228, which is what fitting six rules to one summer looks like, not a
+   result. A daily loss cap (1 to 5 losers) does not help in any consistent way.
+
+Issues found (bugs, repainting, alerts, drawing problems): none in the trades. Entry times
+are the candle after the tag, flats are at 15:55 CT, and no trade shows an exit off its stop
+or target. Evening entries (17:00-19:00 CT and after 23:00) hold through the night to the next
+flatten by design; they are 105 trades at PF 0.63.
+
+Changes made before the next session (setting or code, and why): none to the script. D-90
+records what the file decides: the trade manager (M5, the plan's staged stops and partials)
+is the next build, because the in-trade arithmetic is the one lever the export measures
+exactly and it does not touch the reversal concept; the selection readings wait for the
+365-day export (date chip "Last 365 days", capital chip 500,000, same defaults), run through
+the same tool and split in halves.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : the export and the
+readout are saved under `reference/backtests/2026-09-21/`.
+
+---
+
 ## 2026-09-21  Session 13  (M4 v0.5, defaults on the chart range: tags confirmed, same trades as v0.3)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to 20 Sep 2026, the chart's

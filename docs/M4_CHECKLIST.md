@@ -38,7 +38,8 @@ box must read `L2L M4 v0.5`. Every filter is off by default: that is the base ru
    tester's header the date chip picks the range ("Last 365 days" shows a DEEP mark) and the
    capital chip ("50K USD") sets the initial capital without opening Properties. The tags are
    confirmed on the chart-range run (session 13): the "Profits and losses, by signals" panel
-   lists them and the figures match v0.3 to the cent. Each
+   lists them and the figures match v0.3 to the cent. The chart-range export is done and read
+   (session 14, D-90); the 365-day export is the one still owed. Each
    entry row's Signal column reads like "REV PDH+P4H s72 k2 h12 NY" (setup, zone, score, stack,
    level-history points, window) and each exit row says T1, stop or flat, so one file gives
    the breakdown by every dimension plus each trade's run-up and drawdown.

@@ -810,6 +810,41 @@ stop would have done; hold times; hour of day. Switch tests continue only for ch
 export cannot answer (entry at the level, stop at the wick, the rejection candle rules,
 fewer levels), because those change the trades themselves.
 
+
+### D-90  What the first trade list says: the manager comes first, the level's day history second  (DECIDED)
+The 769-trade export of the chart-range run (session 14, tool `tools/trade_list_report.py`,
+file and readout under `reference/backtests/2026-09-21/`) decides the order of work.
+1. **M5, the trade manager, is the next build.** Half the stop-outs had been half a stop in
+   profit and a quarter a full stop in profit before they reversed to the stop; the losers that
+   had reached +25 points lost 68,976 USD between them, which a stop at entry would have turned
+   into scratches. What that rule costs on winners only the script can measure, so the
+   manager is built as the plan has it (D-32 staged stops in R: +0.5R half risk, +1R breakeven
+   plus cushion, +1.5R trail; D-33 partials as an option; D-34 ladder and soft targets) and the
+   tester measures each stage against the hard-target base. Exact readings from the file:
+   one contract off at a run-up does not turn the sign on its own (-11,385 at +50), nor does a
+   closer target (-6,000 at 40 to 50 points) nor a tighter stop (-5,100 at 40 to 50 points).
+   The export cannot rate a wider target or a trail at all, so those wait for M5.
+2. **The level's history today matters, and the score has it backwards.** A reversal at a
+   level that already held today lost 16,928 USD on 297 trades, at a level already touched
+   today 9,775 on 174, in every window and stack size; the first test of the day was flat and
+   the retest of a level that broke earlier today positive (mostly five big trades). The score
+   awards held 15 points, first test 12, touched 6, broke 3. No change to the weights yet: the
+   365-day export decides, and if it agrees the change is a switch "one reversal per level
+   per day" (skip held-today and touched-today levels) rather than new points, so the rule
+   reads plainly on the chart. The reversal concept is untouched: the first rejection at a
+   level still trades; only the second attempt at the same level in the same day does not.
+3. **Hours, level types and the rest are hypotheses.** The cash-open hour and the 17:00 CT
+   [18:00 NY] reopen hour lose, the two 4-hour opens lose, scores of 80 and up lose, retries
+   within two hours lose. The 73-day Asia reading already failed on the long sample, so none
+   of these changes a default until it holds on both halves of the 365-day export (D-88
+   keeper rule). The existing switches test the ones that need no code: the opening blackout
+   for the cash open, the news blackout with 1700 listed and 60 minutes after for the reopen,
+   the 4-hour Open and Prev Open boxes, the minimum score. A daily loss cap showed nothing
+   consistent and is parked; the retry rule is small and waits.
+4. **Workflow.** Every export is saved under `reference/backtests/<date>/` with the tool's
+   readout next to it, and the readout is what the log quotes. The long-sample readout is
+   also split into halves (first six months against the last six) before any rule is kept.
+
 ---
 
 ## L. New in round 4
