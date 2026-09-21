@@ -1,13 +1,13 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.5
+//  Level-to-Level (L2L)  |  Milestone 5: Trade manager, staged stops  |  M5 v0.1
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
 //    [A] Level Engine      (M1, done)
 //    [B] Interaction       (M2, done)       [C] Stats & Ranking (M2, done)
 //    [D] Setup Detector    (M3, done)       [E] Score           (M3, done)
-//    [F] Filters           (this milestone) [G] Trade Manager   (M5)
+//    [F] Filters           (M4, done)       [G] Trade Manager   (this milestone: stages)
 //    [H] HTF Confluence    (M6)      [I] Bias Inputs     (M6)
 //    [J] Output            (M3 on)
 //
@@ -27,8 +27,10 @@
 //  so the lines and tables refresh live as the indicator did; orders and the tally are placed
 //  on confirmed candles only, so the tester's history is the same either way. Every entry order
 //  carries a comment with the trade's setup, zone, score, stack, level history and session
-//  window, and every exit says T1, stop or flat, so the tester's exported trade list holds the
-//  whole breakdown of a Deep Backtesting run (D-89).
+//  window, and every exit says T1, stop, half, be or flat, so the tester's exported trade list
+//  holds the whole breakdown of a Deep Backtesting run (D-89). M5 (D-32): the stop moves in
+//  stages on closed candles, halfway to the entry after +0.5R and to the entry plus a cushion
+//  after +1R; the tally and the tester get the same stop at the same close.
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
