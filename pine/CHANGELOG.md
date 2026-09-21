@@ -1,5 +1,26 @@
 # Changelog
 
+## M4 v0.1, 2026-09-21
+
+- Milestone 4: the script is now a TradingView strategy. One position at a time; market entries
+  fill at the next candle's open, as the tester and a bridge fill them; resting limits (break
+  retests, the reversal limit modes) fill at their price; every entry carries its stop and first
+  target as tester orders; the flatten order is placed one candle early so it fills at the open
+  of the flatten candle (15:55 CT). Costs in the script are the MNQ defaults (0.80 per side,
+  2 ticks slippage), initial capital 50,000; change them in Properties for other contracts.
+- Filters module [F] as inputs, all off for the base run: allowed session windows, opening
+  blackout, news blackout, chop band, daily trade and losing-trade caps, daily loss limit and
+  daily target.
+- Resting orders are checked for geometry, gate, score and filters when placed, as the tester
+  requires; a fill is the signal. No new orders while a position is open; every other resting
+  order is cancelled when one fills or a market entry is placed, inside the same candle through
+  the tester's cancel group. The tally reads a candle along the tester's assumed path (open,
+  nearer extreme, other extreme, close) to pick the fill, price a gap fill at the open, and
+  count a stop or target hit later on the fill candle.
+- The paper tally follows the same fill model and stays on the chart; the info box adds the
+  tester's closed trades and net after costs, in currency and points, for the cross-check. The
+  Contracts input drives both orders and alerts.
+
 ## M3 v0.15, 2026-09-20
 
 - Paper trades by level type and by stack (D-84): the statistics table gains three columns

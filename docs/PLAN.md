@@ -1,6 +1,15 @@
 # Level-to-Level (L2L) Strategy: Design Plan
 
-Status: BUILDING. Milestone 3 in review. Version 0.25, 2026-09-20.
+Status: BUILDING. Milestone 4 in build. Version 0.26, 2026-09-21.
+
+Changes in 0.26, Milestone 4 v0.1 (D-85, D-86):
+- The level-type and stack split showed nothing in the level set that separates winners from
+  losers on 73 days, and the hold-rate ranking predicting its own verdict rule rather than the
+  trade (D-85). No type filter. Milestone 4 built: the script is a strategy, one position at a
+  time, market entries at the next candle's open (4.7), resting limits at their price, hard
+  first target, the [F] filters as inputs all off for the base run, MNQ costs in the script,
+  the paper tally kept as the cross-check. Deep Backtesting is the point: years of 5-minute
+  data instead of 73 days.
 
 Changes in 0.25, paper trades by level type and stack (D-84):
 - The geometry test showed the hit rate following the stop size, both landing a little under a

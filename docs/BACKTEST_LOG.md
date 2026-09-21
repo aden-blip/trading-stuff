@@ -83,10 +83,23 @@ coin flip (stop ÷ (stop + target)) the reversals sit under it in both geometrie
 zones well under it and the single levels at it. Runs B, C and D not run; the geometry question
 is answered well enough by A and E.
 
-Changes made before the next session (setting or code, and why): M3 v0.15 splits the paper
-trades by level type (statistics table columns) and by the number of levels in the zone
-(breakdown rows), to see whether a few level types carry the winners (D-84). No trading rule
-changed. M4's default stays the plan's entry and stop.
+Run F (M3 v0.15, defaults, the same 812 trades as run A): stack rows: 1 level in the zone
+312 / 19 % / avg T1 +143.00 / avg stop −46.50 / −2239.25; 2 levels 278 / 27 % / +131.25 /
+−57.00 / +1527.00; 3 or more 222 / 22 % / +133.75 / −56.25 / −2047.50. Level types, the 15
+shown (top by hold rate; trades / T1 % / net, a stacked trade counting in every member's row):
+MNH 23 / 17 / −291.50; NH 51 / 27 / +40.50; MNL 25 / 24 / −325.25; LL 48 / 23 / −319.50;
+LH 73 / 19 / −1646.25; PDH 42 / 21 / −90.25; AL 47 / 17 / −557.50; P4H 93 / 25 / −795.75;
+MO 76 / 28 / +573.25; NL 47 / 32 / +792.00; NO 74 / 22 / −435.75; AO 70 / 30 / +340.00;
+AH 67 / 34 / +496.00; MOO 14 / 21 / +115.25; P4M 100 / 30 / +1325.25. The remaining types
+need Rows set to 40 (asked). Reading in D-85: the two-level zones are the best group, single
+levels the worst; the top-ranked types lose and the middle-ranked types win, so the hold-rate
+rank predicts its own verdict rule, not the trade. Too few trades per row to filter on.
+
+Changes made before the next session (setting or code, and why): M4 v0.1, the strategy
+conversion (D-86): one position at a time in the tester, market entries at the next candle's
+open, resting limits at their price, hard first target, flatten filling at the open of the
+15:55 candle, the [F] filters as inputs all off, MNQ costs, the paper tally kept as the
+cross-check. Next session is the tester's base run and the Deep Backtesting run.
 
 Screenshots or trade list attached under reference/backtests/<date>/ : not saved; in the chat of
 2026-09-20.

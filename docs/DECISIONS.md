@@ -707,6 +707,63 @@ the risk taken, 21 % of the stop per trade instead of 7 %.
 4. **M4 default unchanged:** entry at the close of the follow-through candle, stop beyond the
    zone, the plan's choice, with the entry and stop switches carried over.
 
+### D-85  Level types and stack: nothing in the level set separates winners at this sample; M4 next  (DECIDED)
+Your v0.15 screenshot (defaults, Session 3 run F, the same 812 trades as the baseline).
+1. **Stack rows.** One level in the zone: 312 trades, 19 % reached the target, net −2239. Two
+   levels: 278, 27 %, +1527. Three or more: 222, 22 %, −2048. So the "stacked zones lose"
+   reading in D-84 was too simple: the two-level zones are the best group and the single levels
+   the worst.
+2. **Type columns, the top 15 by hold rate.** The types the ranking trusts most are net losers
+   as reversal trades (Monday High −292, Monday Low −325, London Low −320, London High −1646,
+   Prev Day High −90, Asia Low −558) and the middle of the ranking holds the winners (Prev 4H
+   Mid +1325, NY Low +792, Midnight Open +573, Asia High +496, Asia Open +340). The hold-rate
+   rank, 40 of the score's 82 points, predicts the verdict rule it was built on, a close 0.05
+   daily ATR back from the level, not whether the trade reaches the next zone. That is why the
+   7/10 and 8/10 trades lose: they carry the top-ranked types.
+3. **What this is not.** With 20 to 100 trades per row, one or two trades move a row by a
+   thousand points, and the rows overlap (a stacked trade counts in every member's row).
+   Switching on the green types and off the red ones would be fitting 73 days of noise. No type
+   filter and no weight change from this table.
+4. **Decision.** The indicator has done its job as a lab: it found the question (which levels,
+   in what context) and showed that 73 days cannot answer it. Milestone 4 now, for three
+   reasons: Deep Backtesting runs the same rules over years of 5-minute data instead of 73 days;
+   the tester adds commissions and slippage; and its trade list can be exported. The score
+   weights, the entry and stop switches, the range and chop filters and the tables all carry
+   over as inputs, so every split above can be re-read on the long sample before any rule
+   changes. Whether the reliability weight should be 0 is the first thing to test there.
+5. **Ask:** one more screenshot with Statistics, Rows set to 40, so the log holds every type.
+
+### D-86  Milestone 4 v0.1: how the strategy places and fills orders  (DECIDED)
+1. **Fill model.** Market entries fill at the next candle's open, as the plan says a bridge would
+   fill them (4.7, process_orders_on_close off). Resting limits fill at their price. The flatten
+   order is placed on the candle before the flatten time so it fills at the open of the flatten
+   candle, 15:55 CT [16:55 NY], instead of the next session's open. The paper tally now follows
+   the same model, so the two can be cross-checked in the info box; costs are the difference.
+   The tally reads a candle the way the tester does: the price goes from the open to the
+   extreme nearer the open, then to the other extreme, then to the close. When two resting
+   orders were crossed in one candle, the one that path reaches first is the fill; an order the
+   open gapped through fills at the open; and the rest of the path decides whether the stop or
+   the target was hit on the fill candle. The flatten fills at the open of its candle, ahead of
+   that candle's own stop or target.
+2. **Resting orders.** Break retests and the reversal limit modes are real tester limit orders
+   with their stop and first target attached. Geometry, gate, score and filters are checked when
+   the order is placed, because the tester cannot refuse a fill later; a fill is the signal.
+   Nothing is placed while a position is open, and every other resting order is cancelled when
+   one fills or a market entry is placed, so one position at a time holds in the tester too
+   (pyramiding 0 as the backstop). All entries sit in one cancel group, so when a resting order
+   fills the tester cancels the others inside the same candle; two orders crossed in one candle
+   can no longer both fill. Resting orders are cancelled inside the entry cutoff window and
+   with the flatten order, after that candle's fills are read.
+3. **Filters [F].** Built as inputs, all off for the base run (plan 4.6): allowed session
+   windows, opening blackout (D-43), news blackout (D-40), chop band (D-28), daily trade and
+   losing-trade caps, daily loss limit and daily target (D-44). They only block new entries.
+4. **Costs.** MNQ defaults in the script: 0.80 per side, 2 ticks slippage, initial capital
+   50,000, from docs/RESEARCH.md. Other contracts change them in the tester's Properties tab.
+   Order size is the Contracts input (2), which also drives the alert quantity.
+5. **Not in v0.1:** the trade manager (M5, so exits are the hard first target only), size by
+   score (D-46), the thin-market filter (D-49), the bias gate (M6), and the bridge check on a
+   sim account, which follows once the tester run is read.
+
 ---
 
 ## L. New in round 4
