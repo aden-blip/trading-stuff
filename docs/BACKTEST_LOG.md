@@ -33,6 +33,46 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 8  (M4 v0.3, switch test 1: Reliability weight 0; 73-day sample)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to 20 Sep 2026, the chart's data
+(Deep Backtesting not yet on; the tester's date chip still shows the chart range).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts.
+Settings changed from defaults: Score group, Reliability 40 -> 0 (the score then reads out of
+the 42 points that stack, history and bias can produce).
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 795 | 208 won, 26.16 % | 0.837 | −20,648.60 USD, −41.30 %; −26.22 USD a trade | 27,935.40 USD, 53.59 % | 513.13 USD (gross profit 106,730.40 over 208) | 217.33 USD (gross loss 127,574.00 over 587) | not measured |
+
+Against the base run (769 trades, 0.864, −16,929.80, drawdown 44.46 %): more trades, a lower
+profit factor, a deeper drawdown. Not a keeper on this sample.
+
+By setup / by level type / by session: not measured for this run.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+Taking the ranking out of the score lets in 26 more trades and they lose; the score's other
+parts (stack, history) do not select better on their own. The ranking was not the cause of the
+base loss, and the "top types lose" reading of D-85 is about the types, not the weight.
+
+Issues found (bugs, repainting, alerts, drawing problems): the owner's third screenshot, taken
+after the test, shows the defaults again (the grey settings line under the script name reads
+"... 14 40 20 15 10 15 50 ...", where 40 is the reliability weight), so it looked as if the
+tester ignored the change. It did not: the second screenshot is the changed run. A change
+takes effect only after OK in the settings window, and the settings line is the check. Tests
+so far are on the 73-day chart range, not the long sample.
+
+Changes made before the next session (setting or code, and why): none. Next: turn Deep
+Backtesting on (the date chip in the tester header, start date years back), rerun the base,
+then the remaining switches on that range.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the three
+screenshots are in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 7  (M4 v0.3, base run: the tester's figures, cross-check passed)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to the Sunday 20 Sep evening
@@ -48,7 +88,12 @@ Headline stats (info box, then the tester's Overview at 20:49 CT [21:49 NY]; the
 Summary tab not yet screenshotted):
 | Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
 |---|---|---|---|---|---|---|---|
-| 769 closed (paper tally 770) | 206 won, 26.79 % (paper: 171 reached T1, 22 %) | 0.864 | −16,929.80 USD after costs on 2 MNQ, −33.86 % of the 50,000; −4232.50 points per contract; −22.00 USD a trade | 24,103.40 USD, 44.46 % | not measured (paper: +137.75 points per T1 exit) | not measured (paper: −54.00 points per stop) | not measured |
+| 769 closed (paper tally 770) | 206 won, 26.79 % (paper: 171 reached T1, 22 %) | 0.864 | −16,929.80 USD after costs on 2 MNQ, −33.86 % of the 50,000; −4232.50 points per contract; −22.02 USD a trade (expectancy) | 24,103.40 USD, 44.46 % | 522.55 USD, 130.6 points per contract (gross profit 107,645.80 over 206 winners; paper +137.75 per T1 exit) | 221.27 USD, 55.3 points per contract (gross loss 124,575.60 over 563 losers; paper −54.00 per stop) | not measured |
+
+Performance analysis tab: commission load 2.29 %; outliers 31,194.60 USD, 62.39 % of the
+gross; largest profit 3,064.80 USD, largest loss 747.20 USD; the five best trades made
+9,127 USD and the other 764 lost 26,057 USD. Payoff about 2.4 to 1, so break-even needs about
+30 % winners; the run wins 26.8 %.
 
 Overview extras: buy and hold over the same range +2.69 %. The equity curve (percent of the
 account) sits between 0 and −5 % from 7 Jun to about 13 Jul, drops to about −22 % over the
