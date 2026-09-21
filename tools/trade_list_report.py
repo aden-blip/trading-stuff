@@ -69,6 +69,9 @@ def load(path, pointvalue):
             t["tag"] = r["Signal"]
             t["entry_px"] = float(r["Price USD"])
         else:
+            if r["Date and time"] == "Open" or r["Signal"] == "Open":
+                t["open"] = True      # still open at the end of the export: left out
+                continue
             t["exit_time"] = parse_time(r["Date and time"])
             t["exit"] = r["Signal"]
             t["exit_px"] = float(r["Price USD"])
@@ -81,6 +84,8 @@ def load(path, pointvalue):
     out = []
     for n in sorted(trades):
         t = trades[n]
+        if t.get("open") or "exit" not in t:
+            continue
         m = TAG.match(t["tag"])
         if not m:
             raise SystemExit(f"trade {n}: unreadable tag {t['tag']!r}")

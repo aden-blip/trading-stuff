@@ -33,6 +33,99 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 19  (M6 v0.1, the exported list of the base run, read by higher-timeframe count and in halves)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", trades
+from 21 Sep 2025 21:25 to 18 Sep 2026 13:50 CT [22:25 NY to 14:50 NY]. The 2,963 closed
+trades are the M4 export of session 15 trade for trade: every month has the same count and
+the same net, the 687 break trades match one for one by time and tag, and the reversal
+tags differ only by the new count (f0 to f4) before the window. The file's last trade,
+number 2,964, was still open when the list was exported and is left out;
+`tools/trade_list_report.py` now skips an open trade instead of stopping on it. File and
+readouts saved under `reference/backtests/2026-09-21/`
+(`trades_M6v0.1_base_deep-365d_500k.csv`, `report_M6v0.1_deep-365d.md`,
+`compare_M6v0.1_halves.md`). Halves as in session 15: to 20 Mar 2026 (1,609 trades) and
+from 21 Mar (1,354).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000.
+Settings changed from defaults: none (manager OFF, HTF count on, HTF weight 0, gate off).
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 2,963 | 26.46 % | 0.84 (halves 0.84 and 0.84) | -57,794.60 USD, -11.56 % of 500,000; -19.51 a trade | 63,245.40 USD closed-trade | 375.81 USD | 161.74 USD | median 6 candles; winners 13, losers 4 |
+
+By setup: REV 2,276 trades, 30 %, PF 0.83, -54,810; BRK 687, 15 %, 0.92, -2,984 (as session 15).
+By level type / by session / by hour / by month: the same trades as session 15, not re-read.
+By higher-timeframe count (reversals only). The count is how many of the last completed
+5-minute, 15-minute, 1-hour and 4-hour candles before the signal poked into the zone,
+closed back on the approach side and left a wick of at least 0.4 of their range. On the
+5-minute chart the 5-minute candle in that check is the rejection candle of the signal's
+own two-candle pattern, so a count of 1 mostly says "the rejection candle had a long
+wick"; the higher-timeframe test proper is a count of 2 or more. The export carries the
+total only, not which candles counted.
+| Count | Trades | Win % | PF | Net USD | USD a trade | First half PF / net | Second half PF / net |
+|---|---|---|---|---|---|---|---|
+| 0 of 4 | 675 | 29.8 % | 0.80 | -19,619 | -29.1 | 0.91 / -3,295 | 0.74 / -16,324 |
+| 1 of 4 | 1,054 | 29.1 % | 0.79 | -30,258 | -28.7 | 0.80 / -11,994 | 0.78 / -18,264 |
+| 2 of 4 | 441 | 30.8 % | 0.91 | -5,568 | -12.6 | 0.77 / -5,564 | 1.00 / -4 |
+| 3 of 4 | 99 | 36.4 % | 1.11 | +1,317 | +13.3 | 0.96 / -256 | 1.28 / +1,573 |
+| 4 of 4 | 7 | 28.6 % | 0.47 | -682 | -97.5 | 0.13 / -657 | 0.95 / -26 |
+
+As a gate would take them ("Reversals need at least" N of 4):
+| At least | Trades | Win % | PF | Net USD | First half: trades, PF, net | Second half: trades, PF, net |
+|---|---|---|---|---|---|---|
+| 1 | 1,601 | 30.0 % | 0.84 | -35,191 | 818, not measured, -18,471 | 783, not measured, -16,721 |
+| 2 | 547 | 31.8 % | 0.93 | -4,933 | 283, 0.79, -6,477 | 264, 1.04, +1,543 |
+| 3 | 106 | 35.8 % | 1.05 | +635 | 64, 0.86, -913 | 42, 1.25, +1,548 |
+The reversals a gate of 2 would drop (count 0 or 1): 1,729 trades, PF 0.80, -49,877 (0.84 /
+-15,289 and 0.76 / -34,588 by half).
+Count 2 or more by month: positive in five months (Jan +349, Apr +162, May +2,128, Jun
++2,548, Aug +1,195) and negative in eight; February (-3,076) and March (-3,418) together
+lose more than the group's whole year. Count 2 or more by window: Asia 82 trades, PF 1.36,
++3,603; London 54, 0.99, -62; New York 223, 0.74, -8,860; other hours 188, 1.02, +385. New
+York is the loser inside this group as it is in the whole sample (0.79).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+1. Over the year the count makes the reversals less bad in a straight line: PF 0.80, 0.79,
+   0.91 and 1.11 for counts 0 to 3, and -29, -29, -13 and +13 USD a trade. The halves do
+   not agree on that order. First half: 0.91, 0.80, 0.77, 0.96, so a count of 2 did worse
+   than a count of 0; second half: 0.74, 0.78, 1.00, 1.28, in order. Under the rule of
+   D-88 and D-93 (a finding counts only when both halves agree) the count does not
+   separate the trades.
+2. As a gate, "at least 2" keeps 547 of the 2,276 reversals and takes the year from
+   -54,810 to -4,933 (PF 0.93), but it is -6,477 (0.79) in the first half and +1,543
+   (1.04) in the second: less bad, not good, and only in one half. "At least 3" is +635
+   on 106 trades, -913 then +1,548 by half, about two trades a week and a loser in the
+   first half. Neither clears the bar for the weight or the gate.
+3. A count of 4 is seven trades, too few to read.
+4. What is stable across every reading of this year (sessions 15, 16, 17 and 19): the
+   payoff of a level rejection on MNQ 5-minute stays near two to one and the hit rate a
+   few points under what that payoff needs to break even, whichever way the trades are
+   sliced (score, stack, level history, window, hour, level type, higher-timeframe
+   count, and the managed stops). Only removal filters change it, and none of them into a
+   profit on both halves.
+
+Issues found (bugs, repainting, alerts, drawing problems): none in the trades. The readout
+tool stopped on the open last trade (fixed). The chart check of a few labels against the
+15-minute and 1-hour charts (M6 checklist item 4) was not done; the count is read here from
+the tags only.
+
+Changes made before the next session (setting or code, and why): none to the script. D-94:
+the HTF weight stays 0 and the gate stays off; the M6 concept is measured and the next
+decision is the owner's (D-93 point 4): the instrument, the timeframe, or the trigger. The
+cheapest tests need no code change (the same script on the MNQ 15-minute chart, or on MCL),
+and they are the owner's to pick. The one check still open on M6 itself is optional: a gate
+run at "at least 2" to confirm the -4,933 on the tester, since a skipped signal frees the
+strategy for trades the export cannot show; it tells whether that group is break-even, not
+whether it is a strategy.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : the export and both
+readouts are saved under `reference/backtests/2026-09-21/`; the screenshots of the run are
+with session 18.
+
+---
+
 ## 2026-09-21  Session 18  (M6 v0.1, base run: the M4 trades with the higher-timeframe count in the tag; screenshots only)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days" at

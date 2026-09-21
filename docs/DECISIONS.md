@@ -941,6 +941,40 @@ cleared by the headline.
    instrument and timeframe, and the next decision is the owner's: the instrument, the
    timeframe, or the trigger itself.
 
+### D-94  The higher-timeframe count is measured: it does not separate the trades on both halves; weight 0 and gate off stay; the next call is the owner's  (DECIDED)
+Session 19: the M6 v0.1 export (the M4 trades exactly) split by how many of the last
+completed 5-minute, 15-minute, 1-hour and 4-hour candles rejected the zone. Year: PF 0.80 /
+0.79 / 0.91 / 1.11 for counts 0 to 3 (675 / 1,054 / 441 / 99 trades), seven trades at 4.
+First half 0.91 / 0.80 / 0.77 / 0.96, second half 0.74 / 0.78 / 1.00 / 1.28. As a gate,
+"at least 2" is 547 trades, -4,933, PF 0.93 (-6,477 at 0.79, then +1,543 at 1.04); "at
+least 3" is 106 trades, +635 (-913, then +1,548).
+1. **The rule of D-93 point 3 is not met.** The count makes the trades less bad over the
+   year, but the halves disagree on the order (a count of 2 did worse than a count of 0
+   in the first half) and no gate is profitable on both halves. The HTF weight stays 0 and
+   the gate stays off; both inputs remain in the script for any later run.
+2. **What a count of 1 means.** On the 5-minute chart the 5-minute candle in the check is
+   the rejection candle of the signal itself, so a count of 1 says the rejection candle
+   had a wick of 0.4 or more of its range; only a count of 2 or more brings a bigger candle
+   into it. The export carries the total, not which candles counted. If the idea is ever
+   revisited, the tag names the candles (5, 15, 60, 240) so the 15-minute and the 1-hour
+   can be read apart.
+3. **The M6 concept as specified is measured (D-93 point 4).** With the manager (D-92,
+   D-93), the score, the stack, the level history, the windows, the hours and the level
+   types (D-91), and now the higher-timeframe rejection all read on the same year, the
+   two-candle rejection at a key level on MNQ 5-minute has no edge that survives both
+   halves. The next decision is the owner's and is not taken here: the instrument (CL/MCL
+   or SI/SIL, which the plan lists after MNQ), the timeframe (a 15-minute or 1-hour chart,
+   where the rejection candle is the bigger candle by itself), or the trigger (something
+   other than the two-candle rejection at the level). The first two are runs of the
+   present script with no code change; the third is design work. None of the recorded
+   leads (the two hours after the cash open and after the 17:00 CT [18:00 NY] reopen, the
+   4-hour opens, New York inside the count-2 group) is applied: they are removal filters
+   that make a losing year less bad, and they wait for whichever path the owner picks.
+4. **One cheap check on M6 remains, optional.** A gate run at "Reversals need at least" 2
+   on the tester, same range and capital, confirms or denies the -4,933 with the trades a
+   skipped signal frees up. It tells whether the count-2 group is break-even on the
+   tester, not whether it is a strategy, and it is not needed before the owner's choice.
+
 ---
 
 ## L. New in round 4
