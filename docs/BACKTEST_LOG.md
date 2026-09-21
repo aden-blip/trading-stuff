@@ -33,6 +33,56 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 9  (M4 v0.3, first Deep Backtesting run, "Last 365 days")
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days"; the
+equity curve runs from late Aug 2025 and stops around 12 Jun 2026, where the account is
+nearly gone (−89 %) and two contracts no longer clear the 5 % margin, so no trade opens
+after that.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 50,000.
+Settings changed from defaults: the owner reports "just Asia selected" in the Filters group.
+The trade count says the filter was not active: 2,510 trades over about 205 trading days is
+12 a day, the all-hours rate (the 73-day base ran 10.5 a day; the Asia window held 18 % of the
+base trades). The master switch "Entries only inside the checked windows" was most likely left
+off, in which case the window boxes do nothing. Treated as the long-sample base run until a
+rerun with the master switch on says otherwise.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 2,510 | 662 won, 26.37 % | 0.843 | −44,558.40 USD, −89.12 % | 48,439.60 USD, 89.90 % | 361.03 USD (gross profit 239,000.60 over 662) | 153.44 USD (gross loss 283,559.00 over 1,848) | not measured |
+
+Commission load 3.36 %. Buy and hold over the range +13.10 %. The five best trades made
+7,889 USD, the other 2,502 lost 52,447 USD.
+
+By setup / by level type / by session: not measured (Deep Backtesting draws nothing on the
+chart, so the paper tables still show the 73-day chart range).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The equity curve loses steadily across the whole year: about −5 % by November 2025, −40 % by
+February, −60 % by March, a bounce in April, then down to −89 % by June. So the base loss is
+not one bad fortnight; the raw trigger loses in every season of the sample, at a profit factor
+(0.843) that matches the 73-day run (0.864). The average winner is smaller here than in the
+73-day run (361 USD against 523) and so is the average loser (153 against 221): the older
+data is lower-priced and quieter, so distances in daily-ATR units come out smaller in dollars.
+
+Issues found (bugs, repainting, alerts, drawing problems): with 50,000 of capital a losing
+run hits the margin floor before the range ends, which cuts the trade count and makes runs
+hard to compare. For the switch tests the initial capital goes to 500,000 in the Properties
+tab, so no run is cut short; profit factor, trade count and net in USD are the comparison,
+not the percentages.
+
+Changes made before the next session (setting or code, and why): none to the rules. Next:
+rerun the base on the long range with initial capital 500,000 (the reference), then the
+window test with the master switch on and only Asia ticked (expect a few hundred trades),
+then the rest of the list. The bias-gate proposal is withdrawn (D-88).
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 8  (M4 v0.3, switch test 1: Reliability weight 0; 73-day sample)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to 20 Sep 2026, the chart's data

@@ -780,6 +780,23 @@ recalculates on every tick (the tester's "On realtime bar tick" setting), so the
 refresh live as the indicator did instead of only at each candle close; orders and the tally
 are placed on confirmed candles only, so the tester's history is the same either way.
 
+### D-88  No trend-bias gate; selection stays inside the reversal concept  (DECIDED)
+Proposed after the M4 base run: build the Milestone 6 bias gate (reversals only with the
+higher-timeframe direction) before the Milestone 5 trade manager. The owner declined: the
+strategy's purpose is to take reversals at levels, and a direction filter works against that.
+Agreed. What stays in scope for finding the edge, all inside the concept and all testable with
+switches before any code: fewer and stronger levels (the 40 drawn levels put price near a
+level at all times, so "at a level" alone says nothing); stacked zones only (two or more
+levels, the only stack group in the black so far; testable now with Reliability 0 and History
+0, which leaves the stack as the whole score); stronger rejection candles (wick share, candle
+size); the range-edge filter (D-81); the session windows; and later the trade manager (M5)
+for the payoff. From Milestone 6 only the higher-timeframe rejection confirmation stays (a
+bigger candle rejecting the same level is still a reversal signal); the bias inputs are
+parked until a test asks for them. Test discipline: every change is judged on the long
+sample with initial capital 500,000 in the Properties tab so no run is cut short by the
+margin floor; profit factor, trade count and net in USD are compared, and a keeper must hold
+on both halves of the range.
+
 ---
 
 ## L. New in round 4
