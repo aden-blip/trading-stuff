@@ -33,6 +33,59 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 7  (M4 v0.3, base run: the tester's figures, cross-check passed)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to the Sunday 20 Sep evening
+session, 73 trading days (breakdown table header); the chart's loaded history, about 20,600
+candles. Screenshot at 20:38 CT [21:38 NY] with the info box, both tables and the level lines
+drawn (the owner re-added the script; the earlier blank was the mid-candle timing).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, set in
+the script. Order size 2 contracts.
+Settings changed from defaults: none (all filters off, entry at the close of the follow-through
+candle, stop beyond the zone, reliability weight 40).
+
+Headline stats (info box; the tester's Overview and Performance Summary not yet screenshotted):
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 769 closed (paper tally 770) | 206 won, 26.8 % (paper: 171 reached T1, 22 %) | not measured | −16,929.80 USD after costs on 2 MNQ, −4232.50 points per contract | not measured | not measured | not measured | not measured |
+
+Cross-check (checklist item 3): tester 769 closed against paper 770, one apart. Tester net
+−4232.50 points per contract against paper −2977.00 before costs: a gap of 1255.50 points over
+769 trades, 1.63 points a trade, against an expected 1.8 for a trade that ends at the stop
+(two commissions, two slipped fills) and 1.3 for one that ends at the target (no slippage on a
+limit fill); weighted by the 22 % of target exits the expectation is about 1.7. The tally's fill
+model matches the tester. The tester's extra winners over the tally's T1 count are the flatten
+exits that closed in profit (43 flats in the tally).
+
+By setup, by score, by stack and by level type: as session 5 (the paper tally is unchanged:
+REV 623 trades about −2915, BRK 147 trades −62; scores 5 and 6 positive, 7 and 8 negative;
+2-level zones +607 against −1825 and −1759 for 1 and 3+; P4M, MO and NL the winners, LH, P4H
+and AL the losers).
+By session (Asia / London / New York) where relevant: as session 5 (Asia +892.50, London
+−1117.50, New York −2384.50, other hours −367.25, paper).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The base strategy loses on this sample after costs: −5.5 points a trade on average, of which
+1.6 is cost; before costs −3.9 a trade. About one trade in four ends with a profit. Nothing
+new in the shape of the trades against v0.15 and the session-5 reading; the D-84 conclusion
+stands (the raw trigger has no edge; the ranking's top types are the losers). This is the
+honest baseline for the switch tests, which now move to the long sample.
+
+Issues found (bugs, repainting, alerts, drawing problems): none in this run. The LuxAlgo
+Smart Money Concepts boxes are still on the chart (not ours). The "NY Low" tag sits on top of
+the statistics table's AO row at this zoom, cosmetic.
+
+Changes made before the next session (setting or code, and why): none to the rules. M4 v0.4
+(already pushed) only makes the strategy recalculate on every tick so the drawings refresh
+live, and formats the tester-net figure plainly; same trades. Next: the tester's Overview and
+Performance Summary for the missing fields, then the Deep Backtesting run of the same base
+settings, then one switch at a time on the long sample, reliability weight 0 first (D-85).
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 6  (M4 v0.3, the tester trades; cross-check of six trades)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, the chart's loaded history; screenshot of
