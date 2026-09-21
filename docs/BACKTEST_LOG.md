@@ -33,6 +33,46 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 10  (M4 v0.3, switch test 2: Asia window only; Last 365 days)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days" (late Aug
+2025 to 20 Sep 2026; the whole range this time, no margin stop).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital still 50,000 (the 500,000 for tests was not yet set; with 532 trades
+the run was not cut short).
+Settings changed from defaults: Filters, "Entries only inside the checked windows" on, Asia
+(19:00 to 23:00 CT [20:00 to 00:00 NY]) the only window ticked.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 532 | 127 won, 23.87 % | 0.841 | −10,218.40 USD, −20.44 %; −19.21 USD a trade | 11,693.20 USD, 22.72 % | 425.00 USD (gross profit 53,974.60 over 127) | 158.50 USD (gross loss 64,193.00 over 405) | not measured |
+
+Commission load 3.15 %. Buy and hold +19.42 %. Outliers 33.98 % of the gross. Payoff about
+2.7 to 1, break-even near 27 % winners, the run wins 24 %.
+
+By setup / by level type / by session: not measured (Deep Backtesting draws nothing on the
+chart).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+About two trades a night. Flat to −5 % from September to March, then a steady slide to −20 %
+by September 2026, with the same profit factor as the all-hours base (0.841 against 0.843).
+The 73-day reading that Asia was the one positive window (session 5: +892.50 points on 137
+trades) does not hold on the year; it was the sample noise D-85 warned about. Not a keeper.
+
+Issues found (bugs, repainting, alerts, drawing problems): none. The filter took this time
+(the trade count is the check).
+
+Changes made before the next session (setting or code, and why): none to the rules. Next
+switch test: stacked zones only (Reliability 0 and History 0 together), then fewer levels,
+stronger rejection candles, the range filter, break trades off, New York only. Initial
+capital 500,000 in Properties from here.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 9  (M4 v0.3, first Deep Backtesting run, "Last 365 days")
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days"; the
