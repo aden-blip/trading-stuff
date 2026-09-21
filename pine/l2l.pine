@@ -1612,7 +1612,10 @@ if barstate.isconfirmed and array.size(zLo) > 0
     int[]    nmPri = array.new<int>(2, -1)
     string[] nmTxt = array.new<string>(2, "")
     bool lateDay = flatBar or (entryCutoff > 0 and modNow >= cutMin and (flattenAt == 0 or modNow <= flatMin))
-    bool flatNow = posDir == 0 and pendDir == 0 and strategy.position_size == 0
+    // Flat by the tally's own book. The tester's position is not part of this: on the candle a
+    // resting order fills, the tester already holds the trade when the script runs, and that
+    // fill is what step 1 reads. The tester's position only guards new placements below.
+    bool flatNow = posDir == 0 and pendDir == 0
     [filtOK, filtWhy] = f_filtersOK()
     // 1. Fills of resting orders, read before anything is cancelled, because the tester filled
     //    them inside this candle. The tester assumes one path through a candle: the open, the
@@ -1746,7 +1749,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
                     else if pattern and lateDay
                         if diag
                             f_nearNote(nmPri, nmTxt, dir, 500, who + " skipped: inside the entry cutoff window")
-                    else if pattern and (not flatNow or sigTaken)
+                    else if pattern and (not flatNow or sigTaken or strategy.position_size != 0)
                         if diag
                             f_nearNote(nmPri, nmTxt, dir, 500, who + " skipped: already in a trade, one at a time")
                     else if pattern
@@ -1794,7 +1797,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
     // 3. New breaks: a close through a zone by the break distance, from the other side, with
     //    enough body, rests a retest limit at the broken edge (D-50), checked for geometry, gate,
     //    score and filters now. Only while flat.
-    if brkOn and flatNow and not sigTaken and bestScore < 0 and not lateDay and filtOK
+    if brkOn and flatNow and not sigTaken and strategy.position_size == 0 and bestScore < 0 and not lateDay and filtOK
         float body = math.abs(close - open)
         bool bodyOK = minBreakBody <= 0 or body >= minBreakBody * execATR
         if bodyOK
