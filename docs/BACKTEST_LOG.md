@@ -33,6 +33,49 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 4  (M4 v0.1, first strategy paste; stopped by a runtime error)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, the chart's loaded history (about 20,590
+candles; the Sunday 20 Sep evening session at the right edge, 19:49 CT [20:49 NY]).
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, set in the script;
+the report was never produced.
+Settings changed from defaults: none.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| not measured | not measured | not measured | not measured | not measured | not measured | not measured | not measured |
+
+The script compiled but stopped on the last candle: "Error on bar 20590: The requested
+historical offset (3001) is beyond the historical buffer's limit (300)", raised by the level-line
+drawing (f_drawLine). No strategy report, no info box, no tables.
+
+By setup: not measured.
+By level type (top 3 and bottom 3 by net P&L): not measured.
+By session (Asia / London / New York) where relevant: not measured.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+Every candle before the last one was processed: the signal tags and the paper exit marks drew
+as in v0.15 (7/10, 8/10 and 5/10 tags; T1 +193.50, stop −38.00, stop −52.25 and T1 +76.75
+visible on 17 and 18 Sep). The level lines, their tags, the info box, the statistics table and
+the breakdown table were missing, because the drawing block runs before them and the error
+stopped the script there. The same chart carried the LuxAlgo Smart Money Concepts boxes, which
+confuse the read of the tester's trade marks; hide that indicator for the M4 screenshots.
+
+Issues found (bugs, repainting, alerts, drawing problems): the runtime error above. A strategy
+refuses a line that starts 3,000 candles back by candle count (the longest-line setting), which
+the indicator version accepted (D-87).
+
+Changes made before the next session (setting or code, and why): M4 v0.2 places the level lines
+and their tags by time, from a list of one time per candle, so a line still starts at the candle
+that made its level. No trading rule changed. Next run: the same base run, plus the tester's
+Overview, Performance Summary and the info box Tester and Paper rows.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the screenshot
+and the error text are in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-20  Session 3  (M3 v0.14, entry and stop switches; run A = baseline)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to the Sunday 20 Sep evening

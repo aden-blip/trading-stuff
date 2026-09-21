@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.1
+//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.2
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -1938,6 +1938,17 @@ if barstate.isconfirmed and flatBar
 // Every level is its own line, starting at the candle that made it. Levels within the share
 // distance (default: the touch tolerance) share one tag so the names stay readable. Zones for
 // trading are built in M3 from the cluster tolerance; drawing does not merge them.
+// Drawings are placed by time. A line starts at the candle that made its level, which can sit
+// thousands of candles back, and a strategy refuses a position that far back by candle count
+// ("requested historical offset beyond the buffer"); a time needs no history. One time per
+// candle is kept in a list; a position to the right of the last candle is projected.
+var int[] barT = array.new<int>()
+if array.size(barT) == bar_index
+    array.push(barT, time)
+int msPerBar = timeframe.in_seconds() * 1000
+f_barTime(int x) =>
+    int n = array.size(barT)
+    x < n ? array.get(barT, math.max(x, 0)) : time + (x - bar_index) * msPerBar
 var line[]  drawL = array.new<line>()
 var label[] drawT = array.new<label>()
 
@@ -1983,16 +1994,16 @@ f_labelText(string base, float price, bool touched) =>
 f_drawLine(float price, int fam, int anchor, int xEnd) =>
     color col = f_famColor(fam)
     int x1 = f_lineStart(anchor)
-    array.push(drawL, line.new(x1, price, xEnd, price, color = color.new(col, 10), width = lineWidth, style = f_lineStyle()))
+    array.push(drawL, line.new(f_barTime(x1), price, f_barTime(xEnd), price, xloc = xloc.bar_time, color = color.new(col, 10), width = lineWidth, style = f_lineStyle()))
 
 // Boxed: a tag whose point sits on the line end. Text only: plain text starting at the line end.
 f_drawLabel(float price, string txt, int fam, int xEnd) =>
     color col = f_famColor(fam)
     if labelStyle == "Text only"
         int xc = f_capX(xEnd + 2 + math.round(f_textBars(str.length(txt)) / 2.0))
-        array.push(drawT, label.new(xc, price, txt, xloc = xloc.bar_index, style = label.style_none, textcolor = col, size = f_labelSize()))
+        array.push(drawT, label.new(f_barTime(xc), price, txt, xloc = xloc.bar_time, style = label.style_none, textcolor = col, size = f_labelSize()))
     else
-        array.push(drawT, label.new(xEnd, price, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
+        array.push(drawT, label.new(f_barTime(xEnd), price, txt, xloc = xloc.bar_time, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
 
 // Pick the first column whose last tag sits more than tol below this price. Prices arrive in
 // ascending order, so only the tag below can overlap. When every column is busy, take the one
@@ -2116,7 +2127,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M4", "v0.1")
+    f_cell(0, "L2L M4", "v0.2")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2198,5 +2209,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M4 v0.1). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M4 v0.2). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

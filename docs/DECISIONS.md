@@ -764,6 +764,15 @@ Your v0.15 screenshot (defaults, Session 3 run F, the same 812 trades as the bas
    score (D-46), the thin-market filter (D-49), the bias gate (M6), and the bridge check on a
    sim account, which follows once the tester run is read.
 
+### D-87  Level lines are placed by time in the strategy  (DECIDED)
+The M4 v0.1 paste stopped on the last candle: TradingView refused a level line starting 3,000
+candles back by candle count ("The requested historical offset (3001) is beyond the historical
+buffer's limit (300)"), which the indicator version had accepted, and because the drawing runs
+before the info box and the tables, all of them were missing. Level lines and their tags are
+placed by time, from a list of one time per candle, so a line still starts at the candle that
+made its level and the longest-line setting keeps its meaning. Signal, exit and explanation
+tags stay on their own candle by count. No trading rule changed.
+
 ---
 
 ## L. New in round 4

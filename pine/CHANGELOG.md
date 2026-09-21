@@ -1,5 +1,15 @@
 # Changelog
 
+## M4 v0.2, 2026-09-21
+
+- Runtime fix. The v0.1 paste stopped on the last candle with "The requested historical offset
+  (3001) is beyond the historical buffer's limit (300)" from the level-line drawing, so the
+  lines, the tags, the info box and the tables never appeared. A strategy refuses a line that
+  starts thousands of candles back by candle count, which the indicator version accepted. Level
+  lines and their tags are now placed by time, from a list of one time per candle, so a line
+  still starts at the candle that made its level (D-87). No trading rule changed; the info box
+  reads v0.2.
+
 ## M4 v0.1, 2026-09-21
 
 - Milestone 4: the script is now a TradingView strategy. One position at a time; market entries
