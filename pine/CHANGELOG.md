@@ -1,5 +1,13 @@
 # Changelog
 
+## M4 v0.3, 2026-09-21
+
+- The tester made no trades on the v0.2 run (info box: 0 closed) while the paper tally made
+  770. Cause: the tester's default margin of 100 % of the contract value, which treats one MNQ
+  contract at 30,000 as 60,000 of cash and rejects every order on a 50,000 account. The script
+  now sets a 5 % margin for longs and shorts, about the exchange margin on a micro contract
+  (Properties tab: leverage 20). No trading rule changed; the info box reads v0.3.
+
 ## M4 v0.2, 2026-09-21
 
 - Runtime fix. The v0.1 paste stopped on the last candle with "The requested historical offset

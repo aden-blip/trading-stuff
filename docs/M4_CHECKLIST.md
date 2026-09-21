@@ -2,7 +2,7 @@
 
 Same paste as before, but the script is now a strategy: when it is added to the chart,
 TradingView opens the Strategy Tester panel at the bottom. Use the 5-minute MNQ chart. The info
-box must read `L2L M4 v0.2`. Every filter is off by default: that is the base run.
+box must read `L2L M4 v0.3`. Every filter is off by default: that is the base run.
 
 ## Checks
 
@@ -10,9 +10,12 @@ box must read `L2L M4 v0.2`. Every filter is off by default: that is the base ru
    Summary and List of Trades with numbers in them. Arrows, exit marks and the tables draw as in
    M3.
 2. **Costs.** Strategy settings, Properties tab: initial capital 50,000, commission 0.80 per
-   contract, slippage 2 ticks. Those are the MNQ defaults from the research notes. For CL/MCL
-   and SI/SIL change them there (0.95 with 1 tick, 1.60 with 2 ticks). Order size comes from the
-   script's Contracts input (2), not from the Properties tab.
+   contract, slippage 2 ticks, long leverage 20 and short leverage 20 (a 5 % margin, about the
+   exchange margin on a micro contract). Those are the MNQ defaults from the research notes.
+   For CL/MCL and SI/SIL change the costs there (0.95 with 1 tick, 1.60 with 2 ticks). Order
+   size comes from the script's Contracts input (2), not from the Properties tab. If the Tester
+   row in the info box ever reads 0 closed while the Paper row has trades, the margin is the
+   first thing to check: at the tester's default of 100 % every order is rejected.
 3. **Cross-check.** In the info box, the Tester rows against the Paper rows. Closed trades should
    match, give or take one or two. Tester net in points should sit below Paper points by about
    1.8 points per trade, which is the costs (0.80 per side and 2 ticks of slippage on each

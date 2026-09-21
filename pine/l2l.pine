@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.2
+//  Level-to-Level (L2L)  |  Milestone 4: Strategy v1 (tester)  |  M4 v0.3
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -20,7 +20,10 @@
 //  bridge would fill them (process_orders_on_close = false); resting limits fill at their price;
 //  the flatten order is placed one candle early so it fills at the open of the flatten candle.
 //  The costs in the strategy() line are the MNQ defaults from docs/RESEARCH.md (0.80 per side,
-//  2 ticks); change them in the tester's Properties tab for other contracts.
+//  2 ticks); change them in the tester's Properties tab for other contracts. Margin is 5 % of
+//  the contract value, about the exchange margin on a micro contract. The tester's own default
+//  is 100 %, which treats one MNQ contract as 60,000 of cash and rejects every order on a
+//  50,000 account (the v0.2 run: zero tester trades).
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
@@ -28,6 +31,7 @@
 strategy("L2L M4 - Strategy", shorttitle = "L2L M4", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500,
      pyramiding = 0, initial_capital = 50000, currency = currency.USD,
+     margin_long = 5, margin_short = 5,
      default_qty_type = strategy.fixed, default_qty_value = 1,
      commission_type = strategy.commission.cash_per_contract, commission_value = 0.80,
      slippage = 2, process_orders_on_close = false, calc_on_every_tick = false)
@@ -2127,7 +2131,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M4", "v0.2")
+    f_cell(0, "L2L M4", "v0.3")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2209,5 +2213,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M4 v0.2). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M4 v0.3). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

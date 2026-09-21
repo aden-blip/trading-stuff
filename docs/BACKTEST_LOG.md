@@ -33,6 +33,57 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 5  (M4 v0.2, first strategy run that drew; the tester made no trades)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, 7 Jun 2026 to the Sunday 20 Sep evening
+session, 73 trading days (breakdown table header); the chart's loaded history, about 20,600
+candles.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, set in the script.
+The tester made no trades, so no cost was charged.
+Settings changed from defaults: none (all filters off, entry at the close of the follow-through
+candle, stop beyond the zone).
+
+Headline stats (paper tally; the tester's own report was empty):
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 770 (171 T1, 556 stop, 43 flat) | 22 % reached T1 | not measured | −2977.00 points before costs | not measured | +137.75 per T1 exit | −54.00 per stop | not measured |
+
+Tester rows in the info box: 0 closed, 0 won, net 0 USD. Signals: 623 REV, 147 BRK.
+
+By setup: REV 623 trades, 24 % T1, about −2915 points; BRK 147 trades, 14 % T1, −62.00 points.
+By score: 5/10 or less 94 trades +1086.00; 6/10 210 trades +954.25; 7/10 217 trades −2645.00;
+8/10 or more 249 trades −2372.25. By stack: 1 level 286 trades −1824.75; 2 levels 272 trades
++607.00; 3 or more 212 trades −1759.00.
+By level type (top 3 and bottom 3 by net P&L): P4M +1134.00 (96 trades, 28 % T1), MO +929.50
+(75, 28 %), NL +845.25 (45, 29 %); LH −1804.00 (69, 18 %), P4H −1096.00 (92, 23 %), AL −616.00
+(52, 15 %). MNH, the top of the hold-rate ranking, 22 trades −204.75.
+By session (Asia / London / New York) where relevant: Asia 137 trades +892.50; London 82
+−1117.50; New York 314 −2384.50; other hours 237 −367.25.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+v0.2 compiled and drew everything: the level lines start at their candles again, the tags,
+the info box and both tables are back. The paper tally under the M4 fill model (entries at
+the next candle's open, resting orders checked when placed) reads a little worse than v0.15
+(770 trades and −2977 against 812 and −2760), which is the cost of getting in one candle
+later. Its shape is unchanged: scores of 5/10 and 6/10 positive, 7/10 and 8/10 negative;
+two-level zones the only stack group in the black; Asia positive, New York the worst window;
+the ranking's top types losing and the middle types winning (D-85). The tester itself made no
+trades: with its default margin of 100 % of the contract value, one MNQ contract at 30,000
+counts as 60,000 of cash, and every order was rejected on the 50,000 account.
+
+Issues found (bugs, repainting, alerts, drawing problems): the tester's zero trades (margin,
+above). The LuxAlgo Smart Money Concepts boxes were still on the chart; they are not ours.
+
+Changes made before the next session (setting or code, and why): M4 v0.3 sets a 5 % margin for
+longs and shorts in the script, about the exchange margin on a micro contract, so the tester
+can fill the orders. No trading rule changed. Next run: the same base run, with the tester's
+Overview, Performance Summary and the info box Tester and Paper rows.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 4  (M4 v0.1, first strategy paste; stopped by a runtime error)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, the chart's loaded history (about 20,590

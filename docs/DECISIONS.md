@@ -759,7 +759,11 @@ Your v0.15 screenshot (defaults, Session 3 run F, the same 812 trades as the bas
    losing-trade caps, daily loss limit and daily target (D-44). They only block new entries.
 4. **Costs.** MNQ defaults in the script: 0.80 per side, 2 ticks slippage, initial capital
    50,000, from docs/RESEARCH.md. Other contracts change them in the tester's Properties tab.
-   Order size is the Contracts input (2), which also drives the alert quantity.
+   Order size is the Contracts input (2), which also drives the alert quantity. Margin is 5 %
+   of the contract value for longs and shorts (v0.3), about the exchange margin on a micro
+   contract; the tester's default of 100 % treats one MNQ contract as 60,000 of cash and
+   rejected every order on the 50,000 account, which is why the v0.2 run showed zero tester
+   trades. Margin calls cannot arise from this: two contracts need about 6,000 of the 50,000.
 5. **Not in v0.1:** the trade manager (M5, so exits are the hard first target only), size by
    score (D-46), the thin-market filter (D-49), the bias gate (M6), and the bridge check on a
    sim account, which follows once the tester run is read.
