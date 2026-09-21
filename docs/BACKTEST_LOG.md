@@ -33,6 +33,47 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 18  (M6 v0.1, base run: the M4 trades with the higher-timeframe count in the tag; screenshots only)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days" at
+00:12 CT [01:12 NY] on 21 Sep; the window has moved one day since the M4 export of session
+15, so the first trades of the range differ slightly. Two screenshots (Overview, Performance
+analysis with the by-signals panel); the list of trades not yet exported.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000.
+Settings changed from defaults: none (manager OFF, HTF count on, HTF weight 0, gate off).
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 2,963 (M4: 2,963) | 26.46 %, 784 won (M4: 784) | 0.836 (M4 0.84) | -57,783.20 USD, -11.56 % (M4 -57,794.60); -19.51 a trade | 63,402.00 USD, 12.58 % | not measured | not measured | not measured |
+
+Gross profit 294,632.20, gross loss 352,428.40, commission load 3.22 %, outliers 78,140.80
+(15.63 %), largest profit 3,064.80, largest loss 872.20, buy and hold +20.94 %. The
+by-signals panel shows the new tags, for example "REV NL s62 k1 h3 f0 ASIA" and "REV 4HO s51
+k1 h6 f2 ASIA": the count is in the export's Signal column.
+
+By setup / by level type / by session / by higher-timeframe count: not measured until the
+export arrives.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+As intended, the M6 v0.1 base is the M4 strategy: the same 2,963 trades and 784 winners,
+eleven dollars apart over the year from the moved window. The split by the higher-timeframe
+count is the whole point of the run and waits for the file.
+
+Issues found (bugs, repainting, alerts, drawing problems): none reported; the chart was not
+screenshotted.
+
+Changes made before the next session (setting or code, and why): none. Next: the export of
+this run, read with `tools/trade_list_report.py` (by count and cumulative) and
+`tools/compare_trade_lists.py` (both halves); the weight and the gate follow only if the
+count separates the trades on both halves (D-93).
+
+Screenshots or trade list attached under reference/backtests/<date>/ : screenshots in the
+chat; the export, when it comes, goes under `reference/backtests/2026-09-21/`.
+
+---
+
 ## 2026-09-21  Session 17  (M5 v0.2, stages plus the trail, Last 365 days at 500,000; screenshots only)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", 21 Sep
