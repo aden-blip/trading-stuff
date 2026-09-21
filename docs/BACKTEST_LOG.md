@@ -44,10 +44,17 @@ the script. Order size 2 contracts.
 Settings changed from defaults: none (all filters off, entry at the close of the follow-through
 candle, stop beyond the zone, reliability weight 40).
 
-Headline stats (info box; the tester's Overview and Performance Summary not yet screenshotted):
+Headline stats (info box, then the tester's Overview at 20:49 CT [21:49 NY]; the Performance
+Summary tab not yet screenshotted):
 | Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
 |---|---|---|---|---|---|---|---|
-| 769 closed (paper tally 770) | 206 won, 26.8 % (paper: 171 reached T1, 22 %) | not measured | −16,929.80 USD after costs on 2 MNQ, −4232.50 points per contract | not measured | not measured | not measured | not measured |
+| 769 closed (paper tally 770) | 206 won, 26.79 % (paper: 171 reached T1, 22 %) | 0.864 | −16,929.80 USD after costs on 2 MNQ, −33.86 % of the 50,000; −4232.50 points per contract; −22.00 USD a trade | 24,103.40 USD, 44.46 % | not measured (paper: +137.75 points per T1 exit) | not measured (paper: −54.00 points per stop) | not measured |
+
+Overview extras: buy and hold over the same range +2.69 %. The equity curve (percent of the
+account) sits between 0 and −5 % from 7 Jun to about 13 Jul, drops to about −22 % over the
+next two weeks, drifts to −30 % by early August, dips to about −38 % around 8 Sep and ends at
+−33.86 %. Most of the damage is one two-week stretch in mid-July; the trade list of those days
+is worth a look once the long sample is in.
 
 Cross-check (checklist item 3): tester 769 closed against paper 770, one apart. Tester net
 −4232.50 points per contract against paper −2977.00 before costs: a gap of 1255.50 points over
@@ -73,7 +80,13 @@ honest baseline for the switch tests, which now move to the long sample.
 
 Issues found (bugs, repainting, alerts, drawing problems): none in this run. The LuxAlgo
 Smart Money Concepts boxes are still on the chart (not ours). The "NY Low" tag sits on top of
-the statistics table's AO row at this zoom, cosmetic.
+the statistics table's AO row at this zoom, cosmetic. With the tester panel open the info box
+and the breakdown table overlap at the top right (the pane is shorter); move the breakdown
+table to "Middle left" or "Bottom left" in the paper-trade settings for tester screenshots.
+The Overview screenshot also shows an open short of 2 contracts at 30,110.25 in the connected
+Tradovate panel, right at the Monday High / Asia High zone where the script would take a
+short reversal; if the strategy's alert is wired to a bridge, it must point at the sim
+account while the base rules lose money (plan: bridge check on sim only).
 
 Changes made before the next session (setting or code, and why): none to the rules. M4 v0.4
 (already pushed) only makes the strategy recalculate on every tick so the drawings refresh
