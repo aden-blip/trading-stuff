@@ -33,6 +33,48 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 11  (M4 v0.3, switch test 3: stacked zones only; Last 365 days)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days".
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000 (first run at the test capital).
+Settings changed from defaults: Score group, Reliability 0 and Level history 0 (the stack is
+then the whole score, so single-level zones fall under the minimum and only zones with two or
+more levels trade). Whether the Asia window from session 10 was still ticked is not
+confirmed: 448 trades is below the Asia-only count of 532, while an all-hours stacked-only run
+should land well above 1,000 (stacked zones held 63 % of the 73-day base trades). Treated as
+Asia plus stacked until the owner confirms; the all-hours version is the next run.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 448 | 105 won, 23.44 % | 0.807 | −10,535.60 USD, −2.11 % of 500,000; −23.52 USD a trade | 12,579.80 USD, 2.51 % | 420.31 USD (gross profit 44,133.00 over 105) | 159.38 USD (gross loss 54,668.60 over 343) | not measured |
+
+Commission load 3.25 %. Buy and hold +19.43 %. Outliers 11,827.40 USD. Largest profit
+1,252.80, largest loss 636.20.
+
+By setup / by level type / by session: not measured (Deep Backtesting draws nothing).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+Flat to slightly positive until February, a dip in March, then a slow slide to −2 % of the
+larger account by September. The profit factor, 0.807, is the lowest of the three long-sample
+runs so far (base 0.843, Asia 0.841). If the Asia window was on, this says stacked zones do not
+help inside Asia; the all-hours version decides the stack question. Either way the 73-day
+"two-level zones in the black" reading looks like sample noise, as the Asia one did.
+
+Issues found (bugs, repainting, alerts, drawing problems): the configuration of this run is
+uncertain (above). From here every test report states the trade count and the grey settings
+line, and the Filters top box is off unless the test is about windows.
+
+Changes made before the next session (setting or code, and why): none. Next: the same
+weights with the Filters top box off (all hours, stacked only), then fewer levels, stronger
+rejection candles, the range filter, break trades off, New York only.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : not saved; the
+screenshot is in the chat of 2026-09-21.
+
+---
+
 ## 2026-09-21  Session 10  (M4 v0.3, switch test 2: Asia window only; Last 365 days)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days" (late Aug
