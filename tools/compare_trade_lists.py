@@ -64,6 +64,8 @@ comp("By window", lambda t: t['window'], ['ASIA', 'LON', 'NY', 'OTH'])
 comp("By stack", lambda t: f"k{t['stack']}" if t['stack'] < 3 else 'k3+', ['k1', 'k2', 'k3+'])
 comp("By score", lambda t: f"s{t['score']//10*10}s")
 comp("By level history", lambda t: f"h{t['hist']} {R.HIST.get(t['hist'],'?')}", ['h12 first test', 'h6 touched', 'h15 held', 'h3 broke'])
+if any(t.get('htf') is not None for t in deep):
+    comp("By higher-timeframe rejections (reversals, M6)", lambda t: f"f{t['htf']}" if t.get('htf') is not None else 'BRK', ['f0', 'f1', 'f2', 'f3', 'f4', 'BRK'])
 comp("By level history, REV only", lambda t: (f"REV h{t['hist']} {R.HIST.get(t['hist'],'?')}" if t['setup']=='REV' else 'BRK'), ['REV h12 first test', 'REV h6 touched', 'REV h15 held', 'REV h3 broke', 'BRK'])
 comp("By level history and window", lambda t: f"h{t['hist']} {t['window']}")
 comp("By hour of entry", lambda t: f"{t['hour']:02d}", [f"{h:02d}" for h in range(24)], min_n=1)

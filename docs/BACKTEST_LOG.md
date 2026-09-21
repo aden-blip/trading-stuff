@@ -33,6 +33,52 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-21  Session 17  (M5 v0.2, stages plus the trail, Last 365 days at 500,000; screenshots only)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", 21 Sep
+2025 to 18 Sep 2026 CT. Two screenshots (Overview, Performance analysis); the list of trades
+was not exported, so the same-entries comparison of D-92 is outstanding.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000.
+Settings changed from defaults: none (manager on: 0.5R half, 1R breakeven, 1.5R trail, swing
+5 candles, 0.5 and 2.0 chart ATRs).
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 4,208 (v0.1 3,926, M4 2,963) | 24.33 %, 1,024 won | 0.814 (v0.1 0.802, M4 0.84) | -65,874.60 USD, -13.17 %; -15.65 a trade (v0.1 -16.72, M4 -19.51) | 71,219.80 USD, 14.22 % | not measured | not measured | not measured |
+
+Gross profit 287,461.20, gross loss 353,335.80, commission load 4.68 %, outliers 104,718.80
+(20.94 %), largest profit 1,325.80 (M4 3,064.80: the trail cut the year's biggest runner),
+largest loss 818.20, buy and hold +19.96 %. Best five signals shown by the tester: +1,137.80,
++1,116.60, +1,112.80, +1,093.00, +1,082.20; the other 3,132 signal groups -71,417.00.
+
+By setup / by level type / by session: not measured (no export).
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+The trail added 282 trades over v0.1 and 231 USD of loss; per trade it is the least bad of the
+three (-15.65 against -16.72 and -19.51), and the total is the same. The winners it makes
+are small: the largest profit fell from 3,064.80 to 1,325.80 because a trail two chart ATRs
+behind the close cannot ride a trend day. On the year's numbers the manager with the trail
+does not beat the hard-target trades: -65,875 against -57,795. The same-entries reading (the
+file) is still owed, but nothing in the headline suggests it clears the D-92 bar: the trail
+would have to be worth more than the 23,807 the extra trades cost, and the per-trade gain
+over v0.1 is about one dollar.
+
+Issues found (bugs, repainting, alerts, drawing problems): none reported; chart not
+screenshotted, so the navy stop line and the TRAIL tags are unchecked.
+
+Changes made before the next session (setting or code, and why): D-93. The manager's switch
+goes OFF by default (the code stays, all inputs stay), and the work moves to the entries:
+M6 v0.1 counts, for every reversal, the higher-timeframe candles that rejected the zone and
+writes the count into the tag, so one export at defaults splits the trades by it.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : screenshots in the
+chat of 2026-09-20 (owner's clock); the v0.2 export, when it comes, goes under
+`reference/backtests/2026-09-21/`.
+
+---
+
 ## 2026-09-21  Session 16  (M5 v0.1, staged stops, Last 365 days at 500,000; the OFF check and the ON export)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", trades

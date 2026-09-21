@@ -22,7 +22,7 @@ import datetime as dt
 import re
 import statistics
 
-TAG = re.compile(r"^(REV|BRK) (\S+) s(\d+) k(\d+) h(\d+) (\S+)$")
+TAG = re.compile(r"^(REV|BRK) (\S+) s(\d+) k(\d+) h(\d+)(?: f(\d+))? (\S+)$")
 FAMILY = {}
 for codes, fam in [
     (["PDH", "PDL", "PDM", "DO", "MO"], "Daily"),
@@ -84,10 +84,11 @@ def load(path, pointvalue):
         m = TAG.match(t["tag"])
         if not m:
             raise SystemExit(f"trade {n}: unreadable tag {t['tag']!r}")
-        t["setup"], zone, sc, k, h, w = m.groups()
+        t["setup"], zone, sc, k, h, f, w = m.groups()
         t["zone"] = zone
         t["codes"] = [c for c in zone.split("+") if c]
         t["score"], t["stack"], t["hist"] = int(sc), int(k), int(h)
+        t["htf"] = int(f) if f is not None else None
         t["window"] = w
         usd_per_pt = t["qty"] * pointvalue
         t["usd_per_pt"] = usd_per_pt
@@ -210,6 +211,9 @@ def main():
     table("By stack (levels in the zone)", group(trs, lambda t: f"k{t['stack']}" if t["stack"] < 3 else "k3+"), ["k1", "k2", "k3+"])
     table("By score", group(trs, lambda t: f"s{t['score'] // 10 * 10}-{t['score'] // 10 * 10 + 9}"))
     table("By level history", group(trs, lambda t: f"h{t['hist']} {HIST.get(t['hist'], '?')}"))
+    if any(t["htf"] is not None for t in trs):
+        table("By higher-timeframe rejections (reversals, M6)", group([t for t in trs if t["htf"] is not None], lambda t: f"f{t['htf']} of 4"))
+        table("By at least N higher-timeframe rejections (cumulative)", {f"f>={n}": [t for t in trs if t["htf"] is not None and t["htf"] >= n] for n in range(5)}, [f"f>={n}" for n in range(5)])
     table("By level history and setup", group(trs, lambda t: f"{t['setup']} h{t['hist']} {HIST.get(t['hist'], '?')}"))
     table("By hour of entry (chart time)", group(trs, lambda t: f"{t['hour']:02d}:00"))
     table("By weekday of entry", group(trs, lambda t: t["wday"]), ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"])

@@ -1,5 +1,19 @@
 # Changelog
 
+## M6 v0.1, 2026-09-21
+
+- Higher-timeframe rejection (plan 4.8, D-93). For every reversal setup the last completed
+  5-minute, 15-minute, 1-hour and 4-hour candles are checked: did the candle trade into the
+  zone and close back on the approach side with a wick of at least 0.4 of its range? The count
+  (0 to 4) goes into the trade's tag as f0 to f4, into the signal label as HTF x/4, into the
+  score (weight 0 for now, so scores and trades are unchanged) and behind an optional gate
+  "reversals need at least N" (off). Four higher-timeframe requests added (10 of 40 used).
+  Settings group "Higher-timeframe rejection (M6)".
+- The trade manager's switch is OFF by default (sessions 16 and 17: a fifth less bad per
+  trade, a third more trades, no better total). Everything about it stays and can be turned on.
+- With the defaults the trades are the M4 trades; the export of this run splits them by the
+  higher-timeframe count. The info box reads v0.1 of M6.
+
 ## M5 v0.2, 2026-09-21
 
 - The third stage of D-32, the trail. From one and a half R of run-up on a closed candle the

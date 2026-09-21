@@ -912,6 +912,35 @@ Session 16, the M5 v0.1 run against the M4 run trade by trade (`tools/compare_ru
    entries, its default goes OFF and the work moves to the entries (M6, the higher-timeframe
    rejection, D-88).
 
+
+### D-93  The manager is parked with its switch off; the entries come next, starting with the higher-timeframe rejection  (DECIDED)
+Session 17: with the trail the year reads -65,875 on 4,208 trades against -65,643 for the
+stages alone and -57,795 for the hard-target trades. Per trade the manager is a fifth less
+bad (-15.65 against -19.51); in total it is worse, because scratching early frees the
+strategy for a third more trades and every trade loses on average. The same-entries reading
+of the v0.2 file is still owed and is recorded when it comes, but the bar of D-92 is not
+cleared by the headline.
+1. **Manager switch OFF by default.** The stages and the trail stay in the script with every
+   input, so they can be turned on for any run, and they are re-judged once the entries have
+   an edge: a per-trade improvement only pays on entries that make money.
+2. **The entries are the work.** Every selection reading so far (D-84, D-85, D-91) says the
+   raw rejection at a level has no edge on this year of MNQ, and only two filters held on
+   both halves (the two hours after the cash open and after the 17:00 CT [18:00 NY] reopen;
+   zones built on a 4-hour open), together worth less bad, not good. What is left inside
+   the reversal concept (D-88): a bigger candle rejecting the same level. M6 v0.1 builds it
+   as plan 4.8 has it: the last completed 5-minute, 15-minute, 1-hour and 4-hour candles
+   are checked for a rejection of the zone (traded in, closed back, wick of 0.4 or more of
+   the range); the count goes into the tag as f0 to f4 and the label as HTF x/4.
+3. **Measured before weighted.** The HTF weight in the score starts at 0 and the gate at
+   off, so the v0.1 base run takes the M4 trades exactly and the export splits them by the
+   count. The weight (the plan's 10) and the gate ("at least N of 4") are set only if the
+   count separates winners from losers on both halves of the year; a gate run then confirms,
+   because a skipped trade frees the strategy for trades the export cannot show.
+4. **The bias inputs stay parked** (D-88). If the higher-timeframe rejection does not
+   separate the trades either, the concept as specified has been measured on this
+   instrument and timeframe, and the next decision is the owner's: the instrument, the
+   timeframe, or the trigger itself.
+
 ---
 
 ## L. New in round 4

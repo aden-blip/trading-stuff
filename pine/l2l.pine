@@ -1,20 +1,20 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 5: Trade manager, staged stops and trail  |  M5 v0.2
+//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.1
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
 //    [A] Level Engine      (M1, done)
 //    [B] Interaction       (M2, done)       [C] Stats & Ranking (M2, done)
 //    [D] Setup Detector    (M3, done)       [E] Score           (M3, done)
-//    [F] Filters           (M4, done)       [G] Trade Manager   (this milestone: stages)
-//    [H] HTF Confluence    (M6)      [I] Bias Inputs     (M6)
+//    [F] Filters           (M4, done)       [G] Trade Manager   (M5, stages and trail, switch OFF by default)
+//    [H] HTF Confluence    (this milestone: rejection count)   [I] Bias Inputs (parked, D-88)
 //    [J] Output            (M3 on)
 //
 //  Rules: no repainting (levels come from completed periods and sessions; higher-timeframe
 //  values use [1] with lookahead on; verdicts are taken on confirmed bars only), no NQ-specific
 //  numbers (distances are daily-ATR units with tick floors), all times read in the timezone
-//  input (default Central). Higher-timeframe requests used: 6 of 40.
+//  input (default Central). Higher-timeframe requests used: 10 of 40.
 //
 //  Orders (M4): one position at a time. Market entries fill at the next candle's open, as a
 //  bridge would fill them (process_orders_on_close = false); resting limits fill at their price;
@@ -30,13 +30,17 @@
 //  window, and every exit says T1, stop, half, be or flat, so the tester's exported trade list
 //  holds the whole breakdown of a Deep Backtesting run (D-89). M5 (D-32): the stop moves in
 //  stages on closed candles, halfway to the entry after +0.5R, to the entry plus a cushion
-//  after +1R, and from +1.5R it trails the last confirmed swing and the close (v0.2); the
-//  tally and the tester get the same stop at the same close.
+//  after +1R, and from +1.5R it trails the last confirmed swing and the close; the tally and
+//  the tester get the same stop at the same close. Measured in sessions 16 and 17: a fifth
+//  less bad per trade, more trades, no better total, so the switch is OFF by default (D-93).
+//  M6 (plan 4.8): for every reversal the last completed 5-minute, 15-minute, 1-hour and 4-hour
+//  candles are checked for a rejection of the same zone; the count goes into the tag ("f2"),
+//  the label ("HTF 2/4"), the score (weight 0 until the export decides) and an optional gate.
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
 // ============================================================================
-strategy("L2L M5 - Strategy", shorttitle = "L2L M5", overlay = true,
+strategy("L2L M6 - Strategy", shorttitle = "L2L M6", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500,
      pyramiding = 0, initial_capital = 50000, currency = currency.USD,
      margin_long = 5, margin_short = 5,
@@ -173,7 +177,7 @@ gSc = "Score (0 to 100)"
 wRel     = input.int(40, "Reliability", minval = 0, maxval = 100, group = gSc, inline = "w1")
 wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline = "w1")
 wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
-wHTF     = input.int(10, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2")
+wHTF     = input.int(0, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2", tooltip = "Points for higher-timeframe candles that rejected the same zone, full points at 4 of 4. 0 until the trade list says the count matters (D-93); the plan's 10 returns then.")
 wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
 minScore = input.int(50, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "The score reads out of 100 of what the bot can measure today: raw points over the points reachable with the weights above (82 before M6, 100 after). 50 here means 5/10 on the tag. The plan's 60 returns once M6 fills the score, and the M4 backtest by score bucket sets the final bar.")
 rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
@@ -210,7 +214,7 @@ showBreak   = input.bool(true, "Show paper breakdown table", group = gPa, toolti
 breakPos    = input.string("Middle right", "Breakdown position", options = ["Middle right", "Middle left", "Top left", "Bottom left"], group = gPa)
 
 gMg = "Trade manager (M5)"
-mgrOn     = input.bool(true, "Move the stop in stages (D-32)", group = gMg, tooltip = "R is the distance from the entry to the first stop. ON: once a closed candle has run half an R in profit, the stop moves halfway to the entry; once it has run a full R, the stop moves to the entry plus a small cushion; from one and a half R the stop trails, following the last confirmed swing and the close, only ever tightening. Each move applies from the next candle, as a bridge would apply it. OFF: the M4 trades, first stop and first target only.")
+mgrOn     = input.bool(false, "Move the stop in stages (D-32)", group = gMg, tooltip = "R is the distance from the entry to the first stop. ON: once a closed candle has run half an R in profit, the stop moves halfway to the entry; once it has run a full R, the stop moves to the entry plus a small cushion; from one and a half R the stop trails, following the last confirmed swing and the close, only ever tightening. Each move applies from the next candle, as a bridge would apply it. OFF: the M4 trades, first stop and first target only.")
 stage1R   = input.float(0.5, "Halve the risk after, R", step = 0.1, minval = 0.1, group = gMg, inline = "st")
 stage2R   = input.float(1.0, "breakeven after, R", step = 0.1, minval = 0.1, group = gMg, inline = "st")
 stage3R   = input.float(1.5, "trail after, R", step = 0.1, minval = 0.1, group = gMg, inline = "st")
@@ -221,6 +225,14 @@ structATR = input.float(0.5, "Trail: below the swing, chart ATRs", step = 0.1, m
 chaseATR  = input.float(2.0, "behind the close, chart ATRs", step = 0.1, minval = 0.1, group = gMg, inline = "tr", tooltip = "The trail is the higher of the two (for a long): the swing stop and the close minus this many chart ATRs. It never moves back.")
 mgrMarks  = input.bool(true, "Mark stop moves", group = gMg, tooltip = "A small navy tag at the stop each time the stage changes: 1/2R, BE or TRAIL.")
 showStopLine = input.bool(true, "Draw the stop in force", group = gMg, tooltip = "A navy line at the stop price while a trade is open, as of each candle's close, so the stages and the trail can be checked by eye.")
+
+gHt = "Higher-timeframe rejection (M6, plan 4.8)"
+htfOn        = input.bool(true, "Count higher-timeframe rejections of the zone", group = gHt, tooltip = "For each reversal, the last completed 5-minute, 15-minute, 1-hour and 4-hour candles are checked: did the candle trade into this zone and close back on the approach side with a wick of at least the share below? The count (0 to 4) goes into the trade's tag as f0 to f4 and into the signal label as HTF x/4. Off: the count reads 0 everywhere.")
+htfWickRatio = input.float(0.4, "Wick at least this share of the candle", step = 0.05, minval = 0.1, maxval = 0.9, group = gHt)
+htfMin       = input.int(0, "Reversals need at least this many (0 = off)", minval = 0, maxval = 4, group = gHt, tooltip = "A gate for testing: a reversal is skipped when fewer higher-timeframe candles rejected the zone. Off for the base run; the exported trade list splits the trades by the count first.")
+htfTf2       = input.timeframe("15", "Timeframes beyond the 5-minute", group = gHt, inline = "tf")
+htfTf3       = input.timeframe("60", "", group = gHt, inline = "tf")
+htfTf4       = input.timeframe("240", "", group = gHt, inline = "tf")
 
 gRg = "Range filter (test, D-81)"
 rangeOn     = input.bool(false, "No reversal at a level inside a range, edges only", group = gRg, tooltip = "Your read: in a range, trade the edges, not the middle. The script looks back over the window below. If that stretch is narrower than the limit and the level sits in the middle of it, away from both edges by the edge share, reversal entries at that level are skipped. Breaks are not affected. Off until the M4 backtest measures it.")
@@ -1288,6 +1300,36 @@ if nzc > 0
                 array.set(zRank, g, rk)
                 array.set(zRankN, g, array.get(stHold, ty) + array.get(stBreak, ty))
 
+// ═══════════════════ [H] HTF CONFLUENCE (M6, plan 4.8) ═══════════════════
+// The last completed candle of each higher timeframe, read with [1] and lookahead on so it never
+// repaints. A candle rejects a zone when it traded into the zone and closed back on the approach
+// side with a wick of at least htfWickRatio of its range.
+[h5o, h5h, h5l, h5c]     = request.security(syminfo.tickerid, "5",    [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+[h15o, h15h, h15l, h15c] = request.security(syminfo.tickerid, htfTf2, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+[h60o, h60h, h60l, h60c] = request.security(syminfo.tickerid, htfTf3, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+[h4o, h4h, h4l, h4c]     = request.security(syminfo.tickerid, htfTf4, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+f_htfRej(int dir, float zlo, float zhi, float o, float h, float l, float c) =>
+    float rng = h - l
+    bool ok = false
+    if not na(o) and not na(c) and rng > 0
+        if dir > 0
+            ok := l <= zhi + touchTol and c > zhi and (math.min(o, c) - l) >= htfWickRatio * rng
+        else
+            ok := h >= zlo - touchTol and c < zlo and (h - math.max(o, c)) >= htfWickRatio * rng
+    ok
+f_htfCount(int dir, float zlo, float zhi) =>
+    int n = 0
+    if htfOn
+        if f_htfRej(dir, zlo, zhi, h5o, h5h, h5l, h5c)
+            n += 1
+        if f_htfRej(dir, zlo, zhi, h15o, h15h, h15l, h15c)
+            n += 1
+        if f_htfRej(dir, zlo, zhi, h60o, h60h, h60l, h60c)
+            n += 1
+        if f_htfRej(dir, zlo, zhi, h4o, h4h, h4l, h4c)
+            n += 1
+    n
+
 // ---- Helpers for setups, geometry and the score.
 // The first zone whose near edge is at least minDist away in the trade direction; -1 if none.
 f_nextZone(int dir, float fromPx, float minDist, int skipIdx) =>
@@ -1354,21 +1396,22 @@ f_hookText() =>
 // out of 15. HTF is 0 and bias neutral until M6. The score reads out of what is reachable today
 // (D-79): raw points over the points the current weights can produce, so 82 raw before M6 is 100.
 int hooksMax = vwapSideW + vwapStretchW + emaVoteW
-int scoreMax = math.max(1, wRel + wStack + wHist + math.round(wBias * 7 / 15.0) + hooksMax)
-f_score(float rankPct, bool isRev, int stack, int hist, int hooks) =>
+int scoreMax = math.max(1, wRel + wStack + wHist + wHTF + math.round(wBias * 7 / 15.0) + hooksMax)
+f_score(float rankPct, bool isRev, int stack, int hist, int hooks, int htf) =>
     float rel = na(rankPct) ? 0.5 : (isRev ? rankPct : 100 - rankPct) / 100.0
     int sRel   = math.round(wRel * rel)
     int sStack = stack >= 3 ? wStack : stack == 2 ? math.round(wStack * 0.6) : math.round(wStack * 0.25)
     int sHist  = math.round(wHist * hist / 15.0)
+    int sHTF   = math.round(wHTF * htf / 4.0)
     int sBias  = math.round(wBias * 7 / 15.0)
-    int raw    = sRel + sStack + sHist + sBias + hooks
+    int raw    = sRel + sStack + sHist + sHTF + sBias + hooks
     [math.round(100.0 * raw / scoreMax), sRel, sStack, sHist, sBias, raw]
 
 f_score10(int sc) =>
     str.tostring(math.round(sc / 10.0)) + "/10"
 
-f_tip(int sRel, int sStack, int sHist, int sBias, int hk, int raw) =>
-    "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF 0 (M6)  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk) + "  Raw " + str.tostring(raw) + " of " + str.tostring(scoreMax) + " reachable"
+f_tip(int sRel, int sStack, int sHist, int sBias, int hk, int raw, int htf) =>
+    "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF " + str.tostring(htf) + "/4 (" + str.tostring(math.round(wHTF * htf / 4.0)) + ")  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk) + "  Raw " + str.tostring(raw) + " of " + str.tostring(scoreMax) + " reachable"
 
 // Explanation notes: one per direction per bar, the highest-priority reason wins.
 f_nearNote(int[] pri, string[] txt, int dir, int p, string t) =>
@@ -1391,12 +1434,14 @@ f_sigSize() =>
 
 // ---- Order comments (D-89): the tester's trade list shows an order's comment in its Signal
 // column, so each entry carries the trade's setup, zone code, score, stack, level history
-// points (12 first test, 6 touched, 15 held today, 3 broke today) and session window, and each
-// exit says T1, stop or flat. One export of a Deep Backtesting run then holds the breakdown.
+// points (12 first test, 6 touched, 15 held today, 3 broke today), for reversals the count of
+// higher-timeframe candles that rejected the zone (f0 to f4, M6), and the session window; each
+// exit says T1, stop, half, be, trail or flat. One export of a Deep Backtesting run then holds
+// the breakdown.
 f_winTag() =>
     inNYS ? "NY" : inLondonS ? "LON" : inAsiaS ? "ASIA" : "OTH"
-f_tradeTag(bool isRev, string code, int sc, int stack, int hist) =>
-    (isRev ? "REV " : "BRK ") + code + " s" + str.tostring(sc) + " k" + str.tostring(stack) + " h" + str.tostring(hist) + " " + f_winTag()
+f_tradeTag(bool isRev, string code, int sc, int stack, int hist, int htf) =>
+    (isRev ? "REV " : "BRK ") + code + " s" + str.tostring(sc) + " k" + str.tostring(stack) + " h" + str.tostring(hist) + (isRev ? " f" + str.tostring(htf) : "") + " " + f_winTag()
 
 // ---- Resting limit orders: reversal limits (kind 1) and break retests (kind 2). Geometry,
 // gate, score and filters are checked when the order is placed, as the tester requires, so a
@@ -1734,6 +1779,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
     bool   fillForceTp = false   // its target was
     int    bestStack = 1
     int    bestHist  = 12
+    int    bestHtf   = 0
     int    bestId    = 0
     float  fillRun   = 0.0       // run-up along the path after a resting order's fill
     bool diag    = nearMiss != "Off"
@@ -1903,15 +1949,19 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         else
                             int hist = array.get(zHist, z) == 0 ? 12 : array.get(zHist, z)
                             int hk = f_hookPoints(dir, true)
-                            [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, true, array.get(zN, z), hist, hk)
-                            if sc < minScore
+                            int htfN = f_htfCount(dir, zlo, zhi)
+                            [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, true, array.get(zN, z), hist, hk, htfN)
+                            if htfMin > 0 and htfN < htfMin
                                 if diag
-                                    f_nearNote(nmPri, nmTxt, dir, sc, who + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw) + ")")
+                                    f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: " + str.tostring(htfN) + " of 4 higher-timeframe candles rejected the zone, needs " + str.tostring(htfMin))
+                            else if sc < minScore
+                                if diag
+                                    f_nearNote(nmPri, nmTxt, dir, sc, who + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw, htfN) + ")")
                             else if revLimitOn
                                 // Rest a limit at the zone's near edge; the fill is the signal (D-83).
                                 if not f_pendingExists(dir, entry)
                                     ordSeq += 1
-                                    f_placePending(dir, entry, zlo, zhi, array.get(zCode, z), array.get(zN, z), 1, stop, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw), ordSeq, f_tradeTag(true, array.get(zCode, z), sc, array.get(zN, z), hist))
+                                    f_placePending(dir, entry, zlo, zhi, array.get(zCode, z), array.get(zN, z), 1, stop, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw, htfN), ordSeq, f_tradeTag(true, array.get(zCode, z), sc, array.get(zN, z), hist, htfN))
                             else if sc > bestScore
                                 bestScore := sc
                                 bestDir   := dir
@@ -1920,12 +1970,13 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 bestLimit := false
                                 bestStack := array.get(zN, z)
                                 bestHist  := hist
+                                bestHtf   := htfN
                                 bestEntry := entry
                                 bestStop  := stop
                                 bestTp1   := tp1
                                 bestTp2   := tp2
                                 bestCode  := array.get(zCode, z)
-                                bestTip   := f_tip(sRel, sStack, sHist, sBias, hk, raw)
+                                bestTip   := f_tip(sRel, sStack, sHist, sBias, hk, raw, htfN)
                     else if diagAll and rej1 and zOK and not zBl and not revLimitRej
                         f_nearNote(nmPri, nmTxt, dir, 0, who + ": rejection candle on the previous bar, but this candle did not follow through, it needs a " + (dir > 0 ? "green close above " + str.tostring(zhi, format.mintick) : "red close below " + str.tostring(zlo, format.mintick)))
     // 3. New breaks: a close through a zone by the break distance, from the other side, with
@@ -1966,13 +2017,13 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 int hP = array.get(zHistP, z)
                                 int histB = hP == 0 or hP == 6 ? 12 : 6
                                 int hk = f_hookPoints(dir, false)
-                                [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, false, array.get(zN, z), histB, hk)
+                                [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, false, array.get(zN, z), histB, hk, 0)
                                 if sc < minScore
                                     if diag
-                                        f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not placed: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw) + ")")
+                                        f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not placed: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw, 0) + ")")
                                 else
                                     ordSeq += 1
-                                    f_placePending(dir, lim, zlo, zhi, array.get(zCode, z), array.get(zN, z), 2, stopB, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw), ordSeq, f_tradeTag(false, array.get(zCode, z), sc, array.get(zN, z), histB))
+                                    f_placePending(dir, lim, zlo, zhi, array.get(zCode, z), array.get(zN, z), 2, stopB, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw, 0), ordSeq, f_tradeTag(false, array.get(zCode, z), sc, array.get(zN, z), histB, 0))
     // 4. One signal per candle: the fill from step 1, or the best market candidate from step 2.
     if bestScore >= 0
         string dirTxt   = bestDir > 0 ? "LONG" : "SHORT"
@@ -1982,6 +2033,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
         string details = (bestLimit ? "E " : "E next open, about ") + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
         if not na(bestTp2)
             details := details + "  T2 " + str.tostring(bestTp2, format.mintick)
+        if bestSetup == 1 and htfOn
+            details := details + "  HTF " + str.tostring(bestHtf) + "/4"
         if showHooks
             details := details + "  " + f_hookText()
         string mini = (bestDir > 0 ? "▲ " : "▼ ") + f_score10(bestScore)
@@ -2044,7 +2097,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
             pendScore := bestScore
             pendSetup := bestSetup
             pendStack := bestStack
-            strategy.entry("E" + str.tostring(ordSeq), bestDir > 0 ? strategy.long : strategy.short, qty = baseQty, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = f_tradeTag(bestSetup == 1, bestCode, bestScore, bestStack, bestHist))
+            strategy.entry("E" + str.tostring(ordSeq), bestDir > 0 ? strategy.long : strategy.short, qty = baseQty, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = f_tradeTag(bestSetup == 1, bestCode, bestScore, bestStack, bestHist, bestHtf))
             strategy.exit("X" + str.tostring(ordSeq), from_entry = "E" + str.tostring(ordSeq), stop = bestStop, limit = bestTp1, comment_profit = "T1", comment_loss = "stop")
         f_cancelAllPending()
         int bz = bestZone
@@ -2280,7 +2333,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M5", "v0.2")
+    f_cell(0, "L2L M6", "v0.1")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2362,5 +2415,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M5 v0.2). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M6 v0.1). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
