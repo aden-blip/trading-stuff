@@ -1266,6 +1266,35 @@ Session 21's export, 417 trades, read by `tools/trade_list_report.py` and split 
    the next single change after them, and the first code items stay as D-100 point 8 ordered
    them: the VIX, then the buying-against-selling volume split.
 
+### D-103  Size is a multiplier; the contract and the entry style are not  (DECIDED)
+The owner asked whether the small dollar return is the contract size. Re-pricing run A's 240
+trades, stripped back to points per contract (+3.13 a trade before costs, +752 points for the
+year) and re-costed from the `docs/RESEARCH.md` table.
+1. **Size alone changes nothing but the dollars.** MNQ at 2, 5 and 10 lots gives +1,279, +3,198
+   and +6,395 with drawdowns of 1,191, 2,976 and 5,953 and profit factor 1.12 throughout. The
+   ratio of edge to drawdown is fixed; scaling a thin edge scales the fragility with it.
+2. **The contract choice is not a multiplier, and it is worth about a third of the edge.** Costs
+   eat 57 % of the gross edge on micros and 41 % on the standard contract, because commission per
+   contract roughly triples while the contract is ten times the size. At identical exposure of 20
+   USD a point: 10 MNQ makes +6,395 at PF 1.12, one NQ makes +8,867 at PF 1.17. Same risk, same
+   points, 2,472 more a year from the contract alone.
+3. **The resting limit at the level is now the largest single cost item.** On NQ at 2 lots: market
+   entries at the 2-tick default cost 51.40 a trade and return +17,734 at PF 1.17; at 1 tick,
+   31.40 and +22,534 at PF 1.22; with the entry resting at the level so only the exit pays
+   slippage, 21.40 and +24,934 at PF 1.25. That is costs falling from 41 % of gross to 17 %.
+   D-100 point 8 item 5 put this at about 2.00 a trade on micros; priced on the standard contract
+   it is worth about 30 a trade, which promotes it above the volume split in the build order.
+4. **What limits the return is signal frequency, not the cap.** 240 trades over about 250 sessions
+   is under one a day against a cap of four, so the cap is not binding and raising it would change
+   nothing. More return has to come from a better edge per trade, not more trades.
+5. **What is decided.** No backtest run is spent on the standard contract: the signals are
+   identical because both track the same index, so re-pricing the same trade list is exact and a
+   run would add nothing. MNQ stays the test instrument. The contract choice is a live-trading
+   decision for when there is an edge worth sizing, and the note in the script header already
+   says the costs move to the Properties tab for other contracts. The build order in D-100 point 8
+   changes to put the resting limit entry first, ahead of the VIX and the volume split, because it
+   is the one item whose value is now measured rather than hoped for.
+
 ---
 
 ## L. New in round 4
