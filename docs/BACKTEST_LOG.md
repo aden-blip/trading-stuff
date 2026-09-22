@@ -49,12 +49,14 @@ Headline stats:
 |---|---|---|---|---|---|---|---|
 | 417 | 26.62 | 0.93 | -1,426.40 | 3,842.00 (0.77 %) | not measured | not measured | not measured |
 
-By setup: REV trades / win % / net P&L vs BRK trades / win % / net P&L: not measured in the
-tester; the export is owed. The on-chart paper table (a different and much shorter sample, 123
+By setup: REV 248 trades, 26.2 % win, -1,263 USD; BRK 169 trades, 27.2 % win, -164 USD. In
+halves, breaks are the unstable half: H1 PF 1.20 (+701), H2 PF 0.80 (-864). The on-chart paper table (a different and much shorter sample, 123
 trades over 73 days) reads REV 65 trades, 23 % reaching the first target, +133.75 points, and
 BRK 58 trades, 19 %, -79.25 points. That is the opposite of the year's finding in D-99 point 6,
 which is exactly why a 73-day paper sample decides nothing.
-By level type (top 3 and bottom 3 by net P&L): not measured; the export is owed.
+By level type (top 3 and bottom 3 by net P&L): best Asia high +678, London low +453, previous
+week low +252; worst Asia low -1,040, previous day low -998, three-touch SR -781. Only London
+low is positive in both halves with a steady profit factor (1.16 and 1.17).
 By session (Asia / London / New York) where relevant: New York 123, Asia 0, London 0, other
 hours 0 in the paper table, so the session window is working as intended.
 
@@ -81,12 +83,25 @@ Two readings from the paper table that the export needs to confirm or kill:
 Issues found: none. The script compiled, the version markers read L2L M7 v0.1, the session
 filter held, and no drawing or alert problem was reported.
 
-Changes made before the next session: none yet. The export decides. The gap to break-even is
-1,426.40, and the resting limit at the level (D-100 point 8, item 5) saves about 2.00 a trade of
-the 7.20, worth about 834 over 417 trades, which is more than half the gap on its own.
+Changes made before the next session (D-102 point 7): two runs, one change each. Run A sets
+"Reversals need at least this many" to 2. Run B is run A plus the trade manager on with both
+stages at 0.5 R and the trail set out of reach, which is a plain stop to the entry after half an
+R. Wednesday is the next single change after those two; the first code item stays the VIX.
 
-Screenshots or trade list attached under reference/backtests/<date>/ : screenshot of the key
-stats and the paper table received; the trade list export is owed.
+Screenshots or trade list attached under reference/backtests/<date>/ : `2026-09-22/` holds the
+screenshot's numbers, `trades_M7v0.1_method_deep-365d_500k.csv`, `report_M7v0.1_deep-365d.md`,
+`compare_M7v0.1_halves.md` and `findings_M7v0.1.md`.
+
+**Export read (D-102).** Halves at 2026-03-20: H1 210 trades PF 1.01 (+77), H2 207 trades PF 0.87
+(-1,503). What survives both halves: reversals with two or more higher-timeframe rejections, 71
+trades at PF 1.49 and +20.32 a trade, the halves giving +19.07 and +21.24, the steadiest slice in
+any export so far; exactly one rejection is the worst group in the file and loses in both halves.
+The breakeven stop after half an R is the largest lever, taking the whole set from -1,426 to a
+ceiling of +6,317 with the drawdown falling from 3,834 to 1,158 and both halves strongly positive
+(losers exact, winners assumed never scratched, so the real number is lower). The score is
+inverted: its lowest band is the only profitable one. Single-level zones beat stacked ones.
+Wednesday loses in both halves for the third sample running. Partial exits and a closer target are
+both worse than as traded.
 
 ---
 

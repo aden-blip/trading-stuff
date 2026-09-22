@@ -1221,6 +1221,51 @@ boxes set by hand.
    is dead weight but its gates are off, so it affects nothing but the label text. It gets gutted
    and rebuilt when the direction read is built (D-100 point 8, item 4), not before.
 
+### D-102  The M7 export: the higher-timeframe count separates, the breakeven stop is the big lever, and both go on one at a time  (DECIDED)
+Session 21's export, 417 trades, read by `tools/trade_list_report.py` and split in halves by
+`tools/compare_trade_lists.py`. Full readout `reference/backtests/2026-09-22/findings_M7v0.1.md`.
+1. **The run is gross-positive, the first one ever.** Net -1,426.40 at PF 0.93, which is -3.42 a
+   trade against 7.20 of costs, so +3.78 a trade before costs. Every earlier configuration lost
+   before costs as well (D-99 point 1: -12.3 raw). H1 PF 1.01, H2 PF 0.87.
+2. **Two or more higher-timeframe rejections is the finding.** Reversals with f2 or more: 71
+   trades, PF 1.49, +20.32 a trade, and the halves give +19.07 and +21.24 — nearly the same
+   number on either side of the split, which no slice in any previous export has done. f1 is the
+   worst group in the file and loses in both halves, consistent with D-94 point 2 that a count of
+   1 on a 5-minute chart is the signal's own candle. **This reverses nothing in D-94 and
+   confirms D-100 point 4:** the feature was built in M6 and measured as inert on the old
+   configuration; it separates once the method's other conditions are on. It was specified before
+   this data existed, so it is not a pick from the table.
+3. **The breakeven stop is the largest lever, as a ceiling.** Moving the stop to the entry after
+   half an R: the whole set goes from -1,426 to +6,317 with the drawdown falling from 3,834 to
+   1,158, both halves strongly positive; with the gate on, +4,555 at PF 1.61. Losers are exact,
+   winners are assumed never scratched, so the real number is lower and only a run decides it.
+   **D-93's objection is answered by M7, not ignored:** there, scratching early freed the
+   strategy to take more trades and every trade lost on average; M7 caps the day at four trades
+   and two losses, so a scratch cannot buy an extra loser. Partial exits remain rejected: every
+   variant is worse than as traded, and the best fails the halves test.
+4. **Break trades are now the unstable half and stay on for one more run.** 169 trades at PF
+   0.98, but H1 PF 1.19 and H2 PF 0.82. This reverses D-99 point 6, which was taken on the old
+   configuration. They also carry no higher-timeframe test at all, because the count is computed
+   for reversals only. Not dropped yet: one run is one sample, and dropping them leaves 71 trades
+   a year. The asymmetry is the thing to fix, by computing the count for breaks too, not by
+   deleting the setup.
+5. **The score is inverted and comes out.** The lowest band is the only profitable one: 152
+   trades at PF 1.24, positive in both halves, while every higher band loses. Single-level zones
+   also beat stacked ones (PF 0.99 against 0.76 and 0.78) while the score pays more for a stack.
+   Confirms D-85 and D-100 point 6. It is removed when the direction read is built, not now,
+   because its gates are off and it changes nothing at runtime.
+6. **Loses in both halves, recorded and not yet acted on:** Wednesday (PF 0.49, -2,653, and a
+   third sample agreeing with D-91 point 3), Thursday (PF 0.74), the previous day low, the custom
+   levels and the New York level family. Held back deliberately: D-99 point 4 showed that
+   stacking removals fails out of sample, so they wait until the two changes in point 7 are
+   measured.
+7. **What is decided: two runs, one change each, in this order.** Run A, the gate: reversals need
+   at least 2 higher-timeframe rejections. Run B, run A plus the stop to the entry after half an
+   R, with no trailing (the manager on, both stages at 0.5, the trail set out of reach). Each is
+   a setting, no code. Both exports are read in halves before anything else changes. Wednesday is
+   the next single change after them, and the first code items stay as D-100 point 8 ordered
+   them: the VIX, then the buying-against-selling volume split.
+
 ---
 
 ## L. New in round 4
