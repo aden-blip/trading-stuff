@@ -43,6 +43,13 @@ the right is a line drawn through where price already is — a fresh open, a mid
 that refreshes every four hours or every day. That is the same separation as the two leaks in
 D-99 point 2, arrived at from the source instead of from the data.
 
+One thing that is not a switch. The day's own running high and low never trigger a trade by
+themselves; they only appear as an extra tag on a zone that already holds a labelled level. So the
+"Day high/low" row in the report — 239 trades at -37.8 a trade — reads as *a level that happens to
+be sitting at today's extreme right now is a worse place to reverse*, which is another angle on
+D-99 point 3: a new extreme means the market is trending, and the reversal is on the wrong side of
+it. Acting on this needs a small code change, not a setting.
+
 One corroboration worth keeping. The method says the daily open is not a reversal level: "every
 time we reach our daily open I always like to break it first, so realistically I made a mistake
 by not waiting for the break of that key level" (transcript 4). In the year the daily open is
