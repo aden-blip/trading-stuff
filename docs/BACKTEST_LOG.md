@@ -33,6 +33,69 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-22  Session 20  (M6 v0.4/v0.5, run A of D-98: the stop cap alone; screenshot, export awaited)
+
+Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days" at
+22:41 CT [23:41 NY] on 21 Sep. One screenshot of the Key stats panel plus the chart's paper
+breakdown table (chart range: 74 trading days since 7 Jun 2026, the same window as the
+session 13 screenshot, so the paper rows compare directly). The list of trades not yet
+exported.
+Costs used (commission per side, slippage ticks): 0.80 per side, 2 ticks, 5 % margin, 2
+contracts, initial capital 500,000. Script execution: on bar close only (bar magnifier off).
+Settings changed from defaults: "Stop no wider than, daily ATR" 0.03 with a 40-tick floor
+(run A of D-98). Everything else default: manager off, HTF count on with weight 0 and gate
+off, reversal entry at the close of the follow-through candle, reversal stop beyond the zone,
+filters off.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| not measured (export awaited) | not measured | 0.823 (base 0.836) | -59,501.60 USD, -11.90 % (base -57,794.60) | 61,949.80 USD, 12.39 % (base 63,402.00) | not measured | not measured | not measured |
+
+By setup / by level type / by session: not measured until the export arrives.
+
+Paper breakdown table, same 74-day chart window as session 13, cap on against cap off:
+| Group | Trades | T1 % | Avg T1 | Avg stop | Points |
+|---|---|---|---|---|---|
+| All, cap off | 825 | 23 % | +135.00 | -52.00 | -2,026.00 |
+| All, cap on | 1,662 | 11 % | +127.75 | -19.25 | -3,131.00 |
+| REV, cap off | 681 | 24 % | +136.75 | -59.50 | -2,442.75 |
+| REV, cap on | 1,449 | 10 % | +129.75 | -19.00 | -3,236.25 |
+| BRK, cap off | 144 | 15 % | +123.00 | -22.50 | +416.75 |
+| BRK, cap on | 213 | 13 % | +117.25 | -19.75 | +105.00 |
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made no sense):
+1. **The cap works as specified.** The average stop fell from 52 to 19 points, and 0.03 of the
+   daily ATR is about 19 points on MNQ at the moment, so the cap is binding on nearly every
+   trade and the 40-tick floor never had to.
+2. **The hit rate fell with it, to the coin-flip rate.** The share reaching the first target
+   went from 23 % to 11 %. D-97 predicted exactly this from the export replay: the reward
+   stayed near 128 points while the risk fell to 19, so the break-even hit rate rose above
+   what the entry delivers. The measured 11 % is the stop over stop plus target rate of a
+   random entry with this geometry.
+3. **Per trade less bad, in total worse, because the trades doubled.** On the same 74 days
+   the paper tally went from 825 trades at -2.46 points a trade to 1,662 at -1.88. A quick
+   stop frees the bot for the next setup, and every setup loses on average, so the year
+   reads -59,501.60 against the base -57,794.60. This is the D-93 pattern again, the one the
+   staged manager produced: a better trade and a worse year.
+4. The export replay of D-97 said a 12-point stop on the same entries would be -24,075. The
+   tester says -59,501.60 on the freed-up trades. The gap between the two is the cost of the
+   extra trades the replay could not show, and it is the whole reason the tester run was
+   needed.
+
+Issues found (bugs, repainting, alerts, drawing problems): none. Script execution shows "on
+bar close" locked on and the three optional recalculation modes off, as intended.
+
+Changes made before the next session (setting or code, and why): none yet. Next: the export
+of this run for the split by setup, hour and level type, then runs B and C of D-98, the two
+limit-at-the-level entries with the wick stop and the same cap. The cap alone is not the fix,
+as the replay warned; the entry is still the thing under test.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : screenshot in the chat;
+the export, when it comes, goes under `reference/backtests/2026-09-22/`.
+
+---
+
 ## 2026-09-21  Session 19  (M6 v0.1, the exported list of the base run, read by higher-timeframe count and in halves)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days", trades
