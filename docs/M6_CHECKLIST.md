@@ -62,6 +62,24 @@ Same paste. The info box must read `L2L M6 v0.3`.
 
 Report a screenshot of a stretch with two or three signals.
 
+## v0.4: the stop cap and the runs at the level (D-98)
+
+Same paste. The info box must read `L2L M6 v0.4`.
+
+1. **Compiles and runs with the cap at 0:** Deep Backtesting "Last 365 days" at 500,000,
+   defaults: still 2,963 trades, net -57,794.60.
+2. **Run A, the cap alone:** Trade geometry group, "Stop no wider than" 0.03 with the floor
+   at 40 ticks, everything else default. Screenshot the Overview and export the list.
+3. **Run B, entry at the level:** Reversal setup group, "Reversal entry" = "Limit at the level
+   after the follow-through", "Reversal stop" = "Beyond the rejection wick", the cap as in
+   run A. Screenshot and export.
+4. **Run C, the quick return:** as run B with "Reversal entry" = "Limit at the level after
+   the rejection candle". Screenshot and export.
+5. **On the chart** the position boxes should now be short in red (the stop close under the
+   entry) and long in green.
+
+Report the settings line under each Overview so the run is identified.
+
 ## Report back
 
 - Done: the Overview and the exported list of the base run (sessions 18 and 19).

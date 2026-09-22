@@ -1053,6 +1053,30 @@ went against before it ended (session 15's what-ifs, extended on the M6 v0.1 fil
    runs show the entry at the level has an edge, because point 1 says cutting faster on this
    entry does not flip the sign.
 
+### D-98  Both at once: entries at the level and a cap on the stop, built as a setting and run on the year  (DECIDED)
+The owner's answer to D-97: address both, because a good manual entry shows almost no
+drawdown. Decision: build the stop side now as a setting, off by default, and test it together
+with the entry-at-the-level styles on the year.
+1. **M6 v0.4, "Stop no wider than" (Trade geometry group):** a cap in daily-ATR units with a
+   tick floor. When the stop a setup would use sits farther from the entry than the cap, it
+   moves in to the cap; a nearer stop stays. It applies to reversals in every entry style and
+   to break retests, and flows into the tester's orders, the paper tally, the alerts and the
+   position visual alike. 0, the default, leaves every stop as before, so the base run is
+   unchanged.
+2. **The runs (Deep Backtesting "Last 365 days", 500,000, Signals only off, export each):**
+   A) defaults plus the cap, to see the freed-up trades the replay of D-97 could not show;
+   B) "Limit at the level after the follow-through" with "Beyond the rejection wick" and the
+   cap; C) "Limit at the level after the rejection candle" with the wick stop and the cap.
+   The cap for the first pass: 0.03 daily ATR with a floor of 40 ticks, about 10 to 12 points
+   on MNQ; the info box's Daily ATR row says what 0.03 comes to on the day.
+3. **The bar (D-88):** a setting is kept only if it is positive on both halves of the year;
+   the coin-flip check of D-84 (hit rate against stop over stop plus target) is read on each
+   run to see whether the entry at the level carries information that the follow-through
+   entry does not.
+4. **Not built yet:** a touch entry with no rejection candle (a limit resting at the level as
+   price approaches, the manual style) and a time-based cut. Either follows only if run B or
+   C shows the edge sits in the entry and the cap alone did not find it.
+
 ---
 
 ## L. New in round 4

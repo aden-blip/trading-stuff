@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.3
+//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.4
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -172,6 +172,8 @@ tgtTicks     = input.int(10, "floor, ticks", minval = 0, group = gTr, inline = "
 minRR        = input.float(1.0, "Minimum reward to risk", step = 0.1, minval = 0, group = gTr)
 maxRiskATR   = input.float(0.35, "Maximum stop distance, daily ATR", step = 0.05, minval = 0.05, group = gTr)
 execAtrLen   = input.int(14, "Chart ATR length", minval = 2, group = gTr)
+stopCapUnit  = input.float(0, "Stop no wider than, daily ATR (0 = off)", step = 0.005, minval = 0, group = gTr, inline = "sc", tooltip = "A cap on every stop (D-98). When the stop a setup would use sits farther from the entry than this, it moves in to this distance from the entry; a nearer stop stays where it is. 0 leaves the stops as the setup defines them. The floor in ticks keeps the cap above the noise on a quiet day.")
+stopCapTicks = input.int(8, "floor, ticks", minval = 0, group = gTr, inline = "sc")
 
 gSc = "Score (0 to 100)"
 wRel     = input.int(40, "Reliability", minval = 0, maxval = 100, group = gSc, inline = "w1")
@@ -1876,6 +1878,7 @@ if barstate.isconfirmed and array.size(zLo) > 0
     float minTgt  = math.max(tgtUnit * unit, tgtTicks * syminfo.mintick)
     float brkTol2 = math.max(brkUnit * unit, brkTicks * syminfo.mintick)
     float maxRisk = maxRiskATR * unit
+    float stopCap = stopCapUnit > 0 ? math.max(stopCapUnit * unit, stopCapTicks * syminfo.mintick) : na
     int nz = array.size(zLo)
     int    bestScore = -1
     int    bestDir   = 0
@@ -2047,6 +2050,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
                             f_nearNote(nmPri, nmTxt, dir, 500, who + " skipped: already in a trade, one at a time")
                     else if pattern
                         float entry = revLimitOn ? (dir > 0 ? zhi : zlo) : close
+                        if not na(stopCap) and math.abs(entry - stop) > stopCap
+                            stop := entry - dir * stopCap
                         float risk  = math.abs(entry - stop)
                         int t1 = f_nextZone(dir, entry, minTgt, z)
                         float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
@@ -2111,6 +2116,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
                         float lim = brokeDown ? zlo : zhi
                         if not f_pendingExists(dir, lim)
                             float stopB = brokeDown ? zhi + stopBuf : zlo - stopBuf
+                            if not na(stopCap) and math.abs(lim - stopB) > stopCap
+                                stopB := lim - dir * stopCap
                             float risk  = math.abs(lim - stopB)
                             int t1 = f_nextZone(dir, lim, minTgt, -1)
                             float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
@@ -2455,7 +2462,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M6", "v0.3")
+    f_cell(0, "L2L M6", "v0.4")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2537,5 +2544,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M6 v0.3). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M6 v0.4). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

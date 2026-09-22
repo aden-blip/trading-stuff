@@ -1,5 +1,13 @@
 # Changelog
 
+## M6 v0.4, 2026-09-22
+
+- "Stop no wider than, daily ATR" with a tick floor, in the Trade geometry group, 0 by default
+  (D-98). When the stop a setup would use is farther from the entry than the cap, the stop
+  moves in to the cap; nearer stops stay. Applies to reversals in every entry style and to
+  break retests, and flows into the tester's orders, the paper tally, the alerts and the
+  position visual. With the default 0 nothing changes. The info box reads v0.4.
+
 ## M6 v0.3, 2026-09-22
 
 - Position visual (D-96), group "Position visual (M6 v0.3)", on by default: at every signal a
