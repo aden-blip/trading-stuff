@@ -1,5 +1,7 @@
 # M6 checklist: the higher-timeframe rejection in the tester
 
+**Closed.** M7 v0.1 supersedes this milestone; see `docs/M7_CHECKLIST.md`.
+
 **Status after sessions 18 and 19:** items 1 to 3 are done. The base run matched M4 exactly
 and the export was read by count and in halves: the count makes the trades less bad over the
 year but the halves disagree, and no gate is profitable on both halves (D-94). The HTF weight

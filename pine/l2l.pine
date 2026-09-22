@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.5
+//  Level-to-Level (L2L)  |  Milestone 7: the method as described  |  M7 v0.1
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -36,11 +36,19 @@
 //  M6 (plan 4.8): for every reversal the last completed 5-minute, 15-minute, 1-hour and 4-hour
 //  candles are checked for a rejection of the same zone; the count goes into the tag ("f2"),
 //  the label ("HTF 2/4"), the score (weight 0 until the export decides) and an optional gate.
+//  M7 v0.1 (D-101): no new logic, only new defaults. The audit in docs/METHOD_AUDIT.md found
+//  that every condition the method puts in front of the trigger was off, absent, or in a form
+//  it does not use, so sessions 1 to 20 measured the trigger alone. The defaults now hold the
+//  method as described: levels only where price has already turned (every open family, every
+//  mid family and the whole previous-4-hour-bar family off), New York only, opening blackout
+//  on, four trades and two losses a day, volume confirmation on, the first target at the
+//  nearest level, and the stop at the rejection wick with the cap on. An existing chart keeps
+//  its saved settings, so reset them or re-add the strategy after pasting this version.
 //
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
 // ============================================================================
-strategy("L2L M6 - Strategy", shorttitle = "L2L M6", overlay = true,
+strategy("L2L M7 - Strategy", shorttitle = "L2L M7", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500,
      pyramiding = 0, initial_capital = 50000, currency = currency.USD,
      margin_long = 5, margin_short = 5,
@@ -63,41 +71,41 @@ sessNYMet  = input.session("0830-1600", "New York, Metals profile", group = gS, 
 sessMode   = input.string("Developing", "Session levels", options = ["Developing", "Completed only"], group = gS, tooltip = "Developing: while a session is running its high, low and open update live, then freeze when it ends. Completed only: always the last finished session.")
 
 gDy = "Daily"
-dOpenOn  = input.bool(true, "Open", group = gDy, inline = "d")
+dOpenOn  = input.bool(false, "Open", group = gDy, inline = "d")
 dRangeOn = input.bool(true, "Prev H/L", group = gDy, inline = "d")
-dMidOn   = input.bool(true, "Prev Mid", group = gDy, inline = "d")
-moOn     = input.bool(true, "Midnight open", group = gDy, inline = "d")
+dMidOn   = input.bool(false, "Prev Mid", group = gDy, inline = "d")
+moOn     = input.bool(false, "Midnight open", group = gDy, inline = "d")
 gWk = "Weekly"
-wOpenOn  = input.bool(true, "Open", group = gWk, inline = "w")
+wOpenOn  = input.bool(false, "Open", group = gWk, inline = "w")
 wRangeOn = input.bool(true, "Prev H/L", group = gWk, inline = "w")
-wMidOn   = input.bool(true, "Prev Mid", group = gWk, inline = "w")
+wMidOn   = input.bool(false, "Prev Mid", group = gWk, inline = "w")
 gMo = "Monthly"
-mOpenOn  = input.bool(true, "Open", group = gMo, inline = "m")
+mOpenOn  = input.bool(false, "Open", group = gMo, inline = "m")
 mRangeOn = input.bool(true, "Prev H/L", group = gMo, inline = "m")
-mMidOn   = input.bool(true, "Prev Mid", group = gMo, inline = "m")
+mMidOn   = input.bool(false, "Prev Mid", group = gMo, inline = "m")
 gQt = "Quarterly"
-qOpenOn  = input.bool(true, "Open", group = gQt, inline = "q")
+qOpenOn  = input.bool(false, "Open", group = gQt, inline = "q")
 qRangeOn = input.bool(true, "Prev H/L", group = gQt, inline = "q")
-qMidOn   = input.bool(true, "Prev Mid", group = gQt, inline = "q")
+qMidOn   = input.bool(false, "Prev Mid", group = gQt, inline = "q")
 gYr = "Yearly"
-yOpenOn  = input.bool(true, "Open", group = gYr, inline = "y")
+yOpenOn  = input.bool(false, "Open", group = gYr, inline = "y")
 yRangeOn = input.bool(true, "Current H/L", group = gYr, inline = "y")
-yMidOn   = input.bool(true, "Mid", group = gYr, inline = "y")
+yMidOn   = input.bool(false, "Mid", group = gYr, inline = "y")
 g4H = "4-hour"
-h4OpenOn  = input.bool(true, "Open", group = g4H, inline = "h")
-h4RangeOn = input.bool(true, "Prev H/L", group = g4H, inline = "h")
-h4MidOn   = input.bool(true, "Prev Mid", group = g4H, inline = "h")
-h4POpenOn = input.bool(true, "Prev Open", group = g4H, inline = "h")
+h4OpenOn  = input.bool(false, "Open", group = g4H, inline = "h")
+h4RangeOn = input.bool(false, "Prev H/L", group = g4H, inline = "h")
+h4MidOn   = input.bool(false, "Prev Mid", group = g4H, inline = "h")
+h4POpenOn = input.bool(false, "Prev Open", group = g4H, inline = "h")
 gMn = "Monday range"
 monRangeOn = input.bool(true, "Range", group = gMn, inline = "mo")
-monMidOn   = input.bool(true, "Mid", group = gMn, inline = "mo")
+monMidOn   = input.bool(false, "Mid", group = gMn, inline = "mo")
 gSe = "Sessions"
 aRangeOn = input.bool(true, "Asia H/L", group = gSe, inline = "s1")
-aOpenOn  = input.bool(true, "Asia Open", group = gSe, inline = "s1")
+aOpenOn  = input.bool(false, "Asia Open", group = gSe, inline = "s1")
 lRangeOn = input.bool(true, "London H/L", group = gSe, inline = "s2")
-lOpenOn  = input.bool(true, "London Open", group = gSe, inline = "s2")
+lOpenOn  = input.bool(false, "London Open", group = gSe, inline = "s2")
 nRangeOn = input.bool(true, "NY H/L", group = gSe, inline = "s3")
-nOpenOn  = input.bool(true, "NY Open", group = gSe, inline = "s3")
+nOpenOn  = input.bool(false, "NY Open", group = gSe, inline = "s3")
 gCu = "Custom levels"
 onCustom  = input.bool(true, "Show custom levels", group = gCu)
 customTxt = input.string("", "Custom levels", group = gCu, tooltip = "Comma separated, up to 20. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
@@ -151,11 +159,11 @@ engulfOn     = input.bool(true, "Engulfing", group = gRev, inline = "rj")
 wickRatio    = input.float(0.5, "Wick at least this share of the bar", step = 0.05, minval = 0.1, maxval = 0.9, group = gRev)
 minBarATR    = input.float(0.6, "Rejection bar range, chart ATRs", step = 0.1, minval = 0, group = gRev, tooltip = "Dojis do not qualify: the rejection bar's range must be at least this many chart-timeframe ATRs.")
 strongSkip   = input.bool(false, "Strong rejection enters without follow-through", group = gRev, tooltip = "A wick of 60 % or more with a close in the far third enters at the rejection bar's close instead of waiting one bar.")
-volConfirmIn = input.string("Off", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "Off during the review: the M4 backtest turns it on as one of the optional filters (D-66, D-78). Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. On or Auto: the follow-through bar's volume must reach the multiple of the 20-bar average.")
+volConfirmIn = input.string("On", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "On from M7 v0.1: the method names volume as its only confirmation and twenty backtest sessions never once had it on (D-100). Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. On or Auto: the follow-through bar's volume must reach the multiple of the 20-bar average. This measures total volume, not buying against selling pressure, which is the form the method actually reads and is still to be built (D-78).")
 volConfirmMult = input.float(1.0, "Volume multiple of the 20-bar average", step = 0.1, minval = 0.1, group = gRev)
 revEntry     = input.string("Close of the follow-through candle", "Reversal entry (test, D-83)", options = ["Close of the follow-through candle", "Limit at the level after the follow-through", "Limit at the level after the rejection candle"], group = gRev, tooltip = "Where the reversal trade gets in. Close of the follow-through candle: the plan's default, a candle or two away from the level. Limit at the level after the follow-through: same setup, but the order rests at the zone edge and fills only if price comes back to it. Limit at the level after the rejection candle: no follow-through needed, the order rests at the zone edge as soon as the rejection candle closes, the quick-return entry. A resting limit is cancelled after the bars below, or when a candle closes back through the zone.")
 revLimitBars = input.int(6, "Reversal limit rests for, bars", minval = 1, maxval = 100, group = gRev)
-revStop      = input.string("Beyond the zone", "Reversal stop (test, D-83)", options = ["Beyond the zone", "Beyond the rejection wick", "The farther of the two"], group = gRev, tooltip = "Beyond the zone: the far side of the whole zone plus the buffer, the plan's default; wide when several levels stack. Beyond the rejection wick: the rejection candle's extreme plus the buffer. The farther of the two: whichever sits further from the entry.")
+revStop      = input.string("Beyond the rejection wick", "Reversal stop (test, D-83)", options = ["Beyond the zone", "Beyond the rejection wick", "The farther of the two"], group = gRev, tooltip = "Beyond the zone: the far side of the whole zone plus the buffer, the plan's default; wide when several levels stack. Beyond the rejection wick: the rejection candle's extreme plus the buffer. The farther of the two: whichever sits further from the entry.")
 
 gBrk = "Break trade (BRK): break, retest, enter"
 brkOn        = input.bool(true, "Break trades", group = gBrk, tooltip = "Never straight off the breakout. After a close through the zone, a limit rests at the broken edge and the entry is the retest.")
@@ -167,12 +175,12 @@ retestBars   = input.int(6, "Retest limit rests for, bars", minval = 1, maxval =
 gTr = "Trade geometry (daily-ATR units with tick floors)"
 stopUnit     = input.float(0.03, "Stop buffer beyond the zone, daily ATR", step = 0.005, minval = 0, group = gTr, inline = "sb")
 stopTicks    = input.int(4, "floor, ticks", minval = 0, group = gTr, inline = "sb")
-tgtUnit      = input.float(0.15, "Minimum target distance, daily ATR", step = 0.01, minval = 0, group = gTr, inline = "td")
+tgtUnit      = input.float(0.03, "Minimum target distance, daily ATR", step = 0.01, minval = 0, group = gTr, inline = "td")
 tgtTicks     = input.int(10, "floor, ticks", minval = 0, group = gTr, inline = "td")
 minRR        = input.float(1.0, "Minimum reward to risk", step = 0.1, minval = 0, group = gTr)
 maxRiskATR   = input.float(0.35, "Maximum stop distance, daily ATR", step = 0.05, minval = 0.05, group = gTr)
 execAtrLen   = input.int(14, "Chart ATR length", minval = 2, group = gTr)
-stopCapUnit  = input.float(0, "Stop no wider than, daily ATR (0 = off)", step = 0.005, minval = 0, group = gTr, inline = "sc", tooltip = "A cap on every stop (D-98). When the stop a setup would use sits farther from the entry than this, it moves in to this distance from the entry; a nearer stop stays where it is. 0 leaves the stops as the setup defines them. The floor in ticks keeps the cap above the noise on a quiet day.")
+stopCapUnit  = input.float(0.03, "Stop no wider than, daily ATR (0 = off)", step = 0.005, minval = 0, group = gTr, inline = "sc", tooltip = "A cap on every stop (D-98). When the stop a setup would use sits farther from the entry than this, it moves in to this distance from the entry; a nearer stop stays where it is. 0 leaves the stops as the setup defines them. The floor in ticks keeps the cap above the noise on a quiet day.")
 stopCapTicks = input.int(8, "floor, ticks", minval = 0, group = gTr, inline = "sc")
 
 gSc = "Score (0 to 100)"
@@ -250,13 +258,13 @@ rangeMin    = input.int(120, "Window, minutes", minval = 15, maxval = 720, group
 rangeMaxATR = input.float(0.5, "Counts as a range when narrower than, daily ATR", step = 0.05, minval = 0.05, group = gRg)
 rangeEdge   = input.float(0.25, "Edge share of the range height", step = 0.05, minval = 0.05, maxval = 0.5, group = gRg, tooltip = "0.25 means the top quarter and the bottom quarter of the range count as edges; a level in the middle half is skipped.")
 
-gF = "Filters (M4, all off for the base run)"
-sessFilterOn = input.bool(false, "Entries only inside the checked windows", group = gF, tooltip = "Plan 4.6. Off for the base run. The plan's live default for the Index profile is New York only.")
-allowAsia    = input.bool(true, "Asia", group = gF, inline = "sw")
-allowLondon  = input.bool(true, "London", group = gF, inline = "sw")
+gF = "Filters (M4; M7 v0.1 turns on the ones the method names)"
+sessFilterOn = input.bool(true, "Entries only inside the checked windows", group = gF, tooltip = "Plan 4.6. On from M7 v0.1 with New York only, which is the window the method trades and the plan's live default for the Index profile. Untick it to go back to entries around the clock.")
+allowAsia    = input.bool(false, "Asia", group = gF, inline = "sw")
+allowLondon  = input.bool(false, "London", group = gF, inline = "sw")
 allowNY      = input.bool(true, "New York", group = gF, inline = "sw")
-allowOther   = input.bool(true, "Other hours", group = gF, inline = "sw")
-obOn         = input.bool(false, "Opening blackout after the New York open", group = gF, tooltip = "D-43: no entries for the minutes below after the cash open (the start of the New York window, 08:30 CT on the Index profile). Live default on; off for the base run.")
+allowOther   = input.bool(false, "Other hours", group = gF, inline = "sw")
+obOn         = input.bool(true, "Opening blackout after the New York open", group = gF, tooltip = "D-43: no entries for the minutes below after the cash open (the start of the New York window, 08:30 CT on the Index profile). On from M7 v0.1: the first half hour lost in both halves of the year and your own TradeZella record agrees.")
 obMin        = input.int(30, "Opening blackout, minutes", minval = 1, maxval = 240, group = gF)
 newsOn       = input.bool(false, "News blackout", group = gF, tooltip = "D-40: no entries from the minutes before to the minutes after each time listed. Live default on; off for the base run.")
 newsTimes    = input.string("0730, 0900", "News times (HHMM, comma separated)", group = gF)
@@ -265,8 +273,8 @@ newsAfter    = input.int(5, "after", minval = 0, maxval = 120, group = gF, inlin
 chopOn       = input.bool(false, "Chop band (D-28)", group = gF, tooltip = "When the last window's range fits inside the band, chop is on and the band is frozen; the first close outside the frozen band turns it off. No entries while on.")
 chopPct      = input.float(0.25, "Band, percent of price", step = 0.05, minval = 0.01, group = gF, inline = "ch")
 chopMinutes  = input.int(30, "window, minutes", minval = 5, maxval = 720, group = gF, inline = "ch")
-maxSigDay    = input.int(0, "Max trades per day (0 = off)", minval = 0, group = gF)
-maxLossDay   = input.int(0, "Max losing trades per day (0 = off)", minval = 0, group = gF)
+maxSigDay    = input.int(4, "Max trades per day (0 = off)", minval = 0, group = gF)
+maxLossDay   = input.int(2, "Max losing trades per day (0 = off)", minval = 0, group = gF)
 maxLossPct   = input.float(0, "Max daily loss, percent of account (0 = off)", step = 0.5, minval = 0, group = gF)
 dayTargetPct = input.float(0, "Daily target, percent of account (0 = off)", step = 0.5, minval = 0, group = gF, tooltip = "D-44: reaching the target only stops new entries; an open trade keeps running.")
 
@@ -1150,8 +1158,9 @@ f_entryOK(int i) =>
     not dev
 
 // ═══════════════════ [F] FILTERS (M4) ═══════════════════
-// All off for the base run (plan 4.6). Each one only blocks new entries; an open trade is never
-// touched. Times are read in the timezone input.
+// The session window, the opening blackout and the two daily limits are on from M7 v0.1 (D-101);
+// the chop band, the range filter and the news blackout are still off. Each one only blocks new
+// entries; an open trade is never touched. Times are read in the timezone input.
 int modNow = hour(time, tz) * 60 + minute(time, tz)
 int nyOpenMin = int(str.tonumber(str.substring(sessNY, 0, 2))) * 60 + int(str.tonumber(str.substring(sessNY, 2, 4)))
 // News blackout times, parsed once into minutes of the day.
@@ -2463,7 +2472,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M6", "v0.5")
+    f_cell(0, "L2L M7", "v0.1")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2545,5 +2554,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M6 v0.5). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M7 v0.1). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

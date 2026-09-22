@@ -1181,6 +1181,46 @@ been tested, not of the concept.
    approximation of it. Filling those in for a stretch of history is the one input no amount of
    code replaces.
 
+### D-101  Modify, do not rebuild: the method configuration becomes the default (M7 v0.1)  (DECIDED)
+The owner asked whether to change the existing script or start fresh. Decided: change it, and
+ship the method configuration as the defaults so the run takes one paste instead of twenty-five
+boxes set by hand.
+1. **Why not a fresh script.** Every setting the next run needs already exists, so a rebuild
+   would recreate the level engine, the zone builder, the rejection candle and the trade tracking
+   only to run the same test. The five code items D-100 lists are additions to what is there, not
+   rewrites. Pine cannot be compiled here, so each rebuild costs the owner paste-and-report
+   rounds. And switching a family off keeps it in the export where it can be measured; deleting
+   it destroys the measurement that produced D-100 point 3 in the first place.
+2. **The complexity objection is answered by what runs, not by what is in the file.** After these
+   defaults the live strategy is his levels, his session, his volume check, his trade limits, a
+   rejection candle and a break retest. The other inputs sit at zero and cost nothing.
+3. **What changed: thirty defaults, no logic.** Off: the five period opens, the midnight open,
+   the five mids, the Monday mid, the three session opens and all four previous-4-hour-bar
+   levels. On: the session window with New York only, the opening blackout, four trades and two
+   losses a day, volume confirmation. Changed: minimum target distance 0.15 to 0.03 daily ATR,
+   reversal stop from beyond the zone to beyond the rejection wick, stop cap from 0 to 0.03 with
+   an 8-tick floor. Unchanged: break trades on, manager and trail off, all score gates off, chop
+   band and range filter and news blackout off, 2 contracts, costs and margin.
+4. **Two interactions to expect, so the readout is not misread.** (a) A thinner level set means
+   fewer places to take profit, so the nearest level in the trade direction will often be farther
+   than it was, and setups with no qualifying target are discarded rather than taken. The drop in
+   the minimum target distance will therefore bind much less than it would have on the old level
+   set, and the method's own near targets are the hand-drawn 4-hour lines the script does not
+   have. Item 15 of the audit, taking the setup with no qualifying target on a time or R exit,
+   moves up the list because of this. (b) With New York only, the New York high and low are
+   developing during the entry window and are not entry-eligible, so that family will contribute
+   almost nothing; it stays on because it costs nothing and matters if the hours widen later.
+5. **How the run is judged.** About 250 to 450 trades in the year is the expectation, thin enough
+   that the halves rule (D-88) decides everything and a single-half result decides nothing. This
+   run is session 21 and the start of a new series: sessions 1 to 20 measured a different
+   configuration and are not its baseline. Whatever it shows, settings go back one at a time to
+   find which carried it, largest first.
+6. **The score comes out later, not now.** Every component has been measured and failed: the
+   reliability rank predicts its own verdict rule (D-85), the level-history reading was withdrawn
+   (D-91 point 2), the higher-timeframe part is zeroed (D-94) and the bias term is a constant. It
+   is dead weight but its gates are off, so it affects nothing but the label text. It gets gutted
+   and rebuilt when the direction read is built (D-100 point 8, item 4), not before.
+
 ---
 
 ## L. New in round 4

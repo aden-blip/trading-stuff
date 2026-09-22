@@ -1,5 +1,36 @@
 # Changelog
 
+## M7 v0.1, 2026-09-22
+
+New defaults only. Not one line of logic changed, so nothing new can break; every box below can
+be put back the way it was. The audit in `docs/METHOD_AUDIT.md` found that every condition the
+method puts in front of the trigger was off, absent, or in a form it does not use, which means
+sessions 1 to 20 measured the trigger alone (D-100). These defaults hold the method as described
+(D-101), and it has never been run:
+
+- Levels, only where price has already turned. Off: the daily, weekly, monthly, quarterly and
+  yearly opens, the midnight open, all five mids, the Monday mid, the three session opens, and
+  the whole previous-4-hour-bar family including the current 4-hour open, which alone cost
+  27,174 USD on 620 trades in the year. On, unchanged: the prior period highs and lows, the
+  session highs and lows, the Monday range, the repeated-touch levels and your own pivots.
+- New York only. The session window is on with Asia, London and Other hours unticked, so entries
+  run from the cash open to the 15:00 cutoff, and the opening blackout takes the first 30
+  minutes of that.
+- Four trades a day and two losing trades a day, his stated limits. The year ran about twelve a
+  day with no cap.
+- Volume confirmation on, for the first time in twenty sessions. Still the total-volume form; the
+  buying-against-selling form the method actually reads is D-78 and is not built.
+- The first target at the nearest level: the minimum target distance drops from 0.15 to 0.03
+  daily ATR, so a level roughly 9 points out can be a target where the floor used to be 45.
+- The stop at the rejection wick instead of beyond the whole zone, with the cap on at 0.03 daily
+  ATR and an 8-tick floor (run A of D-98, about 19 points on MNQ).
+- Unchanged and deliberate: break trades on, trade manager and trailing off, score gates off,
+  higher-timeframe gate off, chop band off (D-81 says rescale it first), range filter off, news
+  blackout off, 2 contracts.
+- An existing chart keeps its own saved settings, so after pasting this version either reset the
+  settings in the dialog or remove the strategy and add it again. The info box reads v0.1 and the
+  title reads L2L M7.
+
 ## M6 v0.5, 2026-09-22
 
 - The position boxes get a thin solid border in their own colour (green for the entry-to-target
