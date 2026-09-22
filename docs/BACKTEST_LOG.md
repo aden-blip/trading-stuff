@@ -33,6 +33,63 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-09-22  Session 21  (M7 v0.1)
+
+Symbol / timeframe / date range: MNQ1! 5-minute, Deep Backtesting "Last 365 days DEEP", 500,000
+capital, Central time.
+Costs used (commission per side, slippage ticks): 0.80 cash per contract per side, 2 ticks
+slippage, 2 contracts. 7.20 USD a round-trip trade.
+Settings changed from defaults: none. This is the first run of the M7 v0.1 defaults, which are
+the method as described (D-101): levels only where price has already turned, New York only,
+opening blackout on, four trades and two losses a day, volume confirmation on, the first target
+at the nearest level, the stop at the rejection wick with the cap at 0.03 daily ATR.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 417 | 26.62 | 0.93 | -1,426.40 | 3,842.00 (0.77 %) | not measured | not measured | not measured |
+
+By setup: REV trades / win % / net P&L vs BRK trades / win % / net P&L: not measured in the
+tester; the export is owed. The on-chart paper table (a different and much shorter sample, 123
+trades over 73 days) reads REV 65 trades, 23 % reaching the first target, +133.75 points, and
+BRK 58 trades, 19 %, -79.25 points. That is the opposite of the year's finding in D-99 point 6,
+which is exactly why a 73-day paper sample decides nothing.
+By level type (top 3 and bottom 3 by net P&L): not measured; the export is owed.
+By session (Asia / London / New York) where relevant: New York 123, Asia 0, London 0, other
+hours 0 in the paper table, so the session window is working as intended.
+
+How it reacted: the trade count fell from 2,963 to 417, inside the 250 to 450 predicted in D-101
+point 5, so the settings reset took. The average stop in the paper table is about 19.5 points
+against 52 to 63 on the old default, so the wick stop and the cap are both binding. The first
+target is reached on 21 % of paper trades at an average of +65.75 points against an average stop
+of -19.50, a payoff over 3 to 1, where the old default reached its target on 23 % at a much wider
+stop.
+
+**The headline: this is the first gross-positive run.** Net -1,426.40 over 417 trades is -3.42 a
+trade; costs are 7.20 a trade, or 3,002.40 over the run, so before costs the year made +1,576.00,
+about +3.78 a trade. Every previous configuration lost money before costs as well as after
+(D-99 point 1: -12.3 a trade raw). The trigger plus the method's conditions is the first
+combination that has ever had a positive raw edge.
+
+Two readings from the paper table that the export needs to confirm or kill:
+- A single level in the zone beat stacked levels: 96 trades at +323.75 points against 20 trades
+  at -246.50 for two levels. If that holds in the tester it contradicts the stack component of
+  the score, which pays more for stacked zones.
+- The score does not rank: 6/10 and 7/10 are positive, 5/10 or less and 8/10 or more are
+  negative. Consistent with D-85 and D-100 point 6, that the score is dead weight.
+
+Issues found: none. The script compiled, the version markers read L2L M7 v0.1, the session
+filter held, and no drawing or alert problem was reported.
+
+Changes made before the next session: none yet. The export decides. The gap to break-even is
+1,426.40, and the resting limit at the level (D-100 point 8, item 5) saves about 2.00 a trade of
+the 7.20, worth about 834 over 417 trades, which is more than half the gap on its own.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : screenshot of the key
+stats and the paper table received; the trade list export is owed.
+
+---
+
 ## 2026-09-22  Session 20  (M6 v0.4/v0.5, run A of D-98: the stop cap alone; screenshot, export awaited)
 
 Symbol / timeframe / date range: MNQ1!, 5-minute, Deep Backtesting "Last 365 days" at
