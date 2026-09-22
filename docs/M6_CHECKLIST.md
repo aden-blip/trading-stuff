@@ -80,6 +80,9 @@ Same paste. The info box must read `L2L M6 v0.4`.
 
 Report the settings line under each Overview so the run is identified.
 
+v0.5 adds a thin border to the position boxes; the info box reads `L2L M6 v0.5`. "Positions
+kept" at 1 shows the newest signal's plan only.
+
 ## Report back
 
 - Done: the Overview and the exported list of the base run (sessions 18 and 19).

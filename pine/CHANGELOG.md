@@ -1,5 +1,11 @@
 # Changelog
 
+## M6 v0.5, 2026-09-22
+
+- The position boxes get a thin solid border in their own colour (green for the entry-to-target
+  box, red for the entry-to-stop box), one pixel wide and slightly faded, so the start and end
+  of each position read cleanly. Nothing else changes; the info box reads v0.5.
+
 ## M6 v0.4, 2026-09-22
 
 - "Stop no wider than, daily ATR" with a tick floor, in the Trade geometry group, 0 by default

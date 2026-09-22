@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.4
+//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.5
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -1834,9 +1834,10 @@ f_pvNew(int dir, float e, float s, float t1, float t2) =>
     float r = math.abs(e - s)
     bool showT2 = posVisT2 and not na(t2)
     float far = showT2 ? t2 : t1
-    color cNone = color.new(color.black, 100)
-    array.push(pvBox, box.new(bar_index, math.max(e, t1), bar_index, math.min(e, t1), border_color = cNone, border_width = 1, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.green, 85)))
-    array.push(pvBox, box.new(bar_index, math.max(e, s), bar_index, math.min(e, s), border_color = cNone, border_width = 1, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.red, 85)))
+    color cP = color.new(color.green, 35)
+    color cR = color.new(color.red, 35)
+    array.push(pvBox, box.new(bar_index, math.max(e, t1), bar_index, math.min(e, t1), border_color = cP, border_width = 1, border_style = line.style_solid, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.green, 85)))
+    array.push(pvBox, box.new(bar_index, math.max(e, s), bar_index, math.min(e, s), border_color = cR, border_width = 1, border_style = line.style_solid, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.red, 85)))
     nb += 2
     array.push(pvLine, line.new(bar_index, e, bar_index, e, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.white, 20), style = line.style_solid, width = 1))
     array.push(pvLine, line.new(bar_index, s, bar_index, s, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.red, 0), style = line.style_solid, width = 1))
@@ -2462,7 +2463,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M6", "v0.4")
+    f_cell(0, "L2L M6", "v0.5")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2544,5 +2545,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M6 v0.4). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M6 v0.5). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
