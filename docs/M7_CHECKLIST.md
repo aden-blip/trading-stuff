@@ -48,3 +48,61 @@ buying and selling volume (D-100 point 8).
 
 Either way the export goes into `docs/BACKTEST_LOG.md` as session 21 before anything else
 changes.
+
+---
+
+# Predictions for runs A and B, written before the runs (D-102 point 7)
+
+Recorded so the results can be checked against them instead of explained after the fact.
+
+## Run A — reversals need at least 2 higher-timeframe rejections
+
+Replaying the gate over the 417-trade export removes 177 reversals and leaves 240 trades:
+240 trades, win 30.0 %, PF 1.12, net +1,279, +5.33 a trade, closed-trade drawdown 1,191.
+H1 PF 1.28 (+1,225), H2 PF 1.01 (+54).
+
+**Predicted: 240 to 280 trades, PF 1.05 to 1.20, net between +800 and +1,600.**
+
+240 is a floor, not a forecast, because the tester holds one position at a time and caps the day
+at four trades and two losses. Skipping a reversal frees the strategy to take a later signal that
+was blocked, and removing about 84 losing f1 trades means fewer days trip the two-loss cap. Trades
+are short (winners hold about two candles) and the day averages 1.7 trades against a cap of 4, so
+the effect should be small.
+
+**What would mean something is wrong:** fewer than 240 trades (the gate cannot remove a break, and
+breaks alone are 169), more than about 320 (the freed-up signals would be doing more work than the
+gate), or a profit factor under 1.0 (the gate would not have survived its own out-of-sample test).
+
+## Run B — run A plus the stop to the entry after half an R
+
+**No prediction. The outcome turns on a number the export cannot show, and it swings the result
+from good to worse than run A.**
+
+The stop arms once a trade is half an R in profit. 35 % of the losers in the gated set ran that far
+in profit before being stopped, which is where the gain comes from. The cost is winners that reach
+half an R, trade back through the entry, and then go on to the target: those get scratched instead
+of paid. Every winner in the set traded back past its entry at some point, so the whole question is
+whether that happened before or after the run-up, and the export records only how far price went,
+never in what order.
+
+| Winners scratched | Win % | PF | Net | Max DD | H1 | H2 |
+|---|---|---|---|---|---|---|
+| 0 % (the ceiling) | 30.0 | 1.61 | +4,555 | 611 | +2,566 | +1,989 |
+| 10 % | 27.1 | 1.27 | +1,996 | 1,492 | +2,406 | -410 |
+| 20 % | 24.2 | 1.14 | +1,095 | 1,515 | +1,879 | -784 |
+| 30 % | 20.8 | 1.00 | -2 | 1,981 | +1,273 | -1,275 |
+| 40 % | 17.9 | 0.79 | -1,635 | 2,903 | +656 | -2,291 |
+
+Run A alone is +1,279, so **the stop only pays above about a 15 % scratch rate in the wrong
+direction**: past roughly one winner in seven it is worse than doing nothing, and past three in ten
+it is worse than the baseline. The second half turns negative at a 10 % scratch rate, so even the
+halves test is fragile here.
+
+The mechanical guess is a low rate. Winners hold about two candles, the median winner makes 33
+points and half an R is about 8, so a scratch needs price to run 8 points, return through the entry
+and then make 33, inside one or two 5-minute candles. The usual shape is a dip first and then the
+run, which never arms the stop. But that is a guess about order, and the run is what settles it.
+
+**How to read the result:** compare run B against run A, not against the baseline. Better than
++1,279 on both halves and the stop stays. Worse on either half and it comes back off, and the
+ceiling in D-102 point 3 is recorded as unreachable.
