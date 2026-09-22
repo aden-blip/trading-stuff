@@ -1077,6 +1077,51 @@ with the entry-at-the-level styles on the year.
    price approaches, the manual style) and a time-based cut. Either follows only if run B or
    C shows the edge sits in the entry and the cap alone did not find it.
 
+### D-99  Full evaluation of the year: the trigger has no edge, the leaks are mechanical, and the ceiling of the present design is break-even  (DECIDED)
+The owner asked for an evaluation of the whole strategy and a route to a profitable backtest
+with precise entries, low drawdown and high reward to risk, still inside the Socrates method.
+Every claim below is measured on the 2,963-trade year and validated on both halves; the full
+readout is `reference/backtests/2026-09-22/evaluation_365d_full.md`.
+1. **The trigger loses before costs.** -12.3 USD a trade with commission and slippage added
+   back. The share reaching the target is 24.3 % against 27.7 % for a random entry with the
+   same stop and target, so the two-candle rejection carries slightly worse than no
+   information. This is why no geometry has ever helped: 41 stop and target combinations on
+   the cleanest slice, none positive on the year, none on both halves.
+2. **Two mechanical leaks, both large and both consistent.** (a) The four-hour boundary hours
+   (17, 21, 01, 05, 09, 13 Central): 963 trades at -30.9 raw a trade against -3.3 everywhere
+   else, negative on both halves. A fresh four-hour open is a line through the current price,
+   so the bot trades the middle of the action. (b) The level set: pure opens -18.0 and pure
+   mids -35.1 raw a trade against -14.2 for swing extremes. The current four-hour open alone
+   cost 27,174 on 620 trades and the daily open 11,438. What paid was the New York low, the
+   previous day and week highs, the Asia open, the Monday high and the three-touch repeated
+   level, which are swing extremes, every one.
+3. **The losing core is the counter-trend trade itself.** Buying the bottom of the last 24
+   hours' range and selling the top, which is what a reversal at a level does by construction,
+   is the worst slice in the sample: -28.8 raw a trade, negative on both halves. Trades whose
+   direction fights the drift lose -21.5; trades that go with it lose -7.8. The reversal
+   concept is systematically on the wrong side of the move.
+4. **The ceiling of the present design is break-even.** The best configuration reachable
+   without fitting (direction with the drift, a pure swing extreme, outside the boundary
+   hours) is 246 trades, +119 net, +7.7 raw a trade, positive on both halves before costs,
+   payoff 2.3 to 1, hit rate 30.5 %, worst run of losses 3,781. Its raw edge is 8 a trade and
+   costs are 7.20. Dropping the worst levels on top of that looked like +4,425 but fails an
+   out-of-sample test (pick on one half, trade the other: +1,036, then -756, then +510 as the
+   count rises), so it is recorded as noise and not adopted.
+5. **The three untested things, in order of promise.** (a) The owner's ten hand-drawn pivot
+   boxes were empty for the entire year: no trade in the sample was taken at a level he drew,
+   so the actual Socrates level selection has never been tested, only the automatic set.
+   (b) A real directional read. The script already carries a higher-timeframe trend vote and a
+   session VWAP side vote, both built, both weighted zero, and the bias inputs parked at D-88;
+   point 3 says this is the single largest lever. (c) A resting limit at the level instead of
+   a market order a candle away, which both sharpens the entry and saves about 2.00 a trade of
+   the 7.20 in costs, a quarter of the whole edge.
+6. **What is decided.** Nothing is switched on from this reading alone; the leaks in point 2
+   and the bias in point 3 go to the tester one at a time, largest first, each judged on both
+   halves (D-88). The trailing stop and the staged stops stay off (D-93): point 1 says trade
+   management cannot rescue an entry with no edge. Break trades are kept, not dropped: they
+   are the with-trend half of the strategy and the only setup whose raw edge is positive
+   (+2.9 a trade against -7.0 for reversals).
+
 ---
 
 ## L. New in round 4
