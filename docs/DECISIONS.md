@@ -1017,6 +1017,42 @@ to the right until the next signal.
    is still the owner's pick of D-94 (the market, the chart timeframe, or the trigger), and
    the two no-code runs (MNQ 15-minute, MCL 5-minute) remain the cheapest tests.
 
+### D-97  Tight stops on the same entries are measured: less bad, never positive; the idea points at the entry  (DECIDED)
+The owner's read (22 Sep): the stops are large; the entry should be good enough that a trade
+barely goes against, and when it does the loss is cut fast, so a winner is many times a loser.
+The year's export tests the stop half of that exactly, because each trade carries how far it
+went against before it ended (session 15's what-ifs, extended on the M6 v0.1 file).
+1. **Same entries, tighter stop, same targets:** stop 5 pts -30,947 (win 4.9 %, PF 0.56);
+   8 pts -25,231 (8.2 %, 0.74); 10 pts -26,732 (9.9 %, 0.77); 12 pts -24,075 (11.7 %, 0.82);
+   15 pts -29,955; 20 pts -33,050; 25 pts -33,321; as traded -57,795 (26.5 %, 0.84). The best
+   of them cuts the year's loss by more than half and stays a loser. Costs are about 21,300 for
+   the year (commission and two ticks each way on two contracts, 2,963 trades) and every extra
+   small stop adds to them.
+2. **Why: the pullback is the drawdown.** The entry is the close of the follow-through candle,
+   a candle or two off the level, and the winners come back toward the level before they go:
+   the median winner dipped 14 points first, 62 % of winners dipped 10 or more, half 15 or
+   more, 40 % 20 or more. A 10-point stop would have stopped 490 of the 784 winners before they
+   won. Each what-if lands the hit rate where a coin flip puts it, stop over stop plus target
+   (10 % expected at a 10-point stop, 9.9 % measured), which is D-84's finding again: this
+   entry carries no information about what comes next, so no stop or target geometry turns it
+   positive.
+3. **A tighter stop and a closer target together cannot be read from the file:** for 800 to
+   1,500 trades both the stop distance and the closer target were crossed and the export does
+   not say which came first; the bounds run from -50,000 to +175,000. Only a tester run
+   settles it.
+4. **The idea is about the entry, and the switches exist.** Entering at the level instead of a
+   candle or two away is "Reversal entry: Limit at the level after the follow-through" or
+   "Limit at the level after the rejection candle", with "Reversal stop: Beyond the rejection
+   wick", so the stop sits just past the wick, not past the whole zone. Measured once, on the
+   73-day paper sample without costs (session 3 run E, D-84): the stop halved from 63 to 28
+   points and the hit rate halved from 24 % to 12 %, a small loss either way. Never run on the
+   year with costs. Decision: the next runs are those two entry settings, each with the wick
+   stop, on Deep Backtesting "Last 365 days" at 500,000, exported and read the same way
+   (halves, dip before the win, hit rate against the coin flip). No code change. A "cut
+   quickly" rule beyond the stop (a time-based or R-based early exit) is not built until those
+   runs show the entry at the level has an edge, because point 1 says cutting faster on this
+   entry does not flip the sign.
+
 ---
 
 ## L. New in round 4
