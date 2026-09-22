@@ -1,5 +1,19 @@
 # Changelog
 
+## M6 v0.3, 2026-09-22
+
+- Position visual (D-96), group "Position visual (M6 v0.3)", on by default: at every signal a
+  green box from the entry to the first target and a red box from the entry to the stop, lines
+  at the entry, the stop and the targets, a dotted line at every R step (0.5R by default, at
+  most 8) up to the farthest target shown, and labels for SL, E, T1 and T2 with the R each
+  target pays. The newest position runs to the right until the next signal, which stops it
+  there and starts its own; the labels of the newest follow price and move to the start of
+  their position once it is frozen. The last 8 positions stay (input, up to 30). Switches for
+  the second target and for the labels. Nothing in the trades changes; the info box reads v0.3.
+- No script switch for the tester's own trade arrows (blue and purple, with the order text):
+  they are TradingView's markers, hidden in the Style tab ("Trades on chart") or absent in
+  "Signals only" mode.
+
 ## M6 v0.2, 2026-09-21
 
 - "Signals only: labels, no trades", a switch in the Signals group, off by default (D-95). On,

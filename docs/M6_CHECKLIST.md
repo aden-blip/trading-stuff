@@ -43,6 +43,25 @@ Same paste. The info box must read `L2L M6 v0.2`.
 Report the first error line if it does not compile, and a screenshot of the chart with the
 switch on.
 
+## v0.3: the position visual
+
+Same paste. The info box must read `L2L M6 v0.3`.
+
+1. **Compiles and runs.** Report the first error line if not.
+2. **At each signal:** a green box from the entry to the first target and a red box from the
+   entry to the stop, lines at the entry, the stop and the targets, dotted lines at every
+   0.5R up to the farthest target, and labels SL, E, T1, T2 and the R steps at the right end
+   of the newest one. The newest runs to the right and follows price; when the next signal
+   comes it stops at that bar and the new one starts.
+3. **Older positions** stay behind with their labels moved to their start bar; only the last
+   8 remain (setting "Positions kept").
+4. **Trading mode** (Signals only off): Deep Backtesting "Last 365 days" at 500,000 still
+   gives 2,963 trades, net -57,794.60; the visual changes no trade.
+5. **The tester's arrows:** Style tab, untick "Trades on chart", then "Save as default" at
+   the bottom of the settings window. They do not appear in Signals only mode at all.
+
+Report a screenshot of a stretch with two or three signals.
+
 ## Report back
 
 - Done: the Overview and the exported list of the base run (sessions 18 and 19).

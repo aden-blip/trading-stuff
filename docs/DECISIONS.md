@@ -995,6 +995,28 @@ no trades", off by default.
 3. The M6 measurement (D-94) stands. This is a display convenience for watching the chart or
    trading by hand, not a change to the rules.
 
+### D-96  A position visual at every signal, running until the next signal; the tester's arrows are a chart setting  (DECIDED)
+The owner's asks of 22 Sep: the tester's blue and purple arrows and their text should go, and
+each signal should draw its plan, the stop, the targets and the R steps between them, running
+to the right until the next signal.
+1. **The tester's markers are TradingView's, not the script's.** Pine cannot switch them off.
+   They are absent in "Signals only" mode (no orders), and in trading mode the Style tab of
+   the script's settings has "Trades on chart"; unticked and saved as default, they stay off.
+2. **M6 v0.3 draws the position at every signal** (group "Position visual"): a green box from
+   the entry to the first target, a red box from the entry to the stop, lines at the entry,
+   the stop, the first and second targets, a dotted line at every R step (0.5R by default,
+   at most 8) from the entry to the farthest target shown, and labels for SL, E, T1 and T2
+   (price and R) and for the steps. The newest position runs to the right and its labels
+   follow price; the next signal stops it at that bar and starts its own, and the old labels
+   move to the bar their position started on. The last 8 positions stay (input, up to 30).
+   It draws the plan as of the signal: the entry is the planned one (the close for a market
+   entry, the limit for a resting order) and a stop moved by the manager is not redrawn; the
+   "Stop in force" line shows that. On by default in both modes; nothing in the trades
+   changes.
+3. **Profitability stays the job.** Nothing here changes a trade. The next step on the edge
+   is still the owner's pick of D-94 (the market, the chart timeframe, or the trigger), and
+   the two no-code runs (MNQ 15-minute, MCL 5-minute) remain the cheapest tests.
+
 ---
 
 ## L. New in round 4

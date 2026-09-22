@@ -1,6 +1,6 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.2
+//  Level-to-Level (L2L)  |  Milestone 6: Higher-timeframe rejection  |  M6 v0.3
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -234,6 +234,13 @@ htfMin       = input.int(0, "Reversals need at least this many (0 = off)", minva
 htfTf2       = input.timeframe("15", "Timeframes beyond the 5-minute", group = gHt, inline = "tf")
 htfTf3       = input.timeframe("60", "", group = gHt, inline = "tf")
 htfTf4       = input.timeframe("240", "", group = gHt, inline = "tf")
+
+gPV = "Position visual (M6 v0.3)"
+posVisOn   = input.bool(true, "Draw each signal's position: entry, stop, targets and R lines", group = gPV, tooltip = "At every signal a shaded box runs from the entry to the first target (green) and from the entry to the stop (red), with lines at the entry, the stop, the targets and every R step in between. The newest one runs to the right and follows price until the next signal, where it stops; older ones stay on the chart up to the number kept below.")
+posVisKeep = input.int(8, "Positions kept", minval = 1, maxval = 30, group = gPV)
+posVisStep = input.float(0.5, "R lines every, R", step = 0.25, minval = 0.25, maxval = 5, group = gPV, tooltip = "R is the distance from the entry to the stop. A dotted line at every step from the entry up to the farthest target shown, at most 8 of them.")
+posVisT2   = input.bool(true, "Show the second target", group = gPV)
+posVisText = input.bool(true, "Labels: SL, E, T1, T2 and the R steps", group = gPV, tooltip = "Prices at the right end of the newest position, with the R each target pays. When the next signal comes, the labels move to the start of their position.")
 
 gRg = "Range filter (test, D-81)"
 rangeOn     = input.bool(false, "No reversal at a level inside a range, edges only", group = gRg, tooltip = "Your read: in a range, trade the edges, not the middle. The script looks back over the window below. If that stretch is narrower than the limit and the level sits in the middle of it, away from both edges by the edge share, reversal entries at that level are skipped. Breaks are not affected. Off until the M4 backtest measures it.")
@@ -1759,6 +1766,111 @@ if barstate.isconfirmed
 // and no new entry is placed on it.
 bool flatBar = flattenAt > 0 and modNow < flatMin and modNow + tfMinutes >= flatMin
 
+// ───────── [J2] POSITION VISUAL (M6 v0.3): each signal's plan, drawn until the next signal ─────────
+// Two shaded boxes (entry to first target, entry to stop), lines at the entry, the stop, the
+// targets and every R step, labels at the right end. The newest position runs to the right;
+// a new signal stops it at that bar and starts its own. The oldest are dropped past the cap.
+var box[]   pvBox = array.new<box>()
+var line[]  pvLine = array.new<line>()
+var label[] pvLab = array.new<label>()
+var int[]   pvNb  = array.new<int>()     // drawings per position, oldest first
+var int[]   pvNl  = array.new<int>()
+var int[]   pvNt  = array.new<int>()
+var int[]   pvX1  = array.new<int>()     // the bar each position started on
+f_pvLabel(float y, string txt, color bg, string sz) =>
+    if posVisText
+        array.push(pvLab, label.new(bar_index + 1, y, txt, xloc = xloc.bar_index, style = label.style_label_left, color = bg, textcolor = color.white, size = sz))
+        1
+    else
+        0
+// The newest position stops at this bar; its labels move to the bar it started on.
+f_pvFreeze() =>
+    int np = array.size(pvNb)
+    if np > 0
+        int nb = array.get(pvNb, np - 1)
+        int nl = array.get(pvNl, np - 1)
+        int nt = array.get(pvNt, np - 1)
+        int x1 = array.get(pvX1, np - 1)
+        int tb = array.size(pvBox)
+        int tl = array.size(pvLine)
+        int tt = array.size(pvLab)
+        if nb > 0
+            for i = tb - nb to tb - 1
+                box b = array.get(pvBox, i)
+                box.set_right(b, bar_index)
+                box.set_extend(b, extend.none)
+        if nl > 0
+            for i = tl - nl to tl - 1
+                line l = array.get(pvLine, i)
+                line.set_x2(l, bar_index)
+                line.set_extend(l, extend.none)
+        if nt > 0
+            for i = tt - nt to tt - 1
+                label.set_x(array.get(pvLab, i), x1)
+// Past the cap, the oldest position and all its drawings go.
+f_pvTrim() =>
+    while array.size(pvNb) > posVisKeep
+        int nb = array.shift(pvNb)
+        int nl = array.shift(pvNl)
+        int nt = array.shift(pvNt)
+        array.shift(pvX1)
+        if nb > 0
+            for i = 1 to nb
+                box.delete(array.shift(pvBox))
+        if nl > 0
+            for i = 1 to nl
+                line.delete(array.shift(pvLine))
+        if nt > 0
+            for i = 1 to nt
+                label.delete(array.shift(pvLab))
+// A new position from this bar.
+f_pvNew(int dir, float e, float s, float t1, float t2) =>
+    f_pvFreeze()
+    int nb = 0
+    int nl = 0
+    int nt = 0
+    float r = math.abs(e - s)
+    bool showT2 = posVisT2 and not na(t2)
+    float far = showT2 ? t2 : t1
+    color cNone = color.new(color.black, 100)
+    array.push(pvBox, box.new(bar_index, math.max(e, t1), bar_index, math.min(e, t1), border_color = cNone, border_width = 1, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.green, 85)))
+    array.push(pvBox, box.new(bar_index, math.max(e, s), bar_index, math.min(e, s), border_color = cNone, border_width = 1, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.red, 85)))
+    nb += 2
+    array.push(pvLine, line.new(bar_index, e, bar_index, e, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.white, 20), style = line.style_solid, width = 1))
+    array.push(pvLine, line.new(bar_index, s, bar_index, s, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.red, 0), style = line.style_solid, width = 1))
+    array.push(pvLine, line.new(bar_index, t1, bar_index, t1, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.green, 0), style = line.style_solid, width = 1))
+    nl += 3
+    if showT2
+        array.push(pvLine, line.new(bar_index, t2, bar_index, t2, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.green, 40), style = line.style_dashed, width = 1))
+        nl += 1
+    nt += f_pvLabel(s, "SL " + str.tostring(s, format.mintick), color.new(color.maroon, 20), size.small)
+    nt += f_pvLabel(e, "E " + str.tostring(e, format.mintick), color.new(color.gray, 20), size.small)
+    nt += f_pvLabel(t1, "T1 " + str.tostring(t1, format.mintick) + (r > 0 ? "  " + str.tostring(math.abs(t1 - e) / r, "#.0") + "R" : ""), color.new(color.teal, 20), size.small)
+    if showT2
+        nt += f_pvLabel(t2, "T2 " + str.tostring(t2, format.mintick) + (r > 0 ? "  " + str.tostring(math.abs(t2 - e) / r, "#.0") + "R" : ""), color.new(color.teal, 40), size.small)
+    if r > 0
+        int k = 1
+        while k <= 8 and k * posVisStep * r < math.abs(far - e)
+            float y = e + dir * k * posVisStep * r
+            array.push(pvLine, line.new(bar_index, y, bar_index, y, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.gray, 40), style = line.style_dotted, width = 1))
+            nl += 1
+            nt += f_pvLabel(y, str.tostring(k * posVisStep, "#.##") + "R", color.new(color.gray, 60), size.tiny)
+            k += 1
+    array.push(pvNb, nb)
+    array.push(pvNl, nl)
+    array.push(pvNt, nt)
+    array.push(pvX1, bar_index)
+    f_pvTrim()
+// The newest position's labels follow the right edge.
+f_pvFollow() =>
+    int np = array.size(pvNt)
+    if np > 0
+        int nt = array.get(pvNt, np - 1)
+        int tt = array.size(pvLab)
+        if nt > 0
+            for i = tt - nt to tt - 1
+                label.set_x(array.get(pvLab, i), bar_index + 1)
+
 if barstate.isconfirmed and array.size(zLo) > 0
     float stopBuf = math.max(stopUnit * unit, stopTicks * syminfo.mintick)
     float minTgt  = math.max(tgtUnit * unit, tgtTicks * syminfo.mintick)
@@ -2046,6 +2158,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
             array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + " (" + str.tostring(bestScore) + " of 100)\n" + details + "\n" + bestTip))
             if array.size(sigLabels) > sigKeep
                 label.delete(array.shift(sigLabels))
+        if posVisOn
+            f_pvNew(bestDir, bestEntry, bestStop, bestTp1, bestTp2)
         if alertsOn and not sigOnly
             string js = '{"symbol":"' + sym + '","data":"' + (bestDir > 0 ? "buy" : "sell") + '","quantity":' + str.tostring(baseQty) + ',"sl":' + str.tostring(bestStop, format.mintick) + ',"event":"ENTRY","setup":"' + setupTxt + '","level":"' + bestCode + '","score":' + str.tostring(bestScore) + ',"entry":' + str.tostring(bestEntry, format.mintick) + ',"tp1":' + str.tostring(bestTp1, format.mintick) + (na(bestTp2) ? "" : ',"tp2":' + str.tostring(bestTp2, format.mintick)) + '}'
             alert(js, alert.freq_once_per_bar_close)
@@ -2140,6 +2254,10 @@ if barstate.isconfirmed and flatBar
     if posDir != 0
         flatPend := true
     f_cancelAllPending()
+
+// The newest position's labels follow the right edge (M6 v0.3).
+if posVisOn
+    f_pvFollow()
 
 // The stop in force, as of each candle's close (M5): the first stop, then each stage and the trail.
 plot(showStopLine and posDir != 0 ? posStop : na, "Stop in force", color = color.new(color.navy, 0), style = plot.style_linebr, linewidth = 1)
@@ -2337,7 +2455,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M6", "v0.2")
+    f_cell(0, "L2L M6", "v0.3")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2419,5 +2537,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M6 v0.2). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M6 v0.3). If this line is missing in your editor, the paste was cut off.
 // ============================================================================
