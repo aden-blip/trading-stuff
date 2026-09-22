@@ -1078,6 +1078,8 @@ with the entry-at-the-level styles on the year.
    C shows the edge sits in the entry and the cap alone did not find it.
 
 ### D-99  Full evaluation of the year: the trigger has no edge, the leaks are mechanical, and the ceiling of the present design is break-even  (DECIDED)
+Read with D-100, which revises what this reading covers: it measures the trigger with none of
+the method's conditions on, so point 4's ceiling is the ceiling of what has been tested.
 The owner asked for an evaluation of the whole strategy and a route to a profitable backtest
 with precise entries, low drawdown and high reward to risk, still inside the Socrates method.
 Every claim below is measured on the 2,963-trade year and validated on both halves; the full
@@ -1121,6 +1123,63 @@ readout is `reference/backtests/2026-09-22/evaluation_365d_full.md`.
    management cannot rescue an entry with no edge. Break trades are kept, not dropped: they
    are the with-trend half of the strategy and the only setup whose raw edge is positive
    (+2.9 a trade against -7.0 for reversals).
+
+### D-100  The year measured the trigger, not the method: the level rule, the bias, the volume and the caps go on first  (DECIDED)
+A full read of the six transcripts against the script, written up in `docs/METHOD_AUDIT.md`,
+changes what D-99 means. D-99 is a correct measurement of the two-candle rejection at a key level
+with **every one of the method's conditions off, absent, or in a form the method does not use**.
+It is not a measurement of the method, and "the ceiling is break-even" is the ceiling of what has
+been tested, not of the concept.
+1. **The one selection rule was never applied.** The method marks a level only where price
+   pivoted repeatedly and keeps a drawn line only where it lands on a key level. In the script
+   that rule exists once, as the three-touch repeated level, and it carries about 100 of the
+   year's 2,963 trades. The other 37 families need no touch history at all.
+2. **The biggest group of trades has no basis in the source.** The script's "4-hour" family means
+   the previous 4-hour bar's high, low, mid and open plus the current 4-hour open: 1,539 trades
+   and -38,401 USD, the current 4-hour open alone 620 trades and -27,174 at PF 0.65. The method
+   never mentions previous-4-hour-bar levels; its 4-hour work is the drawn lines. This also
+   explains D-99's boundary-hour leak: those hours are when that family refreshes.
+3. **Source and data separate the levels on the same axis.** Every level code that paid is a place
+   price turned and left alone (New York low, previous day and week highs, quarterly and yearly
+   opens, previous month mid and high, three-touch, Asia open, midnight high). Every code that
+   lost badly is a line through where price already is: a fresh open, a mid, a boundary that
+   refreshes every four hours or every day. The method says the same thing from the other side,
+   and it said it first: the daily open is explicitly a break-and-retest level, not a reversal
+   level ("I made a mistake by not waiting for the break"), and in the year the daily open is
+   343 trades and -11,438 at PF 0.71. That is a prediction from the source confirmed by the data,
+   which is the opposite of fitting, so it is adopted.
+4. **The bias term is a constant.** Every trade in every direction gets the same bias points. The
+   method requires a directional read and forms it two ways the script has never built: whether a
+   level held or failed on the higher timeframe, and whether price is above or below the prior
+   session's open, the daily open and the midnight open. D-80 and D-88 rejected *trend* gates;
+   these are different objects and are not covered by those readings. D-99 point 3 makes this the
+   largest lever, and it is still unbuilt.
+5. **Volume has never once been switched on.** It is the only confirmation the method names, in
+   every video. `volConfirmIn` defaults to Off, applies to reversals only, and measures total
+   volume against an average, which D-78 already recorded as the wrong measurement; the
+   buying-versus-selling split it specified was never coded. No session in the log has it on.
+6. **The correlated instruments are an entire video with zero lines of code.** The VIX is the only
+   independent information source in the method, and every filter measured from D-84 to D-99 is
+   another slice of the same MNQ 5-minute series. One security call out of 30 unused.
+7. **None of the risk rules are active** and the strategy runs about 12 trades a day against the
+   method's one to four, with no two-loss stop. This is the mechanism behind D-92, D-93 and
+   session 20, where everything that scratched trades early freed the strategy to take more of
+   them and each one loses on average.
+8. **What is decided.** The next run is the method as described, all no-code settings: levels only
+   where price has turned (every open family, every mid family and the whole previous-4-hour-bar
+   family off), New York only, opening blackout on, four trades a day and two losing trades,
+   volume confirmation on, the first target at the true nearest level, the stop at the rejection
+   wick with the cap on. Then the same run with the opens allowed as break-retests only. Then, in
+   this order and one at a time, the code that the method names and the script does not have: the
+   VIX, the buying-versus-selling volume split, the prior-day rejection count per level, the
+   session-open bias, and the resting limit at the level. Judged on both halves, every time
+   (D-88). Unchanged from D-99: break trades are kept, the trailing and staged stops stay off,
+   and reversals-only is rejected — it is the losing core. Unchanged from D-94: nothing here
+   revives the higher-timeframe candle count.
+9. **What only the owner can do.** The ten hand-drawn pivot boxes were empty for the whole year,
+   so the method's own level selection has still never been tested — only the automatic
+   approximation of it. Filling those in for a stretch of history is the one input no amount of
+   code replaces.
 
 ---
 
