@@ -1295,6 +1295,35 @@ year) and re-costed from the `docs/RESEARCH.md` table.
    changes to put the resting limit entry first, ahead of the VIX and the volume split, because it
    is the one item whose value is now measured rather than hoped for.
 
+### D-104  Cutting the losing slices makes it lose more; the losses are in the half with no filter  (DECIDED)
+The owner asked how to cut the losing trades. Two things were measured on run A's 240 trades.
+1. **Deleting the slices that lost does not work, and this time it is conclusive.** Seven slices
+   lose in both halves (the previous day low, the previous week high, the three-touch level,
+   Thursday, the 10:00 and 11:00 hours, and zones of three or more levels). Removing them all
+   takes the year from +1,279 to +3,601, which is the number that flatters. The out-of-sample
+   test kills it: pick the worst features on one half and trade the other, and **every basket
+   size makes the untouched half worse, in both directions**. H2 goes from +54 to -1,015 at one
+   removal and stays negative through eight; H1 goes from +1,225 to +386 and never recovers. This
+   is D-99 point 4 confirmed on a second export, and it is now a standing rule: a slice losing in
+   both halves is a description of the past, not a filter, unless a mechanism explains it.
+2. **The losses sit almost entirely in the half of the strategy that has no filter.** Of run A's
+   240 trades, break trades are 169 of them, 123 of those lose, they cost 7,811, and the setup
+   nets -164. Reversals carrying two or more higher-timeframe rejections are 71 trades, 45 losers,
+   costing 2,946, and net +1,443. The higher-timeframe count is computed for reversals only, so
+   every break trade is taken with no higher-timeframe check at all.
+3. **How the losers die.** 59 % were wrong immediately and never ran a quarter of the way to their
+   target, costing 6,406; 7 % got a quarter of the way; 35 % ran half their risk in profit before
+   being stopped, costing 3,694. No stop rule reaches the first group: only not taking the trade,
+   or getting in at a better price, does. The 35 % is what run B's breakeven stop attacks.
+4. **What is decided.** No slice removals. The build order becomes: (a) compute the
+   higher-timeframe rejection count for break setups and gate them the same way, which is not a
+   new hypothesis but the already-validated filter applied to the untested half, and is the
+   largest pool of losses in the run; (b) the resting limit at the level (D-103 point 3), which
+   is the only thing that touches the 59 % that are wrong from the first candle; (c) the chop
+   band, rescaled first per D-81, which is the method's hardest do-not-trade rule, has never been
+   run in 21 sessions, and describes exactly the trade that dies instantly at a level. Runs A and
+   B still go first, unchanged: they are already set up and they settle the stop question.
+
 ---
 
 ## L. New in round 4
