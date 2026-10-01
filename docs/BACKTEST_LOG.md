@@ -121,8 +121,22 @@ between the dense-map explanation and the alternatives, and it also prices the t
 confluences separately, because every trade carries how many of them agreed. No code change until
 that is read.
 
-Screenshots or trade list attached under reference/backtests/<date>/ : screenshot in the chat of
-2026-10-01; the trade list export has been requested and is not yet saved.
+Screenshots or trade list attached under reference/backtests/<date>/ :
+`reference/backtests/2026-10-01/trades_M9v0.1_source-method_deep-365d_500k.csv`, with
+`report_M9v0.1_deep-365d.md`, `compare_M9v0.1_halves.md` and `regime.py` beside it.
+
+**Added after the export arrived, correcting the entry above (D-119).** Two things written before
+the file came in are wrong. (a) The "denser map shrank the targets" explanation is only a quarter
+right: the median first-target win moved 33.4 to 32.8 points, barely at all, and only the mean fell
+(44.8 to 39.5), so it is the large winners that were cut rather than every target. (b) The exits
+split 114 T1, 311 stop, **76 void**, 1 flat, and the void exit is doing real work at −6.2 points
+against the stop's −15.1 — the report tool had been dropping void exits silently, which also
+invalidates session 22's reading of M8's average loss. The headline from the export is that before
+commission and slippage the year is −$0.96 a trade with a standard error of $4.49, so the signal is
+indistinguishable from a coin flip and the whole loss is the cost of trading. His named levels lose
+in both halves (daily open PF 0.37, midnight open 0.54); the only positive group, supply zones,
+reverses sign between halves and does not count. Volatility is refuted as an explanation
+(correlation of a month's stop size with its profit factor: −0.09).
 
 ## 2026-10-01  Session 22  (M8 v0.1, the trade in his shape; screenshot only, export awaited)
 

@@ -2051,3 +2051,108 @@ minute and 1 hour for my entries"*). A run of M9 is his method minus those three
 M8. The script passed a structural check (brackets, indentation, declaration order, the request
 budget at 18 of 40, info-box bounds) but the first paste may still stop on an error. One error line
 at a time, as always.
+
+---
+
+### D-119  The M9 export: what the source method is worth, measured  (DECIDED)
+Export: `reference/backtests/2026-10-01/trades_M9v0.1_source-method_deep-365d_500k.csv`, 502 trades,
+1 Oct 2025 to 1 Oct 2026. Readout and halves alongside it.
+
+**1. A tool bug found and fixed first.** `tools/trade_list_report.py` only knew the exit labels T1,
+stop, half, be, trail and flat, so the 76 `void` exits M8 introduced were silently dropped from the
+exit table and from every run-up table. Fixed; both tables now include them. **Session 22's reading
+of M8 was wrong because of it.** I wrote there that the average loss of $56.49 was "about 13 points
+against a 16-point stop, so the exit is cutting about three points earlier". It is not a blend; it
+is two populations.
+
+**2. The void exit works, and it is the one thing in this project that does.**
+
+| Exit | Trades | Per trade | Points |
+|---|---|---|---|
+| T1 | 114 | +$154.90 | +39.5 |
+| stop | 311 | −$63.40 | −15.1 |
+| **void** | **76** | **−$28.10** | **−6.2** |
+| flat | 1 | +$105.80 | +27.2 |
+
+A void costs 6.2 points against the stop's 15.1. Against those same 76 trades running to the stop
+it saved about $2,700 over the year. What cannot be read from a trade list is how many of the 76
+would have come back and won, so this is a confirmed saving, not a confirmed gain.
+
+**3. The three new confluences made no measurable difference.**
+
+| | Trades | PF | Per trade |
+|---|---|---|---|
+| c2 of 3 | 105 | 0.80 | −$8.30 |
+| c3 of 3 | 388 | 0.82 | −$8.20 |
+
+With all three gating, the only visible contrast is the VIX actively confirming against the VIX
+merely not objecting, and it is worth ten cents a trade. Pricing the gates themselves still needs
+runs with them off, but nothing here suggests it is worth the runs.
+
+**4. His named levels lose, and these ones agree across both halves.** Clean attribution,
+single-level zones only:
+
+| Code | What it is | Trades | PF | Per trade | H1 | H2 | Agree |
+|---|---|---|---|---|---|---|---|
+| DO | **daily open** | 24 | 0.37 | −$31.90 | − | − | yes |
+| MO | **midnight open** | 32 | 0.54 | −$21.30 | − | − | yes |
+| PDL | prev day low | 26 | 0.61 | −$18.70 | − | − | yes |
+| PDH | prev day high | 20 | 0.51 | −$16.20 | − | − | yes |
+| P4L | **4-hour low** | 49 | 0.80 | −$8.50 | + | − | NO |
+| P4H | **4-hour high** | 50 | 0.97 | −$1.50 | − | − | yes |
+| SUP | **supply zone** | 69 | 1.08 | +$3.10 | +$838 | −$1,296 | **NO** |
+| DEM | **demand zone** | 87 | 0.73 | −$12.60 | + | − | **NO** |
+
+The daily open is the level he names as his main go-to (*"my main go-to strategy would be waiting
+for a daily high or a daily open"*) and it is the worst group in the file, losing in both halves.
+The supply zone is the only group with a positive year, and it fails the halves test outright:
++$838 to 1 April, −$1,296 after. Under this project's own rule it is not a finding.
+
+**5. The volatility explanation is refuted.** A month's average stop-out distance is set from the
+daily ATR, so it is a clean volatility proxy. Across 13 months its correlation with that month's
+profit factor is **−0.09**. June 2026 was the worst month (PF 0.32) on 20.1-point stops; July had
+*wider* stops at 22.2 and did better at 0.70; October 2025 had the narrowest at 7.5 and still lost.
+Volatility does not explain the failure and should not be chased.
+
+**6. The session-23 "denser map shrank the targets" explanation is only a quarter right.** The
+median first-target win went 33.4 points (M7) to 32.8 (M9) — barely moved. The *mean* went 44.8 to
+39.5. So the typical target is unchanged and it is the large winners that got cut, which is a
+smaller and different effect than I described. The entry stands with this correction attached.
+
+**7. The finding that matters, and it is not about levels at all.**
+
+| | Per trade |
+|---|---|
+| Net | −$8.16 |
+| Cost of trading (commission + slippage) | −$7.20 |
+| **Before costs** | **−$0.96** |
+
+The standard error on that is $4.49, so t = −0.21 and the 95 % range for the true edge before costs
+runs from −$9.75 to +$7.84 a trade. **Before costs the method is statistically indistinguishable
+from a coin flip, and the entire loss is the cost of trading.** The best half of the year, to 1
+April, was +$1.93 a trade net and +$9.13 before costs — above the cost line, but on 251 trades and
+with the halves differing at t = 2.26, which is the sort of gap that appears by chance often enough
+not to build on.
+
+**What this changes.** The project has been looking for a filter that removes losers. There is no
+pile of avoidable losers to remove: there is a signal with no measurable edge either way, and $7.20
+of friction on top of it. Every extra condition tried so far has narrowed the sample without moving
+the edge, because there is no edge in the sample to concentrate. More filters is the wrong next
+move and should stop being the default.
+
+**What is worth trying instead, in order:**
+1. **Make the winners bigger, not the losers fewer.** The void exit already proves the loss side can
+   be cut without hurting the hit rate. Nothing has ever been tried on the win side: no runner, no
+   second target, no trailing beyond the first level. Average win $154 against average loss $56 is
+   the only lever with room in it.
+2. **Attack the $7.20.** It is 88 % of the loss. Slippage is modelled at 2 ticks on every fill; the
+   resting-limit entry M8 introduced should not pay that, and if the model is charging it anyway the
+   whole year is being read through a cost that is not real. Checking that costs nothing.
+3. **Get a real trade record.** The owner's own history (D-47, reopened by D-108) has been asked for
+   four times and never supplied, and no record of the source's actual trades exists either. Without
+   one, there is no way to tell a wrong implementation from a method that does not survive contact
+   with costs. This is now the highest-value missing item in the project.
+
+**What is not concluded.** That the method does not work. Three of its parts cannot be written in
+Pine at all — the order book, the news calendar, the 1-hour entries — and he names all three. A
+method whose edge lives in the order book would look exactly like this file.
