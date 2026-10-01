@@ -1478,6 +1478,53 @@ Five independent adversarial checks were run against the first-break finding bef
    D-99 point 4, D-104 point 1 and this entry are three strikes; the next candidate goes through
    that gate before it reaches the owner, not after.
 
+### D-108  The backtest does not say the method loses; it says the copy of it is lossy. Reopen D-47 and measure the gap directly  (DECIDED)
+The owner says he knows the strategy is profitable and something about the test must be wrong.
+That is a testable claim and it deserves measuring rather than arguing, so this entry records
+what the numbers actually say, the four places the copy can leak, and the one thing that would
+settle it.
+1. **The backtest has never said the method loses.** M7 v0.1 is gross-positive: +3.78 a trade
+   before costs, the first configuration ever to be (D-102 point 1). Reversals carrying two or
+   more higher-timeframe rejections are +20.32 a trade **net**, with the halves at +19.07 and
+   +21.24 (D-102 point 2). A near-break-even bot wrapped around a profitable discretionary method
+   is exactly what a lossy copy looks like; it is not evidence against the method.
+2. **The hand-drawn levels have never been tested, not once.** The ten pivot inputs were empty for
+   the whole 365 days (D-99 point 5). Every number in this project comes from the script's
+   automatic approximation of where the owner would draw a line. He trades off lines he draws. The
+   single largest untested variable in the project is also the only one no amount of code can
+   supply.
+3. **The entry price is measurably the biggest mechanical leak.** 59 % of the losers in run A were
+   wrong from the first candle and never ran a quarter of the way to target, costing 6,406 of the
+   10,757 the losers cost (D-104 point 3). The bot enters at the close of a follow-through candle,
+   one or two candles past the level; the owner enters at the level on a resting order, and has
+   said that when the entry is good he sees almost no drawdown. D-103 point 3 priced the
+   difference at about 30 a trade on the standard contract, costs falling from 41 % of gross to
+   17 %.
+4. **The bot takes every signal; the owner selects.** It has no VIX, no Magnificent 7, no news and
+   no read of whether the level looks clean. Those are zero lines of code (D-100 point 6) and are
+   the only two information sources in the whole method that are not another slice of the same
+   price series. The owner also trades one to four times a day and does not trade every day; the
+   bot runs about one a day with no discretion at all.
+5. **The exits differ.** The owner scalps to the first line and takes profit by feel; the script
+   holds a fixed target at a level. 35 % of run A's losers ran half their risk into profit before
+   being stopped (D-102 point 3). Some of those are trades he would have booked.
+6. **What is decided: reopen D-47.** It was closed on the reasoning that the journal predated this
+   strategy and would only show personal tendencies. That reasoning no longer holds, because the
+   question has changed from "what are his habits" to "where exactly does the bot diverge from
+   what he actually does". His own fills are the only direct measurement of that. What is wanted
+   is any export with date, time, side, entry price, exit price and size — TradeZella, Tradovate,
+   or a broker statement. Even one month is enough.
+7. **What the comparison would show, which nothing else can.** Lining his fills up against the
+   script's signals on the same days separates the four candidates above: whether he took signals
+   the bot never generated (the levels), whether he was filled better on the same signals (the
+   entry), whether he skipped signals the bot took (the selection), or whether he exited the same
+   trades differently (the management). Each one points at a different fix, and right now the
+   project is guessing between them.
+8. **The possibility that has to stay on the table.** Remembered profitability and a broker
+   statement often differ, and the record settles that too. It is named here once so it does not
+   have to be raised again: the export is wanted either way, and if it shows the method paying, it
+   also shows exactly how.
+
 ---
 
 ## L. New in round 4
@@ -1525,7 +1572,7 @@ what stop sizes pay; nothing is set in stone before that.
 **Answer:** You like the idea. Standard fixed sizing for now, size-by-score stays in the settings
 to experiment with during backtesting.
 
-### D-47  TradeZella export  (CLOSED, not needed)
+### D-47  TradeZella export  (REOPENED by D-108: now the most diagnostic item in the project)
 **Answer:** Your call: the journal predates this strategy and would only show personal tendencies.
 Session and level statistics come from the bot's own backtests instead. The search for the file is
 over. Profiles stay as proposed.
