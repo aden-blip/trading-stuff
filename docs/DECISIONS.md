@@ -2066,6 +2066,8 @@ against a 16-point stop, so the exit is cutting about three points earlier". It 
 is two populations.
 
 **2. The void exit works, and it is the one thing in this project that does.**
+*(Wrong, corrected by D-121: this priced the saving and never priced what the saving cost. Left as
+written so the error is on the record.)*
 
 | Exit | Trades | Per trade | Points |
 |---|---|---|---|
@@ -2224,3 +2226,48 @@ fourth candidate nobody had named, and it came from the owner.
 **Judged against:** M9 v0.1, 502 trades, PF 0.813, −$4,094, average win $154 and average loss $56.
 M10 should take the same number of trades. If the win side does not grow, the answer is no and the
 target was not the problem.
+
+---
+
+### D-121  The close-back-through-the-level exit is costing money, and it is off by default  (DECIDED)
+**Answer (owner, 2026-10-01):** "the stuff for closed a trade when a candle closed back through a
+level it was taken at sounds wrong."
+
+**It is, and I had it backwards in D-119.** There I called the void exit "the one thing in this
+project that works", on the strength of it closing losers at 6.2 points against the stop's 15.1.
+That measured the saving and never measured what the saving cost. Priced properly against the M9
+export (`reference/backtests/2026-10-01/void_worth.py`):
+
+| | |
+|---|---|
+| The 76 void exits | −$2,135, or −$28.10 each |
+| Every other trade | 426 trades, 27.0 % win, average win $154, average loss $63 |
+| Those 76 left alone, at the same win rate | −$350 expected (21 winners, 55 losers) |
+| **What cutting them early cost** | **−$1,786 over the year** |
+
+**The break-even test.** Closing on that signal only pays if one candle closing back through a
+level cuts those trades' chances from **27 % to below 16.2 %**. That is a large claim for a single
+five-minute close, and nothing in the file supports it. A five-minute close back through a level is
+ordinary noise around a level, not the death of an idea.
+
+**The circumstantial evidence agrees.** M7 had no void exit and a 26.62 % win rate. M8 and M9 both
+have it and came in at 21.20 % and 22.91 %. Other things changed in both, so this is support, not
+proof, but it points the same way.
+
+**What cannot be known from any export**, and should stop being implied: once the exit fires, the
+record of what price did next stops. The $1,786 above assumes those 76 trades would have behaved
+like every other trade. That is the neutral assumption, not a measured one. Only a run with the
+switch off gives the real number.
+
+**Decision.** `voidOn` ships **off** in M10. The ratcheting trail from D-120 is what ends the trade:
+the stop follows the last level cleared and exits on a touch about one buffer beyond it, which is
+wider and does not react to a single close. The switch is still there, so the comparison can be run
+by ticking one box. M8 and M9 keep it on, because both are already measured and are the record of
+what that exit does.
+
+**Known gap in M10, and the next thing to try if it shows up.** With no target and no void, a trade
+that runs a long way without clearing any level gives everything back to its original stop. The
+level map is dense enough that this should be rare, but if the export shows big run-ups ending at
+the entry stop, the next step is the stage manager (D-32, `mgrOn`), which moves the stop to
+breakeven after 1R. It was measured off in D-93 and that measurement was taken with a target in
+place, so it does not settle the question for a run-it trade.
