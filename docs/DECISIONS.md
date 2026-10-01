@@ -1719,6 +1719,51 @@ against each part.
    turns his rule from an untestable preference into something the next export answers directly,
    and it costs one number per trade. Runs A and B still go first and still cost nothing.
 
+### D-114  Three more source videos found, and they say we have been measuring about a quarter of his system  (DECIDED)
+The channel was listed with `yt-dlp`: 29 videos, of which six were already transcribed and twenty
+are mindset content. Three are strategy and were missing. Captions saved as `transcript_7` to
+`transcript_9`. Number 7, "Top Indicators", is the most valuable single source in the folder: it
+names every indicator he runs, which no earlier source did.
+1. **His complete toolset, in his own words, and all of it free.** Key Levels by **Trading Wolf**
+   (which adds the daily open and low and VWAP levels), Key Levels by **Spaceman** (the one L2L
+   was modelled on), **Bull vs Bear Power by DGT** for volume, **ICT Kill Zones by LuxAlgo**, and
+   **Supply and Demand Visible Range by LuxAlgo**. Plus the order book, covered in another video.
+   Five indicators. The script implements one of them.
+2. **He calls supply and demand half his identity.** *"I am a supply and demand or pivot trader
+   based on pivots near key levels — that's the only thing I look at when I'm trading."* The
+   script has **zero lines** for supply and demand. This was item A5 of `docs/METHOD_AUDIT.md`,
+   recorded as absent; it is now confirmed as one of the two things he says he trades.
+3. **The volume indicator is named exactly**, which closes D-78: Bull vs Bear Power by DGT, and
+   what he takes from it is *"the bull side and the bear side strength... the flips and the
+   switches and the velocity"*. That is the directional split the project specified and never
+   built, and it is now pinned to a specific, free, public indicator.
+4. **His timeframes, stated precisely.** *"The timeframes that I use mainly are the 5 minute and
+   1 hour for my entries, and 4 hour, weekly and daily for my charting."* The script signals on
+   the 5-minute only. Note the owner enters on the 1-minute, so owner and source differ here too.
+5. **His session is far narrower than ours, and the data disagrees with it.** *"I trade 4 to 5 days
+   out of the week from 9:30 to around 11:12"* — New York time, so 08:30 to about 10:15 Central.
+   Measured on both exports, that window is the worst part of the day:
+
+   | | M7 (417) | M6 (2,963) |
+   |---|---|---|
+   | his window, 08:30-10:15 CT | -6.30 a trade, PF 0.87 | -38.14 a trade, PF 0.73, both halves - |
+   | everything after 10:15 CT | **+0.94 a trade, PF 1.02** | -21.94 a trade, PF 0.81 |
+   | after 12:00 CT | **+8.64 a trade, PF 1.19** | -26.57 a trade |
+
+6. **The pattern is now the finding.** Four of his stated rules have been measured against our
+   build and all four disagree with it: his level tiering (D-113 point 2), his session window
+   (point 5 above), the first-break refinement (D-107) and his preference for the opens
+   (D-105 point 2). A source that is wrong about everything is unusual; a measurement of the
+   wrong thing is common. Point 1 gives the likely reason: **the script implements one of his
+   five indicators.** No supply and demand, no bull-versus-bear volume, no kill zones, no VWAP
+   levels, no correlated instruments, no 1-hour entries. Every "his rule does not work" finding in
+   this log was taken on a quarter of his system and should be read as provisional.
+7. **What is decided.** No conclusion against his stated rules is treated as settled until the two
+   he names as core are built: supply and demand zones, and the bull-versus-bear volume split.
+   Those two move to the front of the build list, ahead of the VIX. Runs A and B still go first;
+   they cost nothing and settle the stop question. The session window is **not** narrowed on the
+   strength of point 5, for the same reason as point 6.
+
 ---
 
 ## L. New in round 4

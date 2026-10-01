@@ -13,6 +13,17 @@
 
 Channel: https://www.youtube.com/@Socrates_Investments. More recent material is on Facebook.
 
+**Three more fetched 2026-10-01** by listing the channel (29 videos; the other 20 are mindset and
+motivation, not strategy). Captions pulled with `yt-dlp` and saved as transcripts 7 to 9:
+
+| # | Title | Link |
+|---|---|---|
+| 7 | Top Indicators: Killzones, Key Levels, Supply & Demand, & Volume Profiles | https://www.youtube.com/watch?v=0XmciYRrHT8 |
+| 8 | The Reason Behind My Recent Gold Short | https://www.youtube.com/watch?v=upTY-yul0pI |
+| 9 | Trading Simplified: Buying Low, Selling High, and Avoiding Analysis Paralysis | https://www.youtube.com/watch?v=CnZZRfDPDX0 |
+
+Number 7 is the most valuable single source in this folder: it names every indicator he runs.
+
 ## Socrates Investments, Facebook reels (provided 2026-09-19)
 
 - https://www.facebook.com/share/r/1bSqw2QyrT/?mibextid=wwXIfr
