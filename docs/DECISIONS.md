@@ -1324,6 +1324,55 @@ The owner asked how to cut the losing trades. Two things were measured on run A'
    run in 21 sessions, and describes exactly the trade that dies instantly at a level. Runs A and
    B still go first, unchanged: they are already set up and they settle the stop question.
 
+### D-105  M8 proposal: the liquidity sweep gate, and the level list that contradicts it  (PROPOSED, not decided)
+The owner proposed a new version: a level only triggers after price has taken external range
+liquidity; the better setups are the 4-hour high and low, the daily open, the midnight open and
+the quarterly high, low and open; session highs and lows are not good setups; the VIX and the
+Magnificent 7 stay as confluences.
+1. **The sweep gate is the strongest idea put forward so far and is genuinely unbuilt.** It is
+   item 20 of `docs/METHOD_AUDIT.md`, D-76's multi-candle sweep and reclaim, and the third-party
+   write-up calls it the core of the method ("entry on the retest, never on the sweep itself").
+   What exists today is `pokeOK`, one candle trading through the level and closing back, which is
+   a sweep of the level itself, not of a prior swing. Nothing in the script looks for a prior
+   swing high or low having been taken.
+2. **The level list is the opposite of everything measured, on both exports.** Measured on the
+   M6 year, the only run with those levels switched on:
+
+   | Group | Trades | PF | Net | Per trade | Halves |
+   |---|---|---|---|---|---|
+   | The proposed keep list | 1,570 | 0.81 | -35,346 | -22.51 | both negative |
+   | Session highs and lows | 1,023 | 0.92 | -10,324 | -10.09 | both negative, but half as bad |
+
+   Every code on the keep list loses in both halves: the 4-hour open -27,174 at PF 0.65 (the worst
+   code in the file), the daily open -11,438 at PF 0.71, the previous 4-hour high -8,608 and low
+   -6,668, the previous 4-hour open -4,252. The midnight open is flat overall and unstable
+   (H1 -5,494, H2 +5,295). The quarterly open is +1,505 on 25 trades and goes slightly negative in
+   the second half.
+3. **Two of the three best codes ever measured are on the drop list.** The New York low is the
+   best single code in the M6 year: 104 trades, PF 1.50, +6,047, +58.15 a trade, positive in both
+   halves. In the M7 run the Asia high (+678) and the London low (+453, PF 1.16 and 1.17 across
+   the halves) are the two steadiest codes in the file. Session highs and lows as a group in M7
+   are -0.57 a trade, essentially flat, against the keep list's -22.51.
+4. **The owner's case, which the data cannot refute.** Every number above was measured with no
+   sweep requirement. The proposal is that the level only matters once liquidity has been taken,
+   and a daily open price drifts into is a different event from a daily open price spikes through
+   a prior swing to reach. M6 cannot test that because M6 never had the condition.
+5. **The counter-argument, recorded so the run settles it.** D-100 point 3 found that what
+   separates a paying level from a losing one is whether price has turned there before. A 4-hour
+   open did not exist four hours ago and has never been rejected; a sweep changes the timing of
+   the entry, not the nature of the line. If the sweep gate reorders the level table, that reading
+   is wrong and should be revised.
+6. **Open question that changes the build.** Whether the swept liquidity sits *at* the level (the
+   prior swing that got taken is within the zone tolerance of the key level, so the stops were
+   resting where the trade is taken) or merely *before* it (any sweep in the lookback counts,
+   wherever it happened). The first is the recommended default and matches "shorts at the levels
+   after it has taken external range liquidity"; the second is a looser variant worth a switch.
+7. **Proposed shape.** Build the sweep gate with both variants as a setting, build the VIX and the
+   Magnificent 7 as score bonuses and then gates, and keep the level set as switches so the
+   owner's list and the measured list are run head to head with the sweep on, rather than either
+   being decided by assertion. Runs A and B of D-102 are still owed and still go first: they are
+   one setting each and they settle the stop question before a new trigger changes the sample.
+
 ---
 
 ## L. New in round 4
