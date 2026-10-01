@@ -1764,6 +1764,59 @@ names every indicator he runs, which no earlier source did.
    they cost nothing and settle the stop question. The session window is **not** narrowed on the
    strength of point 5, for the same reason as point 6.
 
+### D-115  Building his system on its own: what can be scripted, what cannot, and the order  (DECIDED)
+The owner asked to set his own additions aside and establish whether the source method works by
+itself. This is the plan, written against all nine transcripts rather than the original six.
+1. **What the script can carry, and what it cannot.** Buildable: key levels (done), supply and
+   demand zones, the buying-against-selling volume split, the correlated instrument, session
+   windows (done), pivot-to-pivot targets (done), a resting entry at the level, an invalidation
+   exit, the trade caps (done), and 1-hour signals (no code, a different chart). **Not buildable:**
+   the news and economic calendar he says he follows, the order book, and his judgement that a
+   setup does not look clean. That last group is real and it is why a faithful script should be
+   expected to underperform him rather than match him; the target is a positive edge, not his
+   returns.
+2. **The script's shape, measured.** Of 2,558 lines: about 860 are the level engine, 245 the trade
+   tally, 213 the higher-timeframe count, 162 the filters — all correct and worth keeping — while
+   roughly 1,000 lines are drawing and display and about 130 are the ranking and score that D-85,
+   D-91 and D-113 have between them established as dead. **The decision logic is small.** This
+   settles the rebuild question for good: keep the engine, strip the dead scoring, add the missing
+   inputs. A fresh script would spend its first thousand lines rebuilding what already works.
+3. **Three things are actively wrong before anything is missing**, and they contaminate every
+   measurement taken while they stand. The entry arrives a candle or two after the level, which is
+   nobody's method (D-114 and the owner's own walkthrough). The stop is a fixed distance, which he
+   does not use (D-115 point 4 below). And `minScore` silently gates at 50 on a number that runs
+   backwards, so the script is filtering on noise.
+4. **His exit is an invalidation, not a stop.** Across the nine transcripts he says *"if I'm going
+   to look to play stop losses"*, places one *"right above this Monday area"* when he does, defers
+   the subject entirely in video 6 as *"a whole another conversation"*, and describes the real
+   exit as *"[if it] goes against me we close the trade and move on"* and *"I cut that trade
+   fast"*. In video 1 the invalidation is named explicitly and it is not a price distance: *"if
+   this [the VIX] was to break lower then my idea would clearly be shot."* Our script exits 73 % of
+   its trades on a mechanical stop it inherited from nowhere.
+5. **The order, and the reasoning.** Fix what is wrong before adding what is missing.
+   - **M8, make the trade his shape.** Resting limit at the level (the setting exists, it has never
+     been the default); the stop becomes an invalidation — out when a candle closes back through
+     the level — with the present stop demoted to a wide backstop; and the score gate drops to 0 so
+     it stops filtering. All three are changes to existing machinery.
+   - **M9, the correlated instrument.** One data feed. Two jobs: confirmation at entry and, more
+     importantly, the invalidation that M8 needs. Used by the source and by the owner, and the only
+     input in the whole method that is not another view of the same price series.
+   - **M10, the buying-against-selling volume split.** His only named confirmation, now pinned to
+     Bull vs Bear Power by DGT (D-114 point 3).
+   - **M11, supply and demand zones.** Half his stated identity and the largest build.
+   - Then the 1-hour chart, which costs nothing, and the Trading Wolf VWAP levels if they matter.
+6. **How each one is judged.** One milestone, one run, one export, split in halves. The baseline to
+   beat is run A: 240 trades, PF 1.12, +1,279. Anything inside roughly plus or minus 1,500 is noise
+   given the halves swing from +77 to -1,503 on their own.
+7. **What changes about the runs already owed.** Run A still goes first: the two-rejection gate is
+   his own top-down rule, it is validated on both halves, and it is one setting. **Run B is
+   demoted.** It tests a breakeven stop, which is a mechanical rule his method does not contain;
+   D-110's conclusion that it was "the whole exit programme" was written before point 4 was known.
+   It stays on the list as a comparison, not as the exit answer.
+8. **What stays set aside.** Everything of the owner's from D-111: the 1-minute entry, the double
+   top and bottom trigger, fair value gaps, volume imbalances. Recorded, not deleted, and taken up
+   once the source method has been measured on its own.
+
 ---
 
 ## L. New in round 4
