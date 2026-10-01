@@ -33,6 +33,97 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-10-01  Session 23  (M9 v0.1, the source method on its own; screenshot only, export awaited)
+
+Symbol / timeframe / date range: MNQ, 5-minute, Deep Backtesting "Last 365 days DEEP", capital
+500,000, Central time, 2 MNQ a trade.
+Costs used (commission per side, slippage ticks): the script's own, unchanged. Commission load
+9.05 % of gross profit, which is exactly 502 x $3.20, so costs are modelled as intended.
+Settings changed from defaults: none. M9 v0.1 ships with D-116's level list, D-117's clock and
+D-118's three new modules all on.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 502 (115 win, 387 lose, 0 breakeven) | 22.91 % | 0.813 | −$4,094.40 (−0.82 %) | not shown on this screenshot | $154.43 | $56.47 | not measured (export awaited) |
+
+Gross profit $17,759.00, gross loss $21,853.40, expectancy −$8.16 a trade, largest win $511.80,
+largest loss $99.20, outlier P&L $7,904.40.
+
+By setup: REV trades / win % / net P&L vs BRK trades / win % / net P&L: not measured (export
+awaited). The visible top five is three BRK and two REV.
+By level type (top 3 and bottom 3 by net P&L): the five named signals carry +$2,714.20 and the
+remaining 284 names carry −$6,808.60. Top: BRK P4L +$716.60, BRK P4H +$587.40, REV SUP +$511.80,
+REV SUP +$484.60, BRK MO+PDL +$413.80.
+By session (Asia / London / New York) where relevant: not measured; every visible tag reads NY,
+as the session filter intends.
+
+**The three new modules are confirmed working.** The tags prove it without needing the export:
+`P4L` and `P4H` are previous 4-hour lows and highs, `SUP` is a supply zone, `MO` is the midnight
+open. All four are level types that had **never produced a single trade** in any run before this
+one (D-116), and four of the five best signals of the year are among them. The `c3` and `c2` on
+the tags are the confluence counts, so that field is recording too. Nothing is broken; the run is
+a real measurement of his method.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made
+no sense): worse than both earlier scripts, and the mechanism is visible in two numbers.
+
+| | M7 v0.1 | M8 v0.1 | M9 v0.1 |
+|---|---|---|---|
+| Trades | 417 | 401 | **502** |
+| Win % | 26.62 | 21.20 | 22.91 |
+| Profit factor | 0.93 | 0.878 | **0.813** |
+| Net | −$1,426 | −$2,183 | **−$4,094** |
+| Average win | not split | $184.34 | **$154.43** |
+| Average loss | not split | $56.49 | **$56.47** |
+| Payoff | — | 3.26 : 1 | **2.73 : 1** |
+| Break-even win rate | — | 23.46 % | 26.78 % |
+| Short of break-even by | — | 2.26 pts, 9 trades | **3.87 pts, 19 trades** |
+| Per trade before all costs | +$3.78 | +$1.76 | **−$0.96** |
+
+**The average loss is identical to the cent** — $56.49 against $56.47 — so the exit is behaving
+exactly as it did in M8 and none of the new work made the losses worse. The whole deterioration
+is on the win side: the average win fell 16 %, which dropped the payoff from 3.26 to 2.73 and
+moved the break-even hit rate up by 3.3 points. The win rate did rise, from 21.20 % to 22.91 %,
+but nowhere near enough to pay for the smaller wins.
+
+**The likely mechanism, to be confirmed from the export.** M9 added previous 4-hour highs and
+lows (about twelve new levels a day) and up to ten supply and demand zones on top of the existing
+map. A denser map means the next level is nearer, and the first target is the next level, so
+every target shrank while the stop and the void exit stayed where they were. That is exactly the
+shape of the damage: wins smaller, losses unchanged, hit rate slightly better, net worse. The
+minimum target distance is 0.03 daily ATR with a 10-tick floor and the stop cap is also 0.03
+daily ATR, so with a dense map a large share of trades can take a target barely further away
+than the stop. If the export confirms it, the first thing to try is one setting: a wider minimum
+target.
+
+**The pattern across three runs is now the finding.** Each script added more of the source
+method, and each was worse than the one before it: +$3.78, +$1.76, −$0.96 a trade before costs.
+That is the third time in a row, and it is no longer explained away by "we only have a quarter of
+his system" (D-114 point 6), because M9 is the first run that contains his levels, his clock,
+his supply and demand, his volatility read and his volume read at once. Either the remaining
+three pieces (the order book, the news calendar, the 1-hour entries) carry the entire edge, or
+one of the pieces now built is implemented in a way he would not recognise. Both are testable and
+neither is settled; what is settled is that "add another of his rules" has now failed three
+times and should stop being the default next step.
+
+Issues found (bugs, repainting, alerts, drawing problems): none. The script compiled on the first
+paste, all three new info-box rows reported live data before the run, and the new level types are
+in the trade list. One thing to watch: TradingView showed "The report is outdated / Update report"
+under the panel, so the export should be taken after pressing Update report, or it may not match
+the figures above. The `c2` tags mean the volatility index was flat against its own average on
+those bars, which it is whenever the cash VIX is shut, so the confluence count reads 2 rather
+than 3 overnight and before the stock open; that is the abstain behaviour of D-118 working, not a
+fault.
+
+Changes made before the next session (setting or code, and why): none yet. The export decides
+between the dense-map explanation and the alternatives, and it also prices the three new
+confluences separately, because every trade carries how many of them agreed. No code change until
+that is read.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : screenshot in the chat of
+2026-10-01; the trade list export has been requested and is not yet saved.
+
 ## 2026-10-01  Session 22  (M8 v0.1, the trade in his shape; screenshot only, export awaited)
 
 Symbol / timeframe / date range: MNQ, 5-minute, Deep Backtesting "Last 365 days DEEP", capital
