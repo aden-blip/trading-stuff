@@ -1650,7 +1650,7 @@ hard to use in replay; they remain additional confluences he applies live.
     bottom trigger, fair value gaps and volume imbalances are recorded as measured divergences and
     go on the build list behind runs A and B, which are still owed and still cost nothing.
 
-### D-112  "Clean" may mean one price, not one level, and the script cannot tell the difference  (OPEN, needs the owner)
+### D-112  "Clean" may mean one price, not one level, and the script cannot tell the difference  (ANSWERED, see D-113)
 Re-reading the walkthrough after the all-time-high correction turned up a contradiction in the
 stacking finding of D-111 point 1 that has to be settled before anything is built.
 1. **The contradiction.** At 07:00 he says he will not take a setup where several levels sit
@@ -1674,6 +1674,50 @@ stacking finding of D-111 point 1 that has to be settled before anything is buil
    level is good and what you avoid is several levels at slightly different prices?
 5. **Until it is answered**, the stack scoring is left alone. D-111 point 1 stands as a measured
    agreement between his rule and the data; what it implies for the code does not.
+
+### D-113  Half his clustering rule holds on both samples, half is contradicted, and the half he cares most about needs a new measurement  (DECIDED)
+The owner settled D-112: a few levels at the *same price* is fine, ideally two or three and ideally
+strong ones — his example being a previous 4-hour low sitting on a quarterly open — while several
+levels at slightly different prices inside about 20 points is a skip. Both exports were tested
+against each part.
+1. **"Fewer levels is better" holds, on both samples, and the script has it backwards.**
+
+   | Levels in the zone | M6 (2,963 trades) | M7 (417 trades) |
+   |---|---|---|
+   | one | **-13.4 a trade** | **-0.3 a trade** |
+   | two | -24.2 | -11.5 |
+   | three or more | -23.8 | -11.0 |
+
+   An 11 dollar a trade gap in both files, same direction, same size. The script pays the full 20
+   stack points for three or more levels, 12 for two and 5 for one, which is the opposite ordering.
+   **This is adopted**: the stack scoring is inverted. It was specified by the owner before the
+   table was built and replicates across two independent samples, which is what D-107 asks for.
+2. **"Strong levels are better" is contradicted, clearly.** Using his own list — monthly, quarterly
+   and daily opens, midnight open, the previous 4-hour levels, previous week, day, month and
+   quarter highs, previous day lows, current year highs — against his weaker set of session levels:
+
+   | | M6 | M7 |
+   |---|---|---|
+   | zone holds at least one strong level | -18.37, both halves negative | -11.91 |
+   | zone holds only weak levels | -11.59 | **+2.53, both halves positive** |
+
+   And **his ideal setup is the worst group in the file**: two or three levels with two or more of
+   them strong is 356 trades at PF 0.71 and **-34.04 a trade, negative in both halves**. The M7
+   version of that slice is 8 trades, too few to read.
+3. **Why this is probably not a refutation of his judgement.** His strong set is dominated by the
+   opens — monthly, quarterly, daily, 4-hour — which D-100 point 3 already identified as lines
+   drawn through where price already is, with no history of anyone defending them. So point 2 may
+   be restating that finding rather than testing his tiering. The two cannot be separated in this
+   data, and it is recorded as unresolved rather than settled against him.
+4. **The part he says matters most cannot be measured at all.** The export records which level
+   codes shared a zone but never their individual prices, so "four names on one price" and "four
+   levels spread over 20 points" are indistinguishable after the fact. That is precisely the
+   distinction he draws, and no amount of re-reading these two files will produce it.
+5. **What is decided.** Two changes, both small. First, invert the stack scoring per point 1.
+   Second, the script records, for each signal, how far apart the levels in its zone actually sit,
+   as a daily-ATR share, and writes it into the trade tag beside the stack count. That one addition
+   turns his rule from an untestable preference into something the next export answers directly,
+   and it costs one number per trade. Runs A and B still go first and still cost nothing.
 
 ---
 
