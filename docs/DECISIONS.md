@@ -1941,3 +1941,51 @@ not his level list, and it is the worst group in the data; when he supplies the 
 in under "My pivots" instead. (c) 4-hour highs and lows produce roughly twelve new levels a day, so
 the trade count may jump; if it clears about 900 the lookback needs a limit before the run means
 anything.
+
+---
+
+### D-117  Stripping the owner's own rules out of the source run  (DECIDED)
+**Answer (owner, 2026-10-01):** "remember this is not what i would take everything from my strategy
+is gone just socrates info." D-116 fixed which levels. This fixes everything else of the owner's
+that was still switched on, and two of the items were blocking the window the source names as his
+best.
+
+**What came out, and why each one is the owner's and not his:**
+
+| Setting | Was | Why it goes |
+|---|---|---|
+| My pivots → Use my pivots | on | The owner's hand-drawn boxes. Empty in every run to date, but it is his chart furniture, not the source's. |
+| Custom levels → Show custom levels | on | Same: prices the owner types in. |
+| Filters → Opening blackout after the New York open | on, 30 min | D-43, and D-43's own wording is the owner's: "You would rather remove the losing trade than shrink it." See the clock finding below. |
+| Monday range → Range | on | 62 trades in the year. Not on the list the owner relayed and not named in any transcript; it comes from the RPG Pivots indicator, which is the owner's choice of tool. |
+| Untagged S/R → Find SR levels | on | Already out under D-116. It is the script guessing where the owner would draw, and it is the worst group in the data at −$33.94 a trade across both halves. |
+
+**The clock finding.** Two source quotes bear on the trading window:
+
+- "I go live at 9:30 in my trading community so we're already in profit for the day."
+- "between 9:15 and 940 the market ... that session will follow the trend within the entirety of
+  the New York session and I found to have high accuracy just trading that alone."
+
+9:15 to 9:40 New York is 8:15 to 8:40 Central. The script's New York window starts at 08:30 Central,
+so the first 15 minutes of his named window were never tradable at all; and the opening blackout
+then removed 08:30 to 09:00 Central, which is the rest of it. **Between them, the single window he
+names as his highest-accuracy read has been switched off for every run this project has done.**
+Fix: blackout off, and the New York index window moved from `0830-1600` to `0800-1600`. The window
+also defines the NY session high and low, which D-116 turns off, so there is no side effect.
+
+**What was already his and stays as it is:** four trades a day maximum (his "between one and four
+trades a day"); volume confirmation on (his only named confirmation); two contracts ("I'm only in
+two lots, it's a scalp"); the target at the next level; and the three M8 trade changes from D-115.
+
+**Still his and still not built:** "two losing trades in a row and my trading day is done" — only a
+daily total exists and it is off. Also the VIX, the Mag 7 basket, the bull-versus-bear volume split,
+supply and demand zones, the order book and the news calendar (D-114, D-115). A run on this setting
+list is the source method's level selection and trade management, not the source method.
+
+**Also confirmed from the transcripts, supporting D-116:** "my main go-to strategy would be waiting
+for a daily high or a daily open", and "what is my favorite point of entry it would be a bounce off
+of a daily low or a retest our bounce off of a daily High Zone". The daily open has been switched
+off for every run; the daily high and low have been on and are two of the worse codes in the data
+(PDH −$5.26 a trade, PDL −$21.24). Both halves agree on PDL. That disagreement is recorded, not
+resolved: it is the same situation as D-116's, a named level failing inside a quarter of the method.
+It also tells us the "bounce or retest" pairing is his, so break trades stay in.
