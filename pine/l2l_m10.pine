@@ -1,0 +1,2838 @@
+//@version=6
+// ============================================================================
+//  Level-to-Level (L2L)  |  Milestone 10: no target, let it run  |  M10 v0.1
+//
+//  A FOURTH SEPARATE SCRIPT. M9 (pine/l2l_m9.pine) is the source method with a first target at
+//  the next level, and it stays as measured. This one is M9 with ONE change: the target comes off
+//  and the trade is left to run. Paste it into its own Pine editor tab; the titles differ so all
+//  four can sit on one chart.
+//
+//  Why (D-120, the owner): "idk why were having a target? he just scalps the level and lets it run
+//  so us targeting 30 points doesn't make sense if the trade is gonna run 100 points." The M9
+//  export agreed from the other side - every step of moving the target CLOSER made the year worse,
+//  monotonically, which says the winners need room. What no export can say is what happens with no
+//  target at all, because once a trade exits at its target the record of what price did next stops.
+//  Only a run answers it.
+//
+//  What takes the trade out instead: the level ratchet. M8's exit already closes a trade when a
+//  candle closes past the far side of the zone it was taken at. Here that line MOVES. Every time
+//  the trade clears a level, the line steps up to that level, so the trade stays in while it keeps
+//  making progress and ends on the first candle that closes back through the last level it passed.
+//  That is level-to-level as a trail rather than as a target, and it is the shape the source
+//  describes: no fixed stop, out when the reason has gone. The stop follows the line as a backstop
+//  for a gap, and never moves against the trade.
+//
+//  What came out (D-117): the owner's hand-typed pivots, custom levels, the Monday range, the
+//  opening blackout and the range-edge filter. What went in: his level list (D-116), his clock,
+//  and the four things D-114 found he runs that this project had never built.
+//
+//  What still cannot be written here: the order book (no Level 2 data in Pine), the news
+//  calendar, and his 1-hour entries. A run of this script is his method minus those three.
+//
+//  docs/PLAN.md describes every module. This file holds modules [A] to [F].
+//  Module map for the finished script:
+//    [A] Level Engine      (M1, done)
+//    [B] Interaction       (M2, done)       [C] Stats & Ranking (M2, done)
+//    [D] Setup Detector    (M3, done)       [E] Score           (M3, done)
+//    [F] Filters           (M4, done)       [G] Trade Manager   (M5, stages and trail, switch OFF by default)
+//    [H] HTF Confluence    (M6, rejection count)                [I] Bias Inputs (parked, D-88)
+//    [J] Output            (M3 on)
+//    [K] Correlated instruments  (M9: the VIX against the trade, big tech with it)
+//    [L] Bull versus bear volume (M9: the directional volume split he names)
+//    [M] Supply and demand zones (M9: the half of his method the script had zero lines for)
+//    [N] Level ratchet          (M10: no target; out when the last level cleared gives way)
+//
+//  Rules: no repainting (levels come from completed periods and sessions; higher-timeframe
+//  values use [1] with lookahead on; verdicts are taken on confirmed bars only), no NQ-specific
+//  numbers (distances are daily-ATR units with tick floors), all times read in the timezone
+//  input (default Central). Higher-timeframe requests used: 18 of 40.
+//
+//  Orders (M4): one position at a time. Market entries fill at the next candle's open, as a
+//  bridge would fill them (process_orders_on_close = false); resting limits fill at their price;
+//  the flatten order is placed one candle early so it fills at the open of the flatten candle.
+//  The costs in the strategy() line are the MNQ defaults from docs/RESEARCH.md (0.80 per side,
+//  2 ticks); change them in the tester's Properties tab for other contracts. Margin is 5 % of
+//  the contract value, about the exchange margin on a micro contract. The tester's own default
+//  is 100 %, which treats one MNQ contract as 60,000 of cash and rejects every order on a
+//  50,000 account (the v0.2 run: zero tester trades). The script recalculates on every tick
+//  so the lines and tables refresh live as the indicator did; orders and the tally are placed
+//  on confirmed candles only, so the tester's history is the same either way. Every entry order
+//  carries a comment with the trade's setup, zone, score, stack, level history and session
+//  window, and every exit says T1, stop, half, be or flat, so the tester's exported trade list
+//  holds the whole breakdown of a Deep Backtesting run (D-89). M5 (D-32): the stop moves in
+//  stages on closed candles, halfway to the entry after +0.5R, to the entry plus a cushion
+//  after +1R, and from +1.5R it trails the last confirmed swing and the close; the tally and
+//  the tester get the same stop at the same close. Measured in sessions 16 and 17: a fifth
+//  less bad per trade, more trades, no better total, so the switch is OFF by default (D-93).
+//  M6 (plan 4.8): for every reversal the last completed 5-minute, 15-minute, 1-hour and 4-hour
+//  candles are checked for a rejection of the same zone; the count goes into the tag ("f2"),
+//  the label ("HTF 2/4"), the score (weight 0 until the export decides) and an optional gate.
+//  M9 v0.1 (D-118) adds the three modules above. [K]: the VIX has to be moving against the trade
+//  and at least four of the seven big tech names with it, both read on the chart's own timeframe
+//  so neither repaints. [L]: each candle's volume is split by where it closed in its own range,
+//  the two sides are smoothed, and the trade needs its own side to be the stronger one. [M]: a
+//  candle that travels more than the set distance in one go leaves the candle before it as a
+//  zone, which joins the level list and behaves like any other level until a close through the
+//  far side uses it up. Each of the three has its own on/off switch so it can be priced alone.
+//
+//  M7 v0.1 (D-101): no new logic, only new defaults. The audit in docs/METHOD_AUDIT.md found
+//  that every condition the method puts in front of the trigger was off, absent, or in a form
+//  it does not use, so sessions 1 to 20 measured the trigger alone. The defaults now hold the
+//  method as described: levels only where price has already turned (every open family, every
+//  mid family and the whole previous-4-hour-bar family off), New York only, opening blackout
+//  on, four trades and two losses a day, volume confirmation on, the first target at the
+//  nearest level, and the stop at the rejection wick with the cap on. An existing chart keeps
+//  its saved settings, so reset them or re-add the strategy after pasting this version.
+//
+//  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
+//  editor does not show it, the copy was cut short and the script will not compile.
+// ============================================================================
+strategy("L2L M10 - Strategy", shorttitle = "L2L M10", overlay = true,
+     max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500,
+     pyramiding = 0, initial_capital = 50000, currency = currency.USD,
+     margin_long = 5, margin_short = 5,
+     default_qty_type = strategy.fixed, default_qty_value = 1,
+     commission_type = strategy.commission.cash_per_contract, commission_value = 0.80,
+     slippage = 2, process_orders_on_close = false, calc_on_every_tick = true)
+
+// ───────────────────────────── [A0] INPUTS ─────────────────────────────
+gG = "General"
+tz        = input.string("America/Chicago", "Timezone for sessions and times", options = ["America/Chicago", "America/New_York", "America/Denver", "America/Los_Angeles", "America/Phoenix", "UTC", "Europe/London"], group = gG, tooltip = "Every session input below is read in this zone.")
+profileIn = input.string("Auto", "Instrument profile", options = ["Auto", "Index", "Energy", "Metals", "Generic"], group = gG, tooltip = "Auto reads the symbol root: NQ MNQ ES MES = Index, CL MCL = Energy, SI SIL GC MGC = Metals, anything else = Generic. The profile picks which New York session input is used.")
+moAnchor  = input.string("New York midnight", "Midnight open anchor", options = ["New York midnight", "Local midnight"], group = gG, tooltip = "The midnight open is defined at 00:00 New York, which is 23:00 Central. Local midnight uses 00:00 in the timezone above instead.")
+
+gS = "Sessions (HHMM-HHMM in the timezone above)"
+sessAsia   = input.session("1900-2300", "Asia", group = gS)
+sessLondon = input.session("0100-0400", "London", group = gS)
+sessNYIdx  = input.session("0800-1600", "New York, Index profile", group = gS, tooltip = "D-117: starts at 08:00 Central, half an hour before the cash open, because the source names 09:15 to 09:40 New York - 08:15 to 08:40 here - as the window that tells him the trend for the whole session. The old 08:30 start made that unreachable.")
+sessNYEng  = input.session("0830-1600", "New York, Energy profile", group = gS, tooltip = "Crude pit hours would be 0800-1330.")
+sessNYMet  = input.session("0830-1600", "New York, Metals profile", group = gS, tooltip = "Silver and gold pit hours would be 0720-1230.")
+sessMode   = input.string("Developing", "Session levels", options = ["Developing", "Completed only"], group = gS, tooltip = "Developing: while a session is running its high, low and open update live, then freeze when it ends. Completed only: always the last finished session.")
+
+gDy = "Daily"
+dOpenOn  = input.bool(true, "Open", group = gDy, inline = "d")
+dRangeOn = input.bool(true, "Prev H/L", group = gDy, inline = "d")
+dMidOn   = input.bool(false, "Prev Mid", group = gDy, inline = "d")
+moOn     = input.bool(true, "Midnight open", group = gDy, inline = "d")
+gWk = "Weekly"
+wOpenOn  = input.bool(false, "Open", group = gWk, inline = "w")
+wRangeOn = input.bool(true, "Prev H/L", group = gWk, inline = "w")
+wMidOn   = input.bool(false, "Prev Mid", group = gWk, inline = "w")
+gMo = "Monthly"
+mOpenOn  = input.bool(false, "Open", group = gMo, inline = "m")
+mRangeOn = input.bool(true, "Prev H/L", group = gMo, inline = "m")
+mMidOn   = input.bool(false, "Prev Mid", group = gMo, inline = "m")
+gQt = "Quarterly"
+qOpenOn  = input.bool(true, "Open", group = gQt, inline = "q")
+qRangeOn = input.bool(true, "Prev H/L", group = gQt, inline = "q")
+qMidOn   = input.bool(false, "Prev Mid", group = gQt, inline = "q")
+gYr = "Yearly"
+yOpenOn  = input.bool(false, "Open", group = gYr, inline = "y")
+yRangeOn = input.bool(true, "Current H/L", group = gYr, inline = "y")
+yMidOn   = input.bool(false, "Mid", group = gYr, inline = "y")
+g4H = "4-hour"
+h4OpenOn  = input.bool(false, "Open", group = g4H, inline = "h")
+h4RangeOn = input.bool(true, "Prev H/L", group = g4H, inline = "h")
+h4MidOn   = input.bool(false, "Prev Mid", group = g4H, inline = "h")
+h4POpenOn = input.bool(false, "Prev Open", group = g4H, inline = "h")
+gMn = "Monday range"
+monRangeOn = input.bool(false, "Range", group = gMn, inline = "mo")
+monMidOn   = input.bool(false, "Mid", group = gMn, inline = "mo")
+gSe = "Sessions"
+aRangeOn = input.bool(false, "Asia H/L", group = gSe, inline = "s1")
+aOpenOn  = input.bool(false, "Asia Open", group = gSe, inline = "s1")
+lRangeOn = input.bool(false, "London H/L", group = gSe, inline = "s2")
+lOpenOn  = input.bool(false, "London Open", group = gSe, inline = "s2")
+nRangeOn = input.bool(false, "NY H/L", group = gSe, inline = "s3")
+nOpenOn  = input.bool(false, "NY Open", group = gSe, inline = "s3")
+gCu = "Custom levels"
+onCustom  = input.bool(false, "Show custom levels", group = gCu)
+customTxt = input.string("", "Custom levels", group = gCu, tooltip = "Comma separated, up to 20. Each item is a price, or price:label. Example: 20150:GEX, 19980:POC, 20210")
+
+gSD = "Supply and demand (M9)"
+sdOn       = input.bool(true, "Find supply and demand zones", group = gSD, tooltip = "The other half of the source method: \"I am a supply and demand or pivot trader based on pivots near key levels, that is the only thing I look at when I am trading.\" A zone is the candle a move left from. When one candle travels further than the distance below in a single go, the candle before it is where the orders were sitting, and that candle's range becomes the zone. A zone stays live until a candle closes through the far side of it, which means it has been used up. Live zones join the level list and behave exactly like any other level: they stack with levels at the same price, they are ranked, they can be traded both ways and they can be targets.")
+sdImpulse  = input.float(1.2, "A candle this many chart ATRs is an impulse", step = 0.1, minval = 0.2, group = gSD)
+sdBodyPct  = input.float(50.0, "and its body must be this much of its range, percent", step = 5.0, minval = 0, maxval = 100, group = gSD)
+sdMaxAge   = input.int(600, "Forget a zone after this many candles (0 = never)", minval = 0, group = gSD)
+
+gCo = "Correlated instruments (M9)"
+corrOn    = input.bool(true, "The VIX must move against the trade and big tech with it", group = gCo, tooltip = "His own words: \"NASDAQ is rejecting our Monday High while at the same time the vix is starting to get some buying power up so I am going to enter a short based off of this information alone\", and \"this is how I make most of my trades\". The volatility index moves opposite to the index, so a long needs it falling and a short needs it rising. The big tech names move with the index, so the count below has to agree with the trade. Both are read on this chart's own timeframe and on closed candles, so neither can repaint. If this empties the trade list, loosen the count first and the VIX second.")
+vixSym    = input.symbol("TVC:VIX", "Volatility index", group = gCo)
+corrLen   = input.int(20, "Compare each one with its own average of this many candles", minval = 2, group = gCo)
+magMin    = input.int(4, "Big tech names that must agree, of seven", minval = 0, maxval = 7, group = gCo)
+magS1     = input.symbol("NASDAQ:AAPL", "Big tech 1", group = gCo, inline = "m1")
+magS2     = input.symbol("NASDAQ:MSFT", "2", group = gCo, inline = "m1")
+magS3     = input.symbol("NASDAQ:NVDA", "Big tech 3", group = gCo, inline = "m2")
+magS4     = input.symbol("NASDAQ:AMZN", "4", group = gCo, inline = "m2")
+magS5     = input.symbol("NASDAQ:GOOGL", "Big tech 5", group = gCo, inline = "m3")
+magS6     = input.symbol("NASDAQ:META", "6", group = gCo, inline = "m3")
+magS7     = input.symbol("NASDAQ:TSLA", "Big tech 7", group = gCo, inline = "m4")
+
+gBv = "Bull versus bear volume (M9)"
+bvOn     = input.bool(true, "Volume must follow suit", group = gBv, tooltip = "His only named confirmation at the level: \"when a candle reaches one of these key levels or pivots, all I would need to enter the trade then would be strong volume following suit\", and what he reads it from is the bull side against the bear side, the flips and the velocity. Each candle's volume is split by where it closed inside its own range: a close at the high counts as all buying, a close at the low as all selling, the middle splits evenly. Both sides are smoothed and the trade needs its own side to be the stronger one by the margin below. This sits on top of the plain volume size check, which stays on.")
+bvLen    = input.int(13, "Smoothing, candles", minval = 1, group = gBv)
+bvMinPct = input.float(5.0, "The stronger side must lead by this much, percent", step = 1.0, minval = 0, maxval = 100, group = gBv)
+bvVelLen = input.int(5, "Velocity window, candles", minval = 1, group = gBv)
+
+gSR = "Untagged support and resistance (SR)"
+srOn         = input.bool(true, "Find SR levels from higher-timeframe pivots", group = gSR, tooltip = "The untagged lines Socrates draws on the 4-hour chart: prices where the market pivoted more than once. A pivot is a bar whose high (or low) beats its neighbours on the pivot timeframe. Pivots within the SR tolerance of each other are touches of one level, and a level needs the touch count below inside the lookback.")
+srTF         = input.timeframe("240", "Pivot timeframe", group = gSR)
+srPivotLeft  = input.int(1, "Pivot bars left", minval = 1, maxval = 10, group = gSR, inline = "pv")
+srPivotRight = input.int(1, "right", minval = 1, maxval = 10, group = gSR, inline = "pv")
+srMinTouches = input.int(3, "Touches needed", minval = 2, maxval = 20, group = gSR)
+srLookback   = input.int(10, "Lookback, days", minval = 1, maxval = 90, group = gSR)
+srUnit       = input.float(0.08, "SR tolerance, daily ATR", step = 0.005, minval = 0, group = gSR, tooltip = "Pivots this close together are touches of one level. Wider than the zone tolerance because higher-timeframe swing points scatter; the level then carries the spread of its touches as a zone width. Raise it if no SR levels appear, lower it if they look sloppy.")
+srTicks      = input.int(8, "SR tolerance floor, ticks", minval = 0, group = gSR)
+srMax        = input.int(12, "Most SR levels kept", minval = 1, maxval = 30, group = gSR, tooltip = "When more clusters qualify, the ones with the most touches win.")
+
+gI = "Interaction (verdicts on confirmed bars only)"
+breakUnit     = input.float(0.05, "Break confirm, daily ATR", step = 0.005, minval = 0, group = gI, tooltip = "A close this far beyond the level on the far side means BROKE. Same distance as the hold by default, so a level with no edge scores near 50 %.")
+breakTicks    = input.int(4, "Break confirm floor, ticks", minval = 0, group = gI)
+holdUnit      = input.float(0.05, "Hold confirm, daily ATR", step = 0.005, minval = 0, group = gI, tooltip = "A close this far away from the level on the approach side means HELD. Keep it equal to the break distance unless you want to bias the verdicts on purpose.")
+holdTicks     = input.int(4, "Hold confirm floor, ticks", minval = 0, group = gI)
+verdictTF     = input.int(5, "Verdict closes on, minutes", minval = 1, maxval = 60, group = gI, tooltip = "HELD and BROKE are judged on closes of this timeframe, so a 1-minute chart gives the same verdicts as a 5-minute chart. On charts at or above it every bar counts.")
+verdictMinutes = input.int(150, "Verdict window, minutes", minval = 5, maxval = 3000, group = gI, tooltip = "A touch with neither outcome inside this long is NEUTRAL and is not counted. 150 minutes is 30 five-minute bars.")
+verdictMarks  = input.string("Off", "Mark verdicts on the chart", options = ["Off", "Counted only", "All"], group = gI, tooltip = "Off keeps the chart to trade signals only. Counted only marks the first interaction of each level instance, the ones the table counts. All marks later interactions too.")
+verdictKeep   = input.int(150, "Marks kept", minval = 10, maxval = 400, group = gI)
+
+gSt = "Statistics"
+showStats = input.bool(true, "Show statistics table", group = gSt)
+statsRows = input.int(15, "Rows", minval = 3, maxval = 40, group = gSt)
+statsPos  = input.string("Bottom right", "Table position", options = ["Bottom right", "Bottom left", "Top left", "Middle right"], group = gSt)
+priorWeight = input.float(10, "Prior weight, interactions", minval = 0, step = 1, group = gSt, tooltip = "Every type starts as if it already had this many interactions at a 50 % hold rate, so one lucky touch cannot top the ranking. The table shows raw hold rates; the rank uses the weighted rate. 0 ranks on raw counts.")
+priorsTxt = input.string("", "Priors (code:rate:count, ...)", group = gSt, tooltip = "Starting hold rates from a longer study, per level type, overriding the prior weight for that type. Example: PDH:0.62:40, SR:0.70:25.")
+
+gRev = "Reversal setup (REV)"
+revOn        = input.bool(true, "Reversal trades", group = gRev)
+wickOn       = input.bool(true, "Wick rejection", group = gRev, inline = "rj")
+pokeOn       = input.bool(true, "Poke and close back", group = gRev, inline = "rj")
+engulfOn     = input.bool(true, "Engulfing", group = gRev, inline = "rj")
+wickRatio    = input.float(0.5, "Wick at least this share of the bar", step = 0.05, minval = 0.1, maxval = 0.9, group = gRev)
+minBarATR    = input.float(0.6, "Rejection bar range, chart ATRs", step = 0.1, minval = 0, group = gRev, tooltip = "Dojis do not qualify: the rejection bar's range must be at least this many chart-timeframe ATRs.")
+strongSkip   = input.bool(false, "Strong rejection enters without follow-through", group = gRev, tooltip = "A wick of 60 % or more with a close in the far third enters at the rejection bar's close instead of waiting one bar.")
+volConfirmIn = input.string("On", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "On from M7 v0.1: the method names volume as its only confirmation and twenty backtest sessions never once had it on (D-100). Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. On or Auto: the follow-through bar's volume must reach the multiple of the 20-bar average. This measures total volume, not buying against selling pressure, which is the form the method actually reads and is still to be built (D-78).")
+volConfirmMult = input.float(1.0, "Volume multiple of the 20-bar average", step = 0.1, minval = 0.1, group = gRev)
+revEntry     = input.string("Limit at the level after the follow-through", "Reversal entry (test, D-83)", options = ["Close of the follow-through candle", "Limit at the level after the follow-through", "Limit at the level after the rejection candle"], group = gRev, tooltip = "Where the reversal trade gets in. Close of the follow-through candle: the plan's default, a candle or two away from the level. Limit at the level after the follow-through: same setup, but the order rests at the zone edge and fills only if price comes back to it. Limit at the level after the rejection candle: no follow-through needed, the order rests at the zone edge as soon as the rejection candle closes, the quick-return entry. A resting limit is cancelled after the bars below, or when a candle closes back through the zone.")
+revLimitBars = input.int(6, "Reversal limit rests for, bars", minval = 1, maxval = 100, group = gRev)
+revStop      = input.string("Beyond the rejection wick", "Reversal stop (test, D-83)", options = ["Beyond the zone", "Beyond the rejection wick", "The farther of the two"], group = gRev, tooltip = "Beyond the zone: the far side of the whole zone plus the buffer, the plan's default; wide when several levels stack. Beyond the rejection wick: the rejection candle's extreme plus the buffer. The farther of the two: whichever sits further from the entry.")
+
+gBrk = "Break trade (BRK): break, retest, enter"
+brkOn        = input.bool(true, "Break trades", group = gBrk, tooltip = "Never straight off the breakout. After a close through the zone, a limit rests at the broken edge and the entry is the retest.")
+brkUnit      = input.float(0.03, "Break confirm, daily ATR", step = 0.005, minval = 0, group = gBrk, inline = "bc")
+brkTicks     = input.int(4, "floor, ticks", minval = 0, group = gBrk, inline = "bc")
+minBreakBody = input.float(0.5, "Break bar body, chart ATRs (0 = off)", step = 0.1, minval = 0, group = gBrk)
+retestBars   = input.int(6, "Retest limit rests for, bars", minval = 1, maxval = 100, group = gBrk, tooltip = "The limit is cancelled after this many bars, or earlier if a bar closes back through the zone.")
+
+gTr = "Trade geometry (daily-ATR units with tick floors)"
+stopUnit     = input.float(0.03, "Stop buffer beyond the zone, daily ATR", step = 0.005, minval = 0, group = gTr, inline = "sb")
+stopTicks    = input.int(4, "floor, ticks", minval = 0, group = gTr, inline = "sb")
+tgtUnit      = input.float(0.03, "Minimum target distance, daily ATR", step = 0.01, minval = 0, group = gTr, inline = "td")
+tgtTicks     = input.int(10, "floor, ticks", minval = 0, group = gTr, inline = "td")
+minRR        = input.float(1.0, "Minimum reward to risk", step = 0.1, minval = 0, group = gTr)
+maxRiskATR   = input.float(0.35, "Maximum stop distance, daily ATR", step = 0.05, minval = 0.05, group = gTr)
+execAtrLen   = input.int(14, "Chart ATR length", minval = 2, group = gTr)
+stopCapUnit  = input.float(0.03, "Stop no wider than, daily ATR (0 = off)", step = 0.005, minval = 0, group = gTr, inline = "sc", tooltip = "A cap on every stop (D-98). When the stop a setup would use sits farther from the entry than this, it moves in to this distance from the entry; a nearer stop stays where it is. 0 leaves the stops as the setup defines them. The floor in ticks keeps the cap above the noise on a quiet day.")
+stopCapTicks = input.int(8, "floor, ticks", minval = 0, group = gTr, inline = "sc")
+exitStyle    = input.string("Run until a level gives way", "How a winning trade ends", options = ["First target at the next level", "Run until a level gives way"], group = gTr, tooltip = "M10 (D-120). FIRST TARGET is what every run before M10 did: the trade books out at the next level, about 33 points on this market. RUN takes the target off entirely. The trade then ends only when a candle closes back through the last level it got past, so a move that keeps going keeps the trade. The geometry check is unchanged either way, so both styles take exactly the same trades and only the exit differs - which is what makes the two runs comparable.")
+voidOn       = input.bool(true, "Close the trade when a candle closes back through the level", group = gTr, tooltip = "M8 (D-115). The source method has no fixed stop: it closes when the idea is dead. The idea here is that the level holds, so the trade is over on the first candle that closes past the far side of the zone, against the trade. The stop above stays as a backstop for a gap or a slam through. Exits show as \"void\" in the tally, on the chart and in the tester.")
+
+gSc = "Score (0 to 100)"
+wRel     = input.int(40, "Reliability", minval = 0, maxval = 100, group = gSc, inline = "w1")
+wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline = "w1")
+wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
+wHTF     = input.int(0, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2", tooltip = "Points for higher-timeframe candles that rejected the same zone, full points at 4 of 4. 0 until the trade list says the count matters (D-93); the plan's 10 returns then.")
+wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
+minScore = input.int(0, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "The score reads out of 100 of what the bot can measure today: raw points over the points reachable with the weights above (82 before M6, 100 after). 50 here means 5/10 on the tag. The plan's 60 returns once M6 fills the score, and the M4 backtest by score bucket sets the final bar.")
+rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
+minSamples = input.int(30, "Samples before the gate applies", minval = 1, group = gSc)
+
+gHk = "Confluence hooks (hidden, zero weight until backtests earn it)"
+vwapSideW      = input.int(0, "VWAP side points", minval = 0, maxval = 30, group = gHk, inline = "h1")
+vwapStretchW   = input.int(0, "VWAP stretch points", minval = 0, maxval = 30, group = gHk, inline = "h1")
+vwapStretchATR = input.float(0.25, "Full stretch at, daily ATR from VWAP", step = 0.05, minval = 0.05, group = gHk)
+emaVoteW       = input.int(0, "EMA vote points", minval = 0, maxval = 30, group = gHk, inline = "h2")
+emaTF          = input.timeframe("15", "EMA timeframe", group = gHk, inline = "h2")
+emaLen         = input.int(200, "EMA length", minval = 5, group = gHk, inline = "h2")
+showHooks      = input.bool(true, "Show hook letters on signal labels", group = gHk)
+showHookLines  = input.bool(false, "Show VWAP and EMA lines", group = gHk)
+
+gSg = "Signals"
+sigLabelsOn = input.bool(true, "Signal labels", group = gSg)
+sigOnly     = input.bool(false, "Signals only: labels, no trades", group = gSg, tooltip = "On: the script only marks the setups. No order goes to the Strategy Tester, no paper trade is kept, so no stop line, no exit marks and no alerts. Every setup that passes the entry rules gets a label, even while another level's trade would still be running; a level still keeps its quiet time, and the daily signal cap counts the labels (the loss cap cannot apply). Setups that would rest a limit order label at the candle where it would have filled. Off: one trade at a time, in step with the tester, and the chart shows the tester's trade while it is open.")
+sigKeep     = input.int(100, "Labels kept", minval = 10, maxval = 300, group = gSg)
+sigSizeIn   = input.string("normal", "Label size", options = ["tiny", "small", "normal", "large"], group = gSg)
+sigDetail   = input.string("Minimal", "Label detail", options = ["Minimal", "Compact", "Full"], group = gSg, tooltip = "Minimal shows an arrow and the score; everything else is in the hover box. Compact adds the setup and the level. Full prints entry, stop and targets on the tag too.")
+sigCooldownMin = input.int(12, "No repeat signal on a level within, minutes", minval = 0, maxval = 600, group = gSg, tooltip = "After a signal, the same level stays quiet for this long. 12 minutes is about two 5-minute candles. 0 turns it off.")
+alertsOn    = input.bool(true, "Fire alert() on each signal", group = gSg, tooltip = "Create one alert on this indicator with the condition Any alert() function call. The message is the JSON body from the plan.")
+baseQty     = input.int(2, "Contracts (orders and alerts)", minval = 1, group = gSg)
+nearMiss    = input.string("Off", "Explain missed signals", options = ["Off", "Rule rejections", "Rules and candles"], group = gSg, tooltip = "Grey ? tags on candles where a trade nearly happened. Hover one to read why it was not a signal. Rule rejections: a setup formed but a rule stopped it (score, volume, target, cooldown, a level still forming). Rules and candles: also rejection candles with no follow-through candle, and breaks whose retest never came.")
+nearKeep    = input.int(150, "Explanation tags kept", minval = 10, maxval = 400, group = gSg)
+
+gPa = "One trade at a time (paper trade, D-80)"
+paperOn     = input.bool(true, "Show the paper tally (tables and exit marks)", group = gPa, tooltip = "The script always trades one position at a time, in step with the Strategy Tester: in at the signal, out at the stop, the first target or the flatten. This switch only shows or hides the paper tally tables and the exit marks, which mirror the tester's fills so the two can be cross-checked in the info box.")
+entryCutoff = input.int(1500, "No new trades from (HHMM, timezone above; 0 = off)", minval = 0, maxval = 2359, group = gPa, tooltip = "No entries between this time and the flatten time, so a trade has room to work before the close. Evening and overnight entries are not affected.")
+flattenAt   = input.int(1555, "Close the trade at (HHMM; 0 = off)", minval = 0, maxval = 2359, group = gPa)
+showExits   = input.bool(true, "Mark exits", group = gPa, tooltip = "A small tag at each exit: T1, stop or flat, with the points made or lost. Teal is a gain, maroon a loss.")
+exitKeep    = input.int(100, "Exit marks kept", minval = 10, maxval = 300, group = gPa)
+showBreak   = input.bool(true, "Show paper breakdown table", group = gPa, tooltip = "A table of the paper trades split by score, by setup (REV or BRK) and by session window: how many, the share that reached the first target, the average gain of those, the average loss of the stopped ones, and the net points. Only shows while the trade switch above is on.")
+breakPos    = input.string("Middle right", "Breakdown position", options = ["Middle right", "Middle left", "Top left", "Bottom left"], group = gPa)
+
+gMg = "Trade manager (M5)"
+mgrOn     = input.bool(false, "Move the stop in stages (D-32)", group = gMg, tooltip = "R is the distance from the entry to the first stop. ON: once a closed candle has run half an R in profit, the stop moves halfway to the entry; once it has run a full R, the stop moves to the entry plus a small cushion; from one and a half R the stop trails, following the last confirmed swing and the close, only ever tightening. Each move applies from the next candle, as a bridge would apply it. OFF: the M4 trades, first stop and first target only.")
+stage1R   = input.float(0.5, "Halve the risk after, R", step = 0.1, minval = 0.1, group = gMg, inline = "st")
+stage2R   = input.float(1.0, "breakeven after, R", step = 0.1, minval = 0.1, group = gMg, inline = "st")
+stage3R   = input.float(1.5, "trail after, R", step = 0.1, minval = 0.1, group = gMg, inline = "st")
+beTicks   = input.int(2, "Breakeven cushion, ticks", minval = 0, group = gMg, inline = "be")
+beATR     = input.float(0.02, "or execution ATRs", step = 0.01, minval = 0, group = gMg, inline = "be", tooltip = "The breakeven stop sits this far on the profit side of the entry, the larger of the two, so a scratch covers its own costs.")
+structLB  = input.int(5, "Trail: swing needs this many candles each side", minval = 1, maxval = 20, group = gMg, tooltip = "A swing low (for a long) is a candle whose low is lower than this many candles on each side; it is known only once the right-side candles have closed, so it never repaints. The trail sits below the last such swing by the share of the chart ATR below.")
+structATR = input.float(0.5, "Trail: below the swing, chart ATRs", step = 0.1, minval = 0, group = gMg, inline = "tr")
+chaseATR  = input.float(2.0, "behind the close, chart ATRs", step = 0.1, minval = 0.1, group = gMg, inline = "tr", tooltip = "The trail is the higher of the two (for a long): the swing stop and the close minus this many chart ATRs. It never moves back.")
+mgrMarks  = input.bool(true, "Mark stop moves", group = gMg, tooltip = "A small navy tag at the stop each time the stage changes: 1/2R, BE or TRAIL.")
+showStopLine = input.bool(true, "Draw the stop in force", group = gMg, tooltip = "A navy line at the stop price while a trade is open, as of each candle's close, so the stages and the trail can be checked by eye.")
+
+gHt = "Higher-timeframe rejection (M6, plan 4.8)"
+htfOn        = input.bool(true, "Count higher-timeframe rejections of the zone", group = gHt, tooltip = "For each reversal, the last completed 5-minute, 15-minute, 1-hour and 4-hour candles are checked: did the candle trade into this zone and close back on the approach side with a wick of at least the share below? The count (0 to 4) goes into the trade's tag as f0 to f4 and into the signal label as HTF x/4. Off: the count reads 0 everywhere.")
+htfWickRatio = input.float(0.4, "Wick at least this share of the candle", step = 0.05, minval = 0.1, maxval = 0.9, group = gHt)
+htfMin       = input.int(0, "Reversals need at least this many (0 = off)", minval = 0, maxval = 4, group = gHt, tooltip = "A gate for testing: a reversal is skipped when fewer higher-timeframe candles rejected the zone. Off for the base run; the exported trade list splits the trades by the count first.")
+htfTf2       = input.timeframe("15", "Timeframes beyond the 5-minute", group = gHt, inline = "tf")
+htfTf3       = input.timeframe("60", "", group = gHt, inline = "tf")
+htfTf4       = input.timeframe("240", "", group = gHt, inline = "tf")
+
+gPV = "Position visual (M6 v0.3)"
+posVisOn   = input.bool(true, "Draw each signal's position: entry, stop, targets and R lines", group = gPV, tooltip = "At every signal a shaded box runs from the entry to the first target (green) and from the entry to the stop (red), with lines at the entry, the stop, the targets and every R step in between. The newest one runs to the right and follows price until the next signal, where it stops; older ones stay on the chart up to the number kept below.")
+posVisKeep = input.int(8, "Positions kept", minval = 1, maxval = 30, group = gPV)
+posVisStep = input.float(0.5, "R lines every, R", step = 0.25, minval = 0.25, maxval = 5, group = gPV, tooltip = "R is the distance from the entry to the stop. A dotted line at every step from the entry up to the farthest target shown, at most 8 of them.")
+posVisT2   = input.bool(true, "Show the second target", group = gPV)
+posVisText = input.bool(true, "Labels: SL, E, T1, T2 and the R steps", group = gPV, tooltip = "Prices at the right end of the newest position, with the R each target pays. When the next signal comes, the labels move to the start of their position.")
+
+gRg = "Range filter (test, D-81)"
+rangeOn     = input.bool(false, "No reversal at a level inside a range, edges only", group = gRg, tooltip = "Your read: in a range, trade the edges, not the middle. The script looks back over the window below. If that stretch is narrower than the limit and the level sits in the middle of it, away from both edges by the edge share, reversal entries at that level are skipped. Breaks are not affected. Off until the M4 backtest measures it.")
+rangeMin    = input.int(120, "Window, minutes", minval = 15, maxval = 720, group = gRg)
+rangeMaxATR = input.float(0.5, "Counts as a range when narrower than, daily ATR", step = 0.05, minval = 0.05, group = gRg)
+rangeEdge   = input.float(0.25, "Edge share of the range height", step = 0.05, minval = 0.05, maxval = 0.5, group = gRg, tooltip = "0.25 means the top quarter and the bottom quarter of the range count as edges; a level in the middle half is skipped.")
+
+gF = "Filters (M4; M7 v0.1 turns on the ones the method names)"
+sessFilterOn = input.bool(true, "Entries only inside the checked windows", group = gF, tooltip = "Plan 4.6. On from M7 v0.1 with New York only, which is the window the method trades and the plan's live default for the Index profile. Untick it to go back to entries around the clock.")
+allowAsia    = input.bool(false, "Asia", group = gF, inline = "sw")
+allowLondon  = input.bool(false, "London", group = gF, inline = "sw")
+allowNY      = input.bool(true, "New York", group = gF, inline = "sw")
+allowOther   = input.bool(false, "Other hours", group = gF, inline = "sw")
+obOn         = input.bool(false, "Opening blackout after the New York open", group = gF, tooltip = "D-43: no entries for the minutes below after the cash open (the start of the New York window, 08:30 CT on the Index profile). On from M7 v0.1: the first half hour lost in both halves of the year and your own TradeZella record agrees.")
+obMin        = input.int(30, "Opening blackout, minutes", minval = 1, maxval = 240, group = gF)
+newsOn       = input.bool(false, "News blackout", group = gF, tooltip = "D-40: no entries from the minutes before to the minutes after each time listed. Live default on; off for the base run.")
+newsTimes    = input.string("0730, 0900", "News times (HHMM, comma separated)", group = gF)
+newsBefore   = input.int(2, "Minutes before", minval = 0, maxval = 120, group = gF, inline = "nw")
+newsAfter    = input.int(5, "after", minval = 0, maxval = 120, group = gF, inline = "nw")
+chopOn       = input.bool(false, "Chop band (D-28)", group = gF, tooltip = "When the last window's range fits inside the band, chop is on and the band is frozen; the first close outside the frozen band turns it off. No entries while on.")
+chopPct      = input.float(0.25, "Band, percent of price", step = 0.05, minval = 0.01, group = gF, inline = "ch")
+chopMinutes  = input.int(30, "window, minutes", minval = 5, maxval = 720, group = gF, inline = "ch")
+maxSigDay    = input.int(4, "Max trades per day (0 = off)", minval = 0, group = gF)
+maxLossDay   = input.int(2, "Max losing trades per day (0 = off)", minval = 0, group = gF)
+maxLossPct   = input.float(0, "Max daily loss, percent of account (0 = off)", step = 0.5, minval = 0, group = gF)
+dayTargetPct = input.float(0, "Daily target, percent of account (0 = off)", step = 0.5, minval = 0, group = gF, tooltip = "D-44: reaching the target only stops new entries; an open trade keeps running.")
+
+gGeo = "Geometry (daily-ATR units with tick floors)"
+atrLen       = input.int(14, "Daily ATR length", minval = 2, group = gGeo)
+clusterUnit  = input.float(0.02, "Cluster tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Levels closer together than this merge into one zone.")
+clusterTicks = input.int(4, "Cluster tolerance floor, ticks", minval = 0, group = gGeo)
+touchUnit    = input.float(0.01, "Touch tolerance, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Price within this distance counts as a touch, which ends a level's fresh state for the day and starts an interaction.")
+touchTicks   = input.int(2, "Touch tolerance floor, ticks", minval = 0, group = gGeo)
+limitRange   = input.bool(false, "Only draw levels near price", group = gGeo, tooltip = "Off draws every level, like the Spaceman indicator. On draws only levels within the distance below.")
+drawRange    = input.float(1.0, "Near means within this many daily ATRs", step = 0.1, minval = 0.1, group = gGeo)
+mergeUnit    = input.float(0.01, "Share one label when levels are within, daily ATR", step = 0.005, minval = 0, group = gGeo, tooltip = "Every level keeps its own line. Levels this close share one tag, names joined with a slash, so near-identical levels do not each need a column. Default equals the touch tolerance. 0 here and 0 in the floor means only identical prices share, like the Spaceman indicator.")
+mergeTicks   = input.int(2, "Share-a-label floor, ticks", minval = 0, maxval = 100, group = gGeo)
+
+gD = "Display"
+anchorMode  = input.string("Candle", "Line start", options = ["Candle", "Right anchored"], group = gD, tooltip = "Candle: each line starts at the candle that made the level. Right anchored: every line has the same length, measured back from the current candle.")
+rightLen    = input.int(40, "Right-anchored length, bars", minval = 5, maxval = 2000, group = gD)
+maxLineBars = input.int(3000, "Longest line, bars", minval = 100, maxval = 9000, group = gD, tooltip = "A line that would start further back than this is cut here.")
+labelOffset = input.int(30, "Line end, bars right of price", minval = 1, maxval = 300, group = gD, tooltip = "Lines end here and labels sit here. If labels are cut off, widen the chart's right margin in chart settings.")
+labelStyle  = input.string("Boxed", "Label style", options = ["Boxed", "Text only"], group = gD, tooltip = "Boxed is a filled tag that hangs off the end of the line like a bookmark. Text only is plain coloured text like the Spaceman indicator.")
+staggerUnit  = input.float(0.015, "Stagger labels closer than, daily ATR", step = 0.005, minval = 0, maxval = 5, group = gD, tooltip = "Labels closer together than this step right into the next column so both stay readable. The distance is a share of the daily ATR on a 1-minute chart and grows with the square root of the chart timeframe, so the same setting works on 1m and 5m. 0 turns staggering off.")
+staggerTicks = input.int(4, "Stagger floor, ticks", minval = 0, maxval = 1000, group = gD)
+tagChars     = input.float(2.5, "Tag width, bars per character", step = 0.25, minval = 0.5, maxval = 20, group = gD, tooltip = "How many bars one character of a tag covers on your screen. Each column is as wide as its longest name, so short codes pack tighter than full names. A tag's width on screen is fixed while bars get narrower as you zoom out, so raise this if tags overlap sideways, lower it to pull the columns in.")
+colGap       = input.int(8, "Gap between columns, bars", minval = 0, maxval = 100, group = gD, tooltip = "Space between the end of one column's longest tag and the point of the next column's tags.")
+staggerCols  = input.int(5, "Stagger columns", minval = 1, maxval = 10, group = gD, tooltip = "Each tag takes the first column whose previous tag is far enough below it. When every column is busy it goes to the one with the most room.")
+labelMode   = input.string("Full names", "Label text", options = ["Full names", "Short codes"], group = gD)
+labelSizeIn = input.string("normal", "Label size", options = ["tiny", "small", "normal", "large"], group = gD)
+showPrice   = input.bool(false, "Show price in label", group = gD)
+lineWidth   = input.int(1, "Line width", minval = 1, maxval = 4, group = gD)
+lineStyleIn = input.string("Solid", "Line style", options = ["Solid", "Dashed", "Dotted"], group = gD)
+useGlobalColor = input.bool(false, "One colour for every level", group = gD, inline = "gc")
+globalColor    = input.color(color.white, "", group = gD, inline = "gc")
+showFreshMark = input.bool(false, "Mark untouched levels with *", group = gD)
+showInfo      = input.bool(true, "Show info box", group = gD)
+showHist      = input.bool(false, "Plot level history (replay checks)", group = gD, tooltip = "Draws the main levels as step lines through history so you can verify nothing moves in bar replay.")
+colDaily   = input.color(color.rgb(66, 135, 245), "Daily", group = gD, inline = "c1")
+colWeekly  = input.color(color.rgb(156, 39, 176), "Weekly", group = gD, inline = "c1")
+colMonthly = input.color(color.rgb(255, 152, 0), "Monthly", group = gD, inline = "c1")
+colQY      = input.color(color.rgb(229, 57, 53), "Quarter/Year", group = gD, inline = "c2")
+col4H      = input.color(color.rgb(158, 158, 158), "4-hour", group = gD, inline = "c2")
+colMonday  = input.color(color.rgb(255, 235, 59), "Monday", group = gD, inline = "c2")
+colAsia    = input.color(color.rgb(0, 150, 136), "Asia", group = gD, inline = "c3")
+colLondon  = input.color(color.rgb(76, 175, 80), "London", group = gD, inline = "c3")
+colNY      = input.color(color.rgb(3, 169, 244), "New York", group = gD, inline = "c3")
+colCustom  = input.color(color.rgb(255, 255, 255), "Custom", group = gD, inline = "c4")
+colSR      = input.color(color.rgb(0, 229, 255), "SR", group = gD, inline = "c4")
+colPiv     = input.color(color.rgb(255, 64, 129), "Supply/Demand", group = gD, inline = "c4")
+
+// ───────────────────────────── [A1] PROFILE ─────────────────────────────
+string root    = syminfo.root
+bool   rootIdx = root == "NQ" or root == "MNQ" or root == "ES" or root == "MES" or root == "RTY" or root == "M2K" or root == "YM" or root == "MYM"
+bool   rootEng = root == "CL" or root == "MCL" or root == "NG" or root == "MNG" or root == "RB" or root == "HO"
+bool   rootMet = root == "SI" or root == "SIL" or root == "GC" or root == "MGC" or root == "HG" or root == "MHG" or root == "PL"
+string profile = profileIn != "Auto" ? profileIn : rootIdx ? "Index" : rootEng ? "Energy" : rootMet ? "Metals" : "Generic"
+string sessNY  = profile == "Energy" ? sessNYEng : profile == "Metals" ? sessNYMet : sessNYIdx
+bool   isFut   = syminfo.type == "futures"
+// The CME exchange day opens at 17:00 CT. Shifting the clock 7 hours maps every bar onto the
+// calendar day its session settles on, which is how Monday's range is identified.
+int    shiftMs = isFut ? 7 * 60 * 60 * 1000 : 0
+
+// ───────────────────── [A2] PERIOD LEVELS FROM THE CHART'S OWN CANDLES ─────────────────────
+// Generic period tracker: previous period high / low / open with the bar each was made on,
+// plus the current period's open with its bar. The first partial period in history is never published.
+f_period(bool newP) =>
+    var float rH  = na
+    var float rL  = na
+    var float rO  = na
+    var int   rHb = 0
+    var int   rLb = 0
+    var int   rOb = 0
+    var float pH  = na
+    var float pL  = na
+    var float pO  = na
+    var int   pHb = 0
+    var int   pLb = 0
+    var int   pOb = 0
+    var bool  seen = false
+    if newP and not barstate.isfirst
+        if seen
+            pH  := rH
+            pL  := rL
+            pO  := rO
+            pHb := rHb
+            pLb := rLb
+            pOb := rOb
+        seen := true
+        rH  := high
+        rL  := low
+        rO  := open
+        rHb := bar_index
+        rLb := bar_index
+        rOb := bar_index
+    else
+        if na(rH) or high > rH
+            rH  := high
+            rHb := bar_index
+        if na(rL) or low < rL
+            rL  := low
+            rLb := bar_index
+        if na(rO)
+            rO  := open
+            rOb := bar_index
+    [pH, pL, pO, pHb, pLb, pOb, seen ? rO : na, rOb, rH, rL, rHb, rLb]
+
+[pdh, pdl, pdo, pdhB, pdlB, pdoB, dOpen, dOpenB, dRunH, dRunL, dRunHb, dRunLb]     = f_period(timeframe.change("D"))
+[pwhC, pwlC, pwoC, pwhB, pwlB, pwoB, wOpenC, wOpenB, wRunH, wRunL, wRunHb, wRunLb] = f_period(timeframe.change("W"))
+[pmhC, pmlC, pmoC, pmhB, pmlB, pmoB, mOpenC, mOpenB, mRunH, mRunL, mRunHb, mRunLb] = f_period(timeframe.change("M"))
+[p4h, p4l, p4o, p4hB, p4lB, p4oB, h4Open, h4OpenB, h4RunH, h4RunL, h4RunHb, h4RunLb] = f_period(timeframe.change("240"))
+// A second tracker on the SR pivot timeframe feeds the untagged levels in [A5b].
+[srPH, srPL, srPO, srPHb, srPLb, srPOb, srCO, srCOb, srRH, srRL, srRHb, srRLb] = f_period(timeframe.change(srTF))
+
+// ───────────────────── [A3] HIGHER-TIMEFRAME DATA (5 requests) ─────────────────────
+// Used where the chart history may be too short: week and month fallbacks, quarter, year, daily ATR.
+f_daily() =>
+    var float yh = na
+    var float yl = na
+    bool newYear = not na(year[1]) and year != year[1]
+    if na(yh) or newYear
+        yh := high
+        yl := low
+    else
+        yh := math.max(yh, high)
+        yl := math.min(yl, low)
+    [ta.atr(atrLen)[1], yh[1], yl[1]]
+
+[dAtr, yHigh, yLow]  = request.security(syminfo.tickerid, "D",   f_daily(), lookahead = barmerge.lookahead_on)
+[pwhS, pwlS, wOpenS] = request.security(syminfo.tickerid, "W",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+[pmhS, pmlS, mOpenS] = request.security(syminfo.tickerid, "M",   [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+[pqh, pql, qOpen]    = request.security(syminfo.tickerid, "3M",  [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+yOpen                = request.security(syminfo.tickerid, "12M", open, lookahead = barmerge.lookahead_on)
+
+// Chart values first, higher-timeframe values only when the chart history is too short. A zero
+// anchor means "unknown", and the drawing code cuts such lines at the longest-line setting.
+float pwh   = na(pwhC) ? pwhS : pwhC
+float pwl   = na(pwlC) ? pwlS : pwlC
+float wOpen = na(wOpenC) ? wOpenS : wOpenC
+int   pwhA  = na(pwhC) ? 0 : pwhB
+int   pwlA  = na(pwlC) ? 0 : pwlB
+int   wOpenA = na(wOpenC) ? 0 : wOpenB
+float pmh   = na(pmhC) ? pmhS : pmhC
+float pml   = na(pmlC) ? pmlS : pmlC
+float mOpen = na(mOpenC) ? mOpenS : mOpenC
+int   pmhA  = na(pmhC) ? 0 : pmhB
+int   pmlA  = na(pmlC) ? 0 : pmlB
+int   mOpenA = na(mOpenC) ? 0 : mOpenB
+
+// Quarter and year opens: the bar of the last boundary seen on the chart, else unknown.
+var int qOpenB = 0
+if timeframe.change("3M")
+    qOpenB := bar_index
+var int yOpenB = 0
+if timeframe.change("12M")
+    yOpenB := bar_index
+// Year high / low: the chart's own extreme when it is the same price, else unknown.
+var float chartMaxH  = na
+var int   chartMaxHb = 0
+var float chartMinL  = na
+var int   chartMinLb = 0
+if na(chartMaxH) or high > chartMaxH
+    chartMaxH  := high
+    chartMaxHb := bar_index
+if na(chartMinL) or low < chartMinL
+    chartMinL  := low
+    chartMinLb := bar_index
+int yHighB0 = not na(yHigh) and not na(chartMaxH) and math.abs(chartMaxH - yHigh) <= syminfo.mintick ? chartMaxHb : 0
+int yLowB0  = not na(yLow)  and not na(chartMinL) and math.abs(chartMinL - yLow)  <= syminfo.mintick ? chartMinLb : 0
+// The year high and low include today's price action, like the Spaceman indicator. They are
+// targets only in the trading logic, so a developing value is fine.
+bool  liveMode = sessMode == "Developing"
+float yHighL = na(yHigh) ? na : liveMode and not na(dRunH) and dRunH > yHigh ? dRunH : yHigh
+float yLowL  = na(yLow)  ? na : liveMode and not na(dRunL) and dRunL < yLow  ? dRunL : yLow
+int   yHighB = liveMode and not na(dRunH) and not na(yHigh) and dRunH > yHigh ? dRunHb : yHighB0
+int   yLowB  = liveMode and not na(dRunL) and not na(yLow)  and dRunL < yLow  ? dRunLb : yLowB0
+
+// ───────────────────────── [A4] SESSION-BASED LEVELS ─────────────────────────
+// Midnight open: the open of the first bar at or after 00:00 in the anchor zone. A gap in
+// trading such as the weekend is not a midnight, so on intraday charts the bar must also sit in
+// the first hour of the day. Charts above 60 minutes fall back to the plain date change.
+string moTz = moAnchor == "New York midnight" ? "America/New_York" : tz
+var int   moDay = -1
+var float mo    = na
+var int   moB   = 0
+int  dmNow     = dayofmonth(time, moTz)
+bool firstHour = hour(time, moTz) == 0
+bool coarseTf  = not timeframe.isintraday or timeframe.multiplier > 60
+if dmNow != moDay and (firstHour or coarseTf)
+    if moDay != -1
+        mo  := open
+        moB := bar_index
+    moDay := dmNow
+
+// Session tracker: track the running session, publish when it completes, with the bar of each extreme.
+f_sessionLevels(simple string sess) =>
+    bool inS = not na(time(timeframe.period, sess, tz))
+    var float runH  = na
+    var float runL  = na
+    var float runO  = na
+    var int   runHb = 0
+    var int   runLb = 0
+    var int   runOb = 0
+    var float doneH  = na
+    var float doneL  = na
+    var float doneO  = na
+    var int   doneHb = 0
+    var int   doneLb = 0
+    var int   doneOb = 0
+    bool starts = inS and not inS[1]
+    bool ends   = not inS and inS[1]
+    if starts
+        runH  := high
+        runL  := low
+        runO  := open
+        runHb := bar_index
+        runLb := bar_index
+        runOb := bar_index
+    else if inS
+        if high > runH
+            runH  := high
+            runHb := bar_index
+        if low < runL
+            runL  := low
+            runLb := bar_index
+    if ends
+        doneH  := runH
+        doneL  := runL
+        doneO  := runO
+        doneHb := runHb
+        doneLb := runLb
+        doneOb := runOb
+    bool live = sessMode == "Developing" and inS
+    [live ? runH : doneH, live ? runL : doneL, live ? runO : doneO, live ? runHb : doneHb, live ? runLb : doneLb, live ? runOb : doneOb]
+
+[ah, al, ao, ahB, alB, aoB]    = f_sessionLevels(sessAsia)
+[lh, ll, lo, lhB, llB, loB]    = f_sessionLevels(sessLondon)
+[nh, nl, nyo, nhB, nlB, nyoB]  = f_sessionLevels(sessNY)
+
+// Monday range: the full exchange session that settles on Monday (Sunday 17:00 CT to Monday 16:00 CT on CME).
+int  dowShift = dayofweek(time + shiftMs, tz)
+bool inMon    = dowShift == dayofweek.monday
+var float monRunH  = na
+var float monRunL  = na
+var int   monRunHb = 0
+var int   monRunLb = 0
+var float mnh  = na
+var float mnl  = na
+var int   mnhB = 0
+var int   mnlB = 0
+if inMon and not inMon[1]
+    monRunH  := high
+    monRunL  := low
+    monRunHb := bar_index
+    monRunLb := bar_index
+else if inMon
+    if high > monRunH
+        monRunH  := high
+        monRunHb := bar_index
+    if low < monRunL
+        monRunL  := low
+        monRunLb := bar_index
+if not inMon and inMon[1]
+    mnh  := monRunH
+    mnl  := monRunL
+    mnhB := monRunHb
+    mnlB := monRunLb
+bool  monLive = liveMode and inMon
+float mnhS  = monLive ? monRunH : mnh
+float mnlS  = monLive ? monRunL : mnl
+int   mnhSB = monLive ? monRunHb : mnhB
+int   mnlSB = monLive ? monRunLb : mnlB
+
+// ───────────────────── [A5] LEVEL TABLE AND FRESH STATE ─────────────────────
+// One slot table for every level: 38 labeled slots, then custom slots, SR slots and the owner's
+// hand-typed pivots. A slot keeps its touched flag and its interaction state from bar to bar. A new
+// value in a slot is a new level instance and resets both.
+int NLAB   = 38
+int NCUS   = 20
+int NSR    = 30
+int NSD    = 10
+int CUS0   = NLAB
+int SR0    = NLAB + NCUS
+int SD0    = SR0 + NSR
+int NTOT   = SD0 + NSD
+int TY_CUS = 38
+int TY_SR  = 39
+int TY_SD  = 40
+int NTYPE  = 41
+var string[] lvCode = array.from("PDH", "PDL", "PDM", "DO", "MO", "PWH", "PWL", "PWM", "WO", "PMH", "PML", "PMM", "MOO", "PQH", "PQL", "PQM", "QO", "YH", "YL", "YM", "YO", "P4H", "P4L", "P4M", "P4O", "4HO", "MNH", "MNL", "MNM", "AH", "AL", "AO", "LH", "LL", "LO", "NH", "NL", "NO")
+var string[] lvName = array.from("Prev Day High", "Prev Day Low", "Prev Day Mid", "Daily Open", "Midnight Open", "Prev Week High", "Prev Week Low", "Prev Week Mid", "Weekly Open", "Prev Month High", "Prev Month Low", "Prev Month Mid", "Monthly Open", "Prev Quarter High", "Prev Quarter Low", "Prev Quarter Mid", "Quarterly Open", "Year High", "Year Low", "Year Mid", "Yearly Open", "Prev 4H High", "Prev 4H Low", "Prev 4H Mid", "Prev 4H Open", "4H Open", "Monday High", "Monday Low", "Monday Mid", "Asia High", "Asia Low", "Asia Open", "London High", "London Low", "London Open", "NY High", "NY Low", "NY Open")
+var int[]    lvFam  = array.from(0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8)
+// Statistics are kept per level type: the 38 codes, then CUS, SR and PIV.
+var string[] tyCode = array.copy(lvCode)
+if barstate.isfirst
+    for i = NLAB to NTOT - 1
+        array.push(lvCode, i >= SD0 ? "SD" + str.tostring(i - SD0 + 1) : "")
+        array.push(lvName, i >= SD0 ? "Supply/Demand " + str.tostring(i - SD0 + 1) : "")
+        array.push(lvFam, i >= SD0 ? 11 : i >= SR0 ? 10 : 9)
+    array.push(tyCode, "CUS")
+    array.push(tyCode, "SR")
+    array.push(tyCode, "PIV")
+var float[] lvVal      = array.new<float>(NTOT, na)
+var int[]   lvAnchor   = array.new<int>(NTOT, 0)
+var bool[]  lvTouched  = array.new<bool>(NTOT, false)
+// Half-width of the level: 0 for a single price, half the spread of the touches for an SR zone.
+var float[] lvWidth    = array.new<float>(NTOT, 0.0)
+// Interaction state per slot: 0 idle, 1 touched. Side +1 means price came from above (the level
+// acts as support), -1 from below (resistance). Armed means a whole bar has traded outside the
+// touch band since the last touch, so the next entry into the band is a new touch.
+var int[]   lvState    = array.new<int>(NTOT, 0)
+var int[]   lvSide     = array.new<int>(NTOT, 0)
+var int[]   lvTouchBar = array.new<int>(NTOT, 0)
+var bool[]  lvArmed    = array.new<bool>(NTOT, false)
+var bool[]  lvCounted  = array.new<bool>(NTOT, false)
+// M3: the last HELD (2) or BROKE (3) verdict today per slot, and a block after a signal until a
+// whole bar trades clear of the band again.
+var int[]   lvVerdictToday = array.new<int>(NTOT, 0)
+var int[]   lvVerdictBar   = array.new<int>(NTOT, -1)
+var bool[]  lvSigBlock     = array.new<bool>(NTOT, false)
+var int[]   lvSigBar       = array.new<int>(NTOT, -100000)
+
+f_resetSlot(int i) =>
+    array.set(lvTouched, i, false)
+    array.set(lvState, i, 0)
+    array.set(lvSide, i, 0)
+    array.set(lvTouchBar, i, 0)
+    array.set(lvArmed, i, false)
+    array.set(lvCounted, i, false)
+    array.set(lvVerdictToday, i, 0)
+    array.set(lvVerdictBar, i, -1)
+    array.set(lvSigBlock, i, false)
+    array.set(lvSigBar, i, -100000)
+
+f_set(int i, float v, int anchorBar) =>
+    float old = array.get(lvVal, i)
+    bool oldNa = na(old)
+    bool newNa = na(v)
+    bool changed = (oldNa and not newNa) or (not oldNa and newNa) or (not oldNa and not newNa and old != v)
+    if changed
+        f_resetSlot(i)
+    array.set(lvVal, i, v)
+    array.set(lvAnchor, i, anchorBar)
+
+f_set(0, pdh, pdhB)
+f_set(1, pdl, pdlB)
+f_set(2, (pdh + pdl) / 2, math.min(pdhB, pdlB))
+f_set(3, dOpen, dOpenB)
+f_set(4, mo, moB)
+f_set(5, pwh, pwhA)
+f_set(6, pwl, pwlA)
+f_set(7, (pwh + pwl) / 2, math.min(pwhA, pwlA))
+f_set(8, wOpen, wOpenA)
+f_set(9, pmh, pmhA)
+f_set(10, pml, pmlA)
+f_set(11, (pmh + pml) / 2, math.min(pmhA, pmlA))
+f_set(12, mOpen, mOpenA)
+f_set(13, pqh, 0)
+f_set(14, pql, 0)
+f_set(15, (pqh + pql) / 2, 0)
+f_set(16, qOpen, qOpenB)
+f_set(17, yHighL, yHighB)
+f_set(18, yLowL, yLowB)
+f_set(19, (yHighL + yLowL) / 2, 0)
+f_set(20, yOpen, yOpenB)
+f_set(21, p4h, p4hB)
+f_set(22, p4l, p4lB)
+f_set(23, (p4h + p4l) / 2, math.min(p4hB, p4lB))
+f_set(24, p4o, p4oB)
+f_set(25, h4Open, h4OpenB)
+f_set(26, mnhS, mnhSB)
+f_set(27, mnlS, mnlSB)
+f_set(28, (mnhS + mnlS) / 2, math.min(mnhSB, mnlSB))
+f_set(29, ah, ahB)
+f_set(30, al, alB)
+f_set(31, ao, aoB)
+f_set(32, lh, lhB)
+f_set(33, ll, llB)
+f_set(34, lo, loB)
+f_set(35, nh, nhB)
+f_set(36, nl, nlB)
+f_set(37, nyo, nyoB)
+
+// Custom levels, parsed once from the text input into the custom slots. Their lines start at the
+// current day's open bar.
+var float[] cuV = array.new<float>()
+if barstate.isfirst and str.length(customTxt) > 0
+    string[] parts = str.split(customTxt, ",")
+    int np = array.size(parts)
+    if np > 0
+        for k = 0 to np - 1
+            string item = str.trim(array.get(parts, k))
+            if str.length(item) > 0 and array.size(cuV) < NCUS
+                string[] kv = str.split(item, ":")
+                float p = str.tonumber(str.trim(array.get(kv, 0)))
+                string lab = array.size(kv) > 1 ? str.trim(array.get(kv, 1)) : "CUS"
+                if not na(p)
+                    int s = CUS0 + array.size(cuV)
+                    array.push(cuV, p)
+                    array.set(lvCode, s, lab)
+                    array.set(lvName, s, lab)
+int ncu = array.size(cuV)
+if ncu > 0
+    for k = 0 to ncu - 1
+        f_set(CUS0 + k, array.get(cuV, k), dOpenB)
+
+// My pivots: prices typed in from pivot lines drawn by hand on a higher timeframe (D-75). 0 means
+// empty. Their lines start at the current day's open bar, like custom levels.
+// Slots SD0 and up are filled by [A5c] below, from the supply and demand zones.
+
+// Tolerances in daily-ATR units with tick floors. Early in history, before a daily ATR exists,
+// the last 50 bars' range stands in.
+float fallbackUnit = ta.highest(high, 50) - ta.lowest(low, 50)
+float unit       = na(dAtr) ? fallbackUnit : dAtr
+float clusterTol = math.max(clusterUnit * unit, clusterTicks * syminfo.mintick)
+float touchTol   = math.max(touchUnit * unit, touchTicks * syminfo.mintick)
+float srTol      = math.max(srUnit * unit, srTicks * syminfo.mintick)
+float breakTol   = math.max(breakUnit * unit, breakTicks * syminfo.mintick)
+float holdTol    = math.max(holdUnit * unit, holdTicks * syminfo.mintick)
+// Verdict timing: closes are judged on the verdict timeframe, the window is in minutes.
+float tfMinutes   = math.max(timeframe.in_seconds() / 60.0, 1.0)
+bool  verdictBar  = tfMinutes >= verdictTF or time_close % (verdictTF * 60000) == 0
+int   verdictBars = math.max(1, math.ceil(verdictMinutes / tfMinutes))
+int   cooldownBars = math.ceil(sigCooldownMin / tfMinutes)
+
+// ───────────── [A5b] UNTAGGED SUPPORT AND RESISTANCE FROM HIGHER-TIMEFRAME PIVOTS ─────────────
+// Each completed bar of the pivot timeframe is stored with its high, low and the chart bars that
+// made them. A bar whose high beats its neighbours is a pivot high, likewise for lows. Pivots
+// inside the lookback are sorted by price and walked: pivots within the SR tolerance are touches
+// of one level. Clusters with enough touches become SR levels, strongest first, priced at the mean
+// of their touches, with the line starting at the first touch.
+var float[] hfHi  = array.new<float>()
+var int[]   hfHiB = array.new<int>()
+var float[] hfLo  = array.new<float>()
+var int[]   hfLoB = array.new<int>()
+var int[]   hfT   = array.new<int>()
+var float[] pvPx  = array.new<float>()
+var int[]   pvB   = array.new<int>()
+var int[]   pvT   = array.new<int>()
+var int     srCount = 0
+bool srNew = srOn and timeframe.change(srTF) and not barstate.isfirst and not na(srPH)
+if srNew
+    array.push(hfHi, srPH)
+    array.push(hfHiB, srPHb)
+    array.push(hfLo, srPL)
+    array.push(hfLoB, srPLb)
+    array.push(hfT, time)
+    if array.size(hfHi) > 800
+        array.shift(hfHi)
+        array.shift(hfHiB)
+        array.shift(hfLo)
+        array.shift(hfLoB)
+        array.shift(hfT)
+    int nhf = array.size(hfHi)
+    if nhf >= srPivotLeft + srPivotRight + 1
+        int k = nhf - 1 - srPivotRight
+        float ch = array.get(hfHi, k)
+        float cl = array.get(hfLo, k)
+        bool isHi = true
+        bool isLo = true
+        for m = k - srPivotLeft to k + srPivotRight
+            if m != k
+                if array.get(hfHi, m) >= ch
+                    isHi := false
+                if array.get(hfLo, m) <= cl
+                    isLo := false
+        if isHi
+            array.push(pvPx, ch)
+            array.push(pvB, array.get(hfHiB, k))
+            array.push(pvT, array.get(hfT, k))
+        if isLo
+            array.push(pvPx, cl)
+            array.push(pvB, array.get(hfLoB, k))
+            array.push(pvT, array.get(hfT, k))
+    // Drop pivots older than the lookback. They were stored in time order.
+    int cutoff = time - srLookback * 86400000
+    bool more = array.size(pvPx) > 0
+    while more
+        if array.get(pvT, 0) < cutoff
+            array.shift(pvPx)
+            array.shift(pvB)
+            array.shift(pvT)
+            more := array.size(pvPx) > 0
+        else
+            more := false
+    // Cluster the remaining pivots by price. A cluster is a zone: its level sits at the midpoint of
+    // its touches and it carries half the spread as a width.
+    float[] cLo = array.new<float>()
+    float[] cHi = array.new<float>()
+    int[]   cN  = array.new<int>()
+    int[]   cB  = array.new<int>()
+    int np = array.size(pvPx)
+    if np > 0
+        int[] ord = array.sort_indices(pvPx, order.ascending)
+        float zMin = na
+        float zMax = na
+        int   zN   = 0
+        int   zB   = 0
+        for k = 0 to np - 1
+            int j = array.get(ord, k)
+            float p = array.get(pvPx, j)
+            int b = array.get(pvB, j)
+            bool joins = false
+            if zN > 0
+                joins := p - zMin <= srTol
+            if joins
+                zMax := p
+                zN += 1
+                zB := math.min(zB, b)
+            else
+                if zN >= srMinTouches
+                    array.push(cLo, zMin)
+                    array.push(cHi, zMax)
+                    array.push(cN, zN)
+                    array.push(cB, zB)
+                zMin := p
+                zMax := p
+                zN := 1
+                zB := b
+        if zN >= srMinTouches
+            array.push(cLo, zMin)
+            array.push(cHi, zMax)
+            array.push(cN, zN)
+            array.push(cB, zB)
+    // Remember the old SR slots so a level that is still there keeps its interaction state.
+    float[] oVal     = array.new<float>()
+    bool[]  oTouched = array.new<bool>()
+    int[]   oState   = array.new<int>()
+    int[]   oSide    = array.new<int>()
+    int[]   oTouchB  = array.new<int>()
+    bool[]  oArmed   = array.new<bool>()
+    bool[]  oCounted = array.new<bool>()
+    for s = SR0 to SR0 + NSR - 1
+        array.push(oVal, array.get(lvVal, s))
+        array.push(oTouched, array.get(lvTouched, s))
+        array.push(oState, array.get(lvState, s))
+        array.push(oSide, array.get(lvSide, s))
+        array.push(oTouchB, array.get(lvTouchBar, s))
+        array.push(oArmed, array.get(lvArmed, s))
+        array.push(oCounted, array.get(lvCounted, s))
+        array.set(lvVal, s, na)
+        array.set(lvWidth, s, 0.0)
+    int nc = array.size(cLo)
+    int keep = math.min(math.min(nc, srMax), NSR)
+    if keep > 0
+        int[] byN = array.sort_indices(cN, order.descending)
+        for r = 0 to keep - 1
+            int c = array.get(byN, r)
+            float clo = array.get(cLo, c)
+            float chi = array.get(cHi, c)
+            float px = (clo + chi) / 2
+            int s = SR0 + r
+            array.set(lvVal, s, px)
+            array.set(lvWidth, s, (chi - clo) / 2)
+            array.set(lvAnchor, s, array.get(cB, c))
+            array.set(lvCode, s, "SR" + str.tostring(array.get(cN, c)))
+            array.set(lvName, s, "S/R (" + str.tostring(array.get(cN, c)) + ")")
+            int match = -1
+            for q = 0 to NSR - 1
+                float ov = array.get(oVal, q)
+                if match < 0 and not na(ov) and math.abs(ov - px) <= srTol
+                    match := q
+            if match >= 0
+                array.set(lvTouched, s, array.get(oTouched, match))
+                array.set(lvState, s, array.get(oState, match))
+                array.set(lvSide, s, array.get(oSide, match))
+                array.set(lvTouchBar, s, array.get(oTouchB, match))
+                array.set(lvArmed, s, array.get(oArmed, match))
+                array.set(lvCounted, s, array.get(oCounted, match))
+                array.set(oVal, match, na)
+            else
+                f_resetSlot(s)
+    srCount := keep
+
+// ───────────────── [A5c] SUPPLY AND DEMAND ZONES (M9, D-118) ─────────────────
+// The half of the method the script had no lines for: "I am a supply and demand or pivot trader
+// based on pivots near key levels". A zone is the candle a move left from. When one candle
+// travels further than sdImpulse chart ATRs in a single go, with a body that is most of its own
+// range, the candle before it is where the orders were sitting; that candle's range becomes the
+// zone. Demand sits under an up move, supply sits over a down one. A zone stays live until a
+// candle closes through its far side, which means it has been used up, and these slots then free
+// for the next one. Everything is read on confirmed candles only, so nothing repaints.
+float sdAtr = ta.atr(14)
+var float[] sdLo   = array.new<float>(NSD, na)
+var float[] sdHi   = array.new<float>(NSD, na)
+var int[]   sdBar  = array.new<int>(NSD, 0)
+var int[]   sdSide = array.new<int>(NSD, 0)    // +1 demand (below price), -1 supply (above)
+if barstate.isconfirmed and sdOn and not na(sdAtr) and sdAtr > 0
+    // 1. Retire zones that have been used up, or that are older than the memory allows.
+    for k = 0 to NSD - 1
+        float zl = array.get(sdLo, k)
+        if not na(zl)
+            float zh = array.get(sdHi, k)
+            int   sd = array.get(sdSide, k)
+            bool  spent = sd > 0 ? close < zl : close > zh
+            bool  stale = sdMaxAge > 0 and bar_index - array.get(sdBar, k) > sdMaxAge
+            if spent or stale
+                array.set(sdLo, k, na)
+                array.set(sdHi, k, na)
+                array.set(sdSide, k, 0)
+    // 2. Did the candle that just closed leave a zone behind it?
+    float rng  = high - low
+    float body = math.abs(close - open)
+    bool  big  = rng >= sdImpulse * sdAtr and rng > 0 and body >= (sdBodyPct / 100.0) * rng
+    int   mdir = close > open ? 1 : close < open ? -1 : 0
+    bool  away = mdir > 0 ? close > high[1] : mdir < 0 ? close < low[1] : false
+    if big and mdir != 0 and away
+        float baseLo = mdir > 0 ? low[1] : math.min(open[1], close[1])
+        float baseHi = mdir > 0 ? math.max(open[1], close[1]) : high[1]
+        if not na(baseLo) and not na(baseHi) and baseHi > baseLo
+            // Take a free slot, or the oldest one if every slot is full.
+            int slot = -1
+            for k = 0 to NSD - 1
+                if slot < 0 and na(array.get(sdLo, k))
+                    slot := k
+            if slot < 0
+                int oldest = 0
+                for k = 1 to NSD - 1
+                    if array.get(sdBar, k) < array.get(sdBar, oldest)
+                        oldest := k
+                slot := oldest
+            array.set(sdLo, slot, baseLo)
+            array.set(sdHi, slot, baseHi)
+            array.set(sdBar, slot, bar_index - 1)
+            array.set(sdSide, slot, mdir)
+// 3. Write the live zones into their level slots. A zone's price does not move while it lives,
+//    so the slot keeps its touched flag and its interaction state exactly as any level does.
+int sdLive = 0
+for k = 0 to NSD - 1
+    float zl = array.get(sdLo, k)
+    float zh = array.get(sdHi, k)
+    bool  ok = sdOn and not na(zl) and not na(zh)
+    f_set(SD0 + k, ok ? (zl + zh) / 2 : na, ok ? array.get(sdBar, k) : bar_index)
+    array.set(lvWidth, SD0 + k, ok ? (zh - zl) / 2 : 0.0)
+    if ok
+        sdLive += 1
+        array.set(lvCode, SD0 + k, array.get(sdSide, k) > 0 ? "DEM" : "SUP")
+        array.set(lvName, SD0 + k, array.get(sdSide, k) > 0 ? "Demand zone" : "Supply zone")
+
+// Fresh state resets at the daily rollover; a touch inside the tolerance ends it.
+bool newDay = timeframe.change("D")
+if newDay
+    array.fill(lvTouched, false)
+    array.fill(lvVerdictToday, 0)
+for i = 0 to NTOT - 1
+    float v = array.get(lvVal, i)
+    float w = array.get(lvWidth, i)
+    if not na(v) and high >= v - w - touchTol and low <= v + w + touchTol
+        array.set(lvTouched, i, true)
+
+// Family helpers. Family ids: 0 daily, 1 weekly, 2 monthly, 3 quarter and year, 4 four-hour,
+// 5 Monday, 6 Asia, 7 London, 8 New York, 9 custom, 10 SR, 11 my pivots.
+f_slotOn(int i) =>
+    switch i
+        0 => dRangeOn
+        1 => dRangeOn
+        2 => dMidOn
+        3 => dOpenOn
+        4 => moOn
+        5 => wRangeOn
+        6 => wRangeOn
+        7 => wMidOn
+        8 => wOpenOn
+        9 => mRangeOn
+        10 => mRangeOn
+        11 => mMidOn
+        12 => mOpenOn
+        13 => qRangeOn
+        14 => qRangeOn
+        15 => qMidOn
+        16 => qOpenOn
+        17 => yRangeOn
+        18 => yRangeOn
+        19 => yMidOn
+        20 => yOpenOn
+        21 => h4RangeOn
+        22 => h4RangeOn
+        23 => h4MidOn
+        24 => h4POpenOn
+        25 => h4OpenOn
+        26 => monRangeOn
+        27 => monRangeOn
+        28 => monMidOn
+        29 => aRangeOn
+        30 => aRangeOn
+        31 => aOpenOn
+        32 => lRangeOn
+        33 => lRangeOn
+        34 => lOpenOn
+        35 => nRangeOn
+        36 => nRangeOn
+        37 => nOpenOn
+        => i >= SD0 ? sdOn : i >= SR0 ? srOn : onCustom
+f_typeOf(int i) =>
+    i >= SD0 ? TY_SD : i >= SR0 ? TY_SR : i >= CUS0 ? TY_CUS : i
+f_famColor(int f) =>
+    color c = f == 0 ? colDaily : f == 1 ? colWeekly : f == 2 ? colMonthly : f == 3 ? colQY : f == 4 ? col4H : f == 5 ? colMonday : f == 6 ? colAsia : f == 7 ? colLondon : f == 8 ? colNY : f == 10 ? colSR : f == 11 ? colPiv : colCustom
+    useGlobalColor ? globalColor : c
+f_lineStyle() =>
+    lineStyleIn == "Dashed" ? line.style_dashed : lineStyleIn == "Dotted" ? line.style_dotted : line.style_solid
+// Which family names a shared tag: the higher timeframe wins.
+f_famRank(int f) =>
+    f == 3 ? 0 : f == 2 ? 1 : f == 1 ? 2 : f == 5 ? 3 : f == 0 ? 4 : f == 4 ? 5 : f == 10 ? 6 : f == 11 ? 7 : f == 9 ? 8 : 9
+f_labelSize() =>
+    labelSizeIn == "tiny" ? size.tiny : labelSizeIn == "small" ? size.small : labelSizeIn == "normal" ? size.normal : size.large
+
+// ───────────────── [B] INTERACTION CLASSIFIER (confirmed bars only) ─────────────────
+// Per level instance: IDLE -> TOUCHED -> HELD / BROKE / NEUTRAL. The approach side comes from the
+// close before the touch. BROKE: a verdict-timeframe close beyond the far edge by the break
+// distance. HELD: a verdict-timeframe close back on the approach side by the hold distance.
+// NEUTRAL: neither inside the verdict window. SR zones add their half-width to every edge.
+// Only the first HELD or BROKE per instance counts; every verdict can be marked on the chart.
+var int[] stHold    = array.new<int>(NTYPE, 0)
+var int[] stBreak   = array.new<int>(NTYPE, 0)
+var int[] stNeutral = array.new<int>(NTYPE, 0)
+var int   touchCount = 0
+var label[] vMarks = array.new<label>()
+var bool  statsDirty = true
+
+f_mark(float price, int verdict, string code, bool counted) =>
+    bool show = verdictMarks == "All" or (verdictMarks == "Counted only" and counted)
+    if show
+        string word = verdict == 2 ? "held" : verdict == 3 ? "broke" : "neutral"
+        color col = verdict == 2 ? color.new(color.lime, 20) : verdict == 3 ? color.new(color.red, 20) : color.new(color.gray, 30)
+        array.push(vMarks, label.new(bar_index, price, code + " " + word, xloc = xloc.bar_index, style = label.style_label_left, color = col, textcolor = color.white, size = size.small))
+        if array.size(vMarks) > verdictKeep
+            label.delete(array.shift(vMarks))
+
+if barstate.isconfirmed
+    for i = 0 to NTOT - 1
+        float p = array.get(lvVal, i)
+        if not na(p) and f_slotOn(i)
+            float w = array.get(lvWidth, i)
+            bool inBand = high >= p - w - touchTol and low <= p + w + touchTol
+            int st = array.get(lvState, i)
+            if st == 0 and array.get(lvArmed, i) and inBand
+                st := 1
+                array.set(lvSide, i, close[1] > p ? 1 : -1)
+                array.set(lvTouchBar, i, bar_index)
+                array.set(lvArmed, i, false)
+                touchCount += 1
+            if st == 1
+                int side = array.get(lvSide, i)
+                bool brokeNow = verdictBar and (side == 1 ? close < p - w - breakTol : close > p + w + breakTol)
+                bool heldNow  = verdictBar and (side == 1 ? close > p + w + holdTol  : close < p - w - holdTol)
+                int verdict = brokeNow ? 3 : heldNow ? 2 : bar_index - array.get(lvTouchBar, i) >= verdictBars ? 4 : 0
+                if verdict > 0
+                    if verdict == 2 or verdict == 3
+                        array.set(lvVerdictToday, i, verdict)
+                        array.set(lvVerdictBar, i, bar_index)
+                    bool counted = not array.get(lvCounted, i)
+                    if counted
+                        statsDirty := true
+                        int ty = f_typeOf(i)
+                        if verdict == 2
+                            array.set(stHold, ty, array.get(stHold, ty) + 1)
+                            array.set(lvCounted, i, true)
+                        else if verdict == 3
+                            array.set(stBreak, ty, array.get(stBreak, ty) + 1)
+                            array.set(lvCounted, i, true)
+                        else
+                            array.set(stNeutral, ty, array.get(stNeutral, ty) + 1)
+                    f_mark(p, verdict, array.get(lvCode, i), counted)
+                    st := 0
+            array.set(lvState, i, st)
+            if not inBand
+                array.set(lvArmed, i, true)
+
+// ───────────────── [C] STATISTICS AND RANKING ─────────────────
+// holdRate = (priorN * priorRate + holds) / (priorN + holds + breaks), per level type.
+var float[] prRate = array.new<float>(NTYPE, 0.5)
+var float[] prN    = array.new<float>(NTYPE, priorWeight)
+if barstate.isfirst and str.length(priorsTxt) > 0
+    string[] items = str.split(priorsTxt, ",")
+    int ni = array.size(items)
+    if ni > 0
+        for k = 0 to ni - 1
+            string[] kv = str.split(str.trim(array.get(items, k)), ":")
+            if array.size(kv) >= 3
+                string code = str.upper(str.trim(array.get(kv, 0)))
+                float r = str.tonumber(str.trim(array.get(kv, 1)))
+                float n0 = str.tonumber(str.trim(array.get(kv, 2)))
+                int ty = array.indexof(tyCode, code)
+                if ty >= 0 and not na(r) and not na(n0)
+                    array.set(prRate, ty, r)
+                    array.set(prN, ty, n0)
+
+f_holdRate(int ty) =>
+    float h  = array.get(stHold, ty)
+    float b  = array.get(stBreak, ty)
+    float n0 = array.get(prN, ty)
+    float den = n0 + h + b
+    den > 0 ? (n0 * array.get(prRate, ty) + h) / den : na
+
+// Rank percentile per type, top = 100, among types with at least one counted interaction.
+var float[] tyRank = array.new<float>(NTYPE, na)
+var int countedTotal = 0
+// Paper-trade tallies per level type (D-84): trades, trades that reached T1, net points. Filled
+// by the paper trade block further down, shown in the statistics table below.
+var int[]   tyPN   = array.new<int>(NTYPE, 0)
+var int[]   tyPW   = array.new<int>(NTYPE, 0)
+var float[] tyPNet = array.new<float>(NTYPE, 0.0)
+
+// Rank percentile per type from the current counts, for the score on every bar.
+f_updateRanks() =>
+    int[]   tIdx = array.new<int>()
+    float[] tRt  = array.new<float>()
+    for ty = 0 to NTYPE - 1
+        if array.get(stHold, ty) + array.get(stBreak, ty) > 0
+            array.push(tIdx, ty)
+            array.push(tRt, f_holdRate(ty))
+    array.fill(tyRank, na)
+    int cnt = array.size(tIdx)
+    if cnt > 0
+        int[] ord = array.sort_indices(tRt, order.descending)
+        for r = 0 to cnt - 1
+            int ty = array.get(tIdx, array.get(ord, r))
+            array.set(tyRank, ty, cnt > 1 ? 100.0 * (cnt - 1 - r) / (cnt - 1) : 100.0)
+if barstate.isconfirmed and statsDirty
+    f_updateRanks()
+    statsDirty := false
+
+f_statsPos() =>
+    statsPos == "Bottom left" ? position.bottom_left : statsPos == "Top left" ? position.top_left : statsPos == "Middle right" ? position.middle_right : position.bottom_right
+var table stats = table.new(f_statsPos(), 9, statsRows + 2, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+f_scell(int c, int r, string txt, color tc, color bg) =>
+    table.cell(stats, c, r, txt, text_color = tc, text_size = size.small, bgcolor = bg, text_halign = c == 0 ? text.align_left : text.align_right)
+
+if barstate.islast
+    int[]   tyIdx = array.new<int>()
+    float[] tyRt  = array.new<float>()
+    int totH = 0
+    int totB = 0
+    int totN = 0
+    for ty = 0 to NTYPE - 1
+        int h = array.get(stHold, ty)
+        int b = array.get(stBreak, ty)
+        totH += h
+        totB += b
+        totN += array.get(stNeutral, ty)
+        if h + b > 0
+            array.push(tyIdx, ty)
+            array.push(tyRt, f_holdRate(ty))
+    countedTotal := totH + totB
+    array.fill(tyRank, na)
+    int cnt = array.size(tyIdx)
+    color hdr  = color.new(color.gray, 70)
+    color txtc = color.white
+    color dim  = color.new(color.white, 20)
+    if showStats
+        f_scell(0, 0, "Type", dim, hdr)
+        f_scell(1, 0, "N", dim, hdr)
+        f_scell(2, 0, "Hold %", dim, hdr)
+        f_scell(3, 0, "Break %", dim, hdr)
+        f_scell(4, 0, "Neutral", dim, hdr)
+        f_scell(5, 0, "Rank", dim, hdr)
+        if paperOn
+            table.cell(stats, 6, 0, "Trades", text_color = dim, text_size = size.small, bgcolor = hdr, text_halign = text.align_right, tooltip = "Paper trades whose zone includes this level type (D-84). A trade at a stacked zone counts in every member type's row, so these three columns do not add up to the total.")
+            f_scell(7, 0, "T1 %", dim, hdr)
+            f_scell(8, 0, "Net", dim, hdr)
+    if cnt > 0
+        int[] ord = array.sort_indices(tyRt, order.descending)
+        for r = 0 to cnt - 1
+            int ty = array.get(tyIdx, array.get(ord, r))
+            float pct = cnt > 1 ? 100.0 * (cnt - 1 - r) / (cnt - 1) : 100.0
+            array.set(tyRank, ty, pct)
+            if showStats and r < statsRows
+                int h = array.get(stHold, ty)
+                int b = array.get(stBreak, ty)
+                float hr = 1.0 * h / (h + b)
+                f_scell(0, r + 1, array.get(tyCode, ty), txtc, color.new(color.black, 100))
+                f_scell(1, r + 1, str.tostring(h + b), txtc, color.new(color.black, 100))
+                f_scell(2, r + 1, str.tostring(hr * 100, "#.0"), hr >= 0.5 ? color.lime : color.orange, color.new(color.black, 100))
+                f_scell(3, r + 1, str.tostring((1 - hr) * 100, "#.0"), txtc, color.new(color.black, 100))
+                f_scell(4, r + 1, str.tostring(array.get(stNeutral, ty)), dim, color.new(color.black, 100))
+                f_scell(5, r + 1, str.tostring(math.round(pct)), txtc, color.new(color.black, 100))
+                if paperOn
+                    int pn = array.get(tyPN, ty)
+                    int pw = array.get(tyPW, ty)
+                    float pnet = array.get(tyPNet, ty)
+                    f_scell(6, r + 1, pn > 0 ? str.tostring(pn) : "", txtc, color.new(color.black, 100))
+                    f_scell(7, r + 1, pn > 0 ? str.tostring(100.0 * pw / pn, "#") : "", txtc, color.new(color.black, 100))
+                    f_scell(8, r + 1, pn > 0 ? (pnet >= 0 ? "+" : "") + str.tostring(pnet, format.mintick) : "", pnet > 0 ? color.lime : pnet < 0 ? color.orange : txtc, color.new(color.black, 100))
+    if showStats
+        if cnt < statsRows
+            for r = cnt to statsRows - 1
+                for c = 0 to (paperOn ? 8 : 5)
+                    f_scell(c, r + 1, "", txtc, color.new(color.black, 100))
+        int tot = totH + totB
+        f_scell(0, statsRows + 1, "Total", dim, hdr)
+        f_scell(1, statsRows + 1, str.tostring(tot), txtc, hdr)
+        f_scell(2, statsRows + 1, tot > 0 ? str.tostring(100.0 * totH / tot, "#.0") : "", txtc, hdr)
+        f_scell(3, statsRows + 1, tot > 0 ? str.tostring(100.0 * totB / tot, "#.0") : "", txtc, hdr)
+        f_scell(4, statsRows + 1, str.tostring(totN), dim, hdr)
+        f_scell(5, statsRows + 1, "", txtc, hdr)
+        if paperOn
+            f_scell(6, statsRows + 1, "", txtc, hdr)
+            f_scell(7, statsRows + 1, "", txtc, hdr)
+            f_scell(8, statsRows + 1, "", txtc, hdr)
+
+// ═══════════════════ [D] SETUP DETECTOR and [E] SCORE (M3) ═══════════════════
+// Zones are rebuilt every bar from the enabled levels within the cluster tolerance and are never
+// drawn (D-66). Each carries its members, stack, freshness, today's verdicts and the best member
+// rank. Signals evaluate on the chart's confirmed bars: run the 5-minute chart (D-21) until the
+// 1-minute trigger mode arrives in M6.
+
+// Chart-timeframe ATR, the volume average, and the hidden hooks (D-64): session VWAP and a
+// higher-timeframe EMA, computed every bar, drawn only on request.
+float execATR = ta.atr(execAtrLen)
+float volAvg  = ta.sma(volume, 20)
+bool  volOK   = volConfirmIn == "Off" ? true : (volConfirmIn == "On" or profile == "Index") ? volume >= volConfirmMult * volAvg : true
+float vwapVal = ta.vwap(hlc3, timeframe.change("D"))
+float emaVal  = request.security(syminfo.tickerid, emaTF, ta.ema(close, emaLen)[1], lookahead = barmerge.lookahead_on)
+int   vwapSide    = close > vwapVal ? 1 : -1
+float vwapStretch = unit > 0 ? (close - vwapVal) / unit : 0.0
+int   emaVote     = na(emaVal) ? 0 : close > emaVal ? 1 : -1
+plot(showHookLines ? vwapVal : na, "Session VWAP", color = color.new(color.yellow, 30))
+plot(showHookLines ? emaVal : na, "Hook EMA", color = color.new(color.orange, 30))
+
+// ───────────── [K] CORRELATED INSTRUMENTS: THE VIX AND BIG TECH (M9, D-118) ─────────────
+// What he watches beside the chart. The volatility index moves against the index: "NASDAQ is
+// rejecting our Monday High while at the same time the vix is starting to get some buying power
+// up so I'm going to enter a short based off of this information alone", and of the pairing,
+// "this is how I make most of my trades". The big tech names move with it. Each series is
+// compared with its own average over corrLen candles on this chart's own timeframe, which never
+// repaints, and the verdicts are read on confirmed candles like everything else.
+float vixPx   = request.security(vixSym, timeframe.period, close)
+float vixBase = ta.sma(vixPx, corrLen)
+int   vixDir  = na(vixPx) or na(vixBase) ? 0 : vixPx > vixBase ? 1 : vixPx < vixBase ? -1 : 0
+float magP1 = request.security(magS1, timeframe.period, close)
+float magP2 = request.security(magS2, timeframe.period, close)
+float magP3 = request.security(magS3, timeframe.period, close)
+float magP4 = request.security(magS4, timeframe.period, close)
+float magP5 = request.security(magS5, timeframe.period, close)
+float magP6 = request.security(magS6, timeframe.period, close)
+float magP7 = request.security(magS7, timeframe.period, close)
+float magB1 = ta.sma(magP1, corrLen)
+float magB2 = ta.sma(magP2, corrLen)
+float magB3 = ta.sma(magP3, corrLen)
+float magB4 = ta.sma(magP4, corrLen)
+float magB5 = ta.sma(magP5, corrLen)
+float magB6 = ta.sma(magP6, corrLen)
+float magB7 = ta.sma(magP7, corrLen)
+f_magVote(float px, float base) =>
+    na(px) or na(base) ? 0 : px > base ? 1 : px < base ? -1 : 0
+int magV1 = f_magVote(magP1, magB1)
+int magV2 = f_magVote(magP2, magB2)
+int magV3 = f_magVote(magP3, magB3)
+int magV4 = f_magVote(magP4, magB4)
+int magV5 = f_magVote(magP5, magB5)
+int magV6 = f_magVote(magP6, magB6)
+int magV7 = f_magVote(magP7, magB7)
+int magUp = (magV1 == 1 ? 1 : 0) + (magV2 == 1 ? 1 : 0) + (magV3 == 1 ? 1 : 0) + (magV4 == 1 ? 1 : 0) + (magV5 == 1 ? 1 : 0) + (magV6 == 1 ? 1 : 0) + (magV7 == 1 ? 1 : 0)
+int magDn = (magV1 == -1 ? 1 : 0) + (magV2 == -1 ? 1 : 0) + (magV3 == -1 ? 1 : 0) + (magV4 == -1 ? 1 : 0) + (magV5 == -1 ? 1 : 0) + (magV6 == -1 ? 1 : 0) + (magV7 == -1 ? 1 : 0)
+// How many of the seven have an opinion at all. Before the stock market opens each one is still
+// holding yesterday's close, so it sits on its own average and votes neither way. When too few of
+// them are saying anything the basket abstains rather than blocking the trade; otherwise nothing
+// could ever trade between 08:00 and 08:30 Central, which is half the window he names as his best.
+int magN  = magUp + magDn
+
+// ───────────── [L] BULL VERSUS BEAR VOLUME (M9, D-118) ─────────────
+// His only named confirmation at the level, and the indicator behind it is named in the source as
+// Bull vs Bear Power: "the bull side and the bear side strength, the flips and the switches and
+// the velocity". Each candle's volume is split by where it closed inside its own range, the two
+// sides are smoothed, and the trade asks for its own side to be the stronger one.
+float bvRange = high - low
+float bvBull  = bvRange > 0 ? volume * (close - low) / bvRange : volume * 0.5
+float bvBear  = bvRange > 0 ? volume * (high - close) / bvRange : volume * 0.5
+float bullStr = ta.ema(bvBull, bvLen)
+float bearStr = ta.ema(bvBear, bvLen)
+float bvNet   = bullStr - bearStr
+float bvSpan  = bullStr + bearStr
+float bvPct   = bvSpan > 0 ? 100.0 * bvNet / bvSpan : 0.0
+int   bvSide  = bvNet > 0 ? 1 : bvNet < 0 ? -1 : 0
+// The flips and the switches: the candle the stronger side changed hands.
+var int bvFlipBar = na
+int bvPrev = nz(bvSide[1], 0)
+if bvSide != 0 and bvPrev != 0 and bvSide != bvPrev
+    bvFlipBar := bar_index
+int bvFlipAge = na(bvFlipBar) ? 9999 : bar_index - bvFlipBar
+// The velocity: how fast the net is moving, as a share of the two sides together.
+float bvVelRef = ta.sma(bvNet, bvVelLen)
+float bvVel    = bvSpan > 0 and not na(bvVelRef) ? 100.0 * (bvNet - bvVelRef) / bvSpan : 0.0
+
+// The direction-aware confluence gate. Returns why it was refused so the near-miss notes and the
+// trade tag can say which of the three said no.
+f_confWhy(int dir) =>
+    string why = ""
+    if corrOn and vixDir == dir
+        why := "the VIX is moving the same way as the trade, not against it"
+    if why == "" and corrOn and magN >= magMin and (dir > 0 ? magUp : magDn) < magMin
+        why := "only " + str.tostring(dir > 0 ? magUp : magDn) + " of seven big tech names agree"
+    if why == "" and bvOn and not (bvSide == dir and math.abs(bvPct) >= bvMinPct)
+        why := "volume is not following suit (" + (bvSide > 0 ? "buying" : bvSide < 0 ? "selling" : "neither") + " side ahead by " + str.tostring(math.abs(bvPct), "#.0") + " %)"
+    why
+// How many of the three confluences agreed with the trade, 0 to 3, for the trade tag.
+f_confCount(int dir) =>
+    int c = 0
+    c += vixDir == -dir ? 1 : 0
+    c += (dir > 0 ? magUp : magDn) >= magMin ? 1 : 0   // actively agreeing, not merely not objecting
+    c += (bvSide == dir and math.abs(bvPct) >= bvMinPct) ? 1 : 0
+    c
+f_confPass(int dir) =>
+    // The gate asks the VIX not to contradict the trade; the tag count above asks it to confirm.
+    bool vixOK = not corrOn or vixDir != dir
+    bool magOK = not corrOn or magN < magMin or (dir > 0 ? magUp : magDn) >= magMin
+    bool volSideOK = not bvOn or (bvSide == dir and math.abs(bvPct) >= bvMinPct)
+    vixOK and magOK and volSideOK
+
+
+// Range filter (D-81, test): the last rangeMin minutes' high and low. With the switch on, a level
+// sitting in the middle of a narrow range is skipped for reversal entries; the edges stay live.
+int   rangeBars = math.max(2, math.round(rangeMin / tfMinutes))
+float rgH = ta.highest(high, rangeBars)
+float rgL = ta.lowest(low, rangeBars)
+bool  inRange = rangeOn and (rgH - rgL) < rangeMaxATR * unit
+
+// Developing extremes are targets only until their session completes (plan 4.1).
+bool inAsiaS   = not na(time(timeframe.period, sessAsia, tz))
+bool inLondonS = not na(time(timeframe.period, sessLondon, tz))
+bool inNYS     = not na(time(timeframe.period, sessNY, tz))
+f_entryOK(int i) =>
+    bool dev = false
+    if liveMode
+        if (i == 29 or i == 30) and inAsiaS
+            dev := true
+        if (i == 32 or i == 33) and inLondonS
+            dev := true
+        if (i == 35 or i == 36) and inNYS
+            dev := true
+        if (i == 26 or i == 27) and inMon
+            dev := true
+        if i == 17 and not na(dRunH) and not na(yHigh) and dRunH > yHigh
+            dev := true
+        if i == 18 and not na(dRunL) and not na(yLow) and dRunL < yLow
+            dev := true
+    not dev
+
+// ═══════════════════ [F] FILTERS (M4) ═══════════════════
+// The session window, the opening blackout and the two daily limits are on from M7 v0.1 (D-101);
+// the chop band, the range filter and the news blackout are still off. Each one only blocks new
+// entries; an open trade is never touched. Times are read in the timezone input.
+int modNow = hour(time, tz) * 60 + minute(time, tz)
+int nyOpenMin = int(str.tonumber(str.substring(sessNY, 0, 2))) * 60 + int(str.tonumber(str.substring(sessNY, 2, 4)))
+// News blackout times, parsed once into minutes of the day.
+var int[] newsMins = array.new<int>()
+if barstate.isfirst
+    string[] nparts = str.split(newsTimes, ",")
+    int nn = array.size(nparts)
+    if nn > 0
+        for k = 0 to nn - 1
+            float tv = str.tonumber(str.trim(array.get(nparts, k)))
+            if not na(tv)
+                int hhmm = int(tv)
+                array.push(newsMins, math.floor(hhmm / 100) * 60 + hhmm % 100)
+bool newsHit = false
+int nnm = array.size(newsMins)
+if newsOn and nnm > 0
+    for k = 0 to nnm - 1
+        int t0 = array.get(newsMins, k)
+        if modNow >= t0 - newsBefore and modNow <= t0 + newsAfter
+            newsHit := true
+// Chop band (D-28): when the last window's range fits inside the band, chop is on and the band
+// is frozen; the first close outside the frozen band turns it off.
+int   chopBars = math.max(2, math.round(chopMinutes / tfMinutes))
+float chopH = ta.highest(high, chopBars)
+float chopL = ta.lowest(low, chopBars)
+var bool  chopState = false
+var float chopHiF = na
+var float chopLoF = na
+if chopOn
+    if not chopState
+        if chopH - chopL <= chopPct / 100.0 * close
+            chopState := true
+            chopHiF := chopH
+            chopLoF := chopL
+    else if close > chopHiF or close < chopLoF
+        chopState := false
+else
+    chopState := false
+// Daily counters for the caps (D-44), reset at the exchange day rollover.
+bool newTradingDay = timeframe.change("1D")
+var int   dayTrades  = 0
+var int   dayLosses  = 0
+var float dayStartEq = strategy.initial_capital
+if newTradingDay
+    dayTrades  := 0
+    dayLosses  := 0
+    dayStartEq := strategy.equity
+float dayPnlPct = dayStartEq > 0 ? 100.0 * (strategy.equity - dayStartEq) / dayStartEq : 0.0
+f_filtersOK() =>
+    string why = ""
+    if sessFilterOn
+        bool inWin = (inAsiaS and allowAsia) or (inLondonS and allowLondon) or (inNYS and allowNY) or (not inAsiaS and not inLondonS and not inNYS and allowOther)
+        if not inWin
+            why := "outside the allowed session windows"
+    if why == "" and obOn and modNow >= nyOpenMin and modNow < nyOpenMin + obMin
+        why := "opening blackout, " + str.tostring(obMin) + " minutes after the New York open"
+    if why == "" and newsHit
+        why := "news blackout"
+    if why == "" and chopOn and chopState
+        why := "chop band, the range sits inside " + str.tostring(chopPct, "#.##") + " % of price"
+    if why == "" and maxSigDay > 0 and dayTrades >= maxSigDay
+        why := "daily trade cap reached"
+    if why == "" and maxLossDay > 0 and dayLosses >= maxLossDay
+        why := "daily losing-trade cap reached"
+    if why == "" and maxLossPct > 0 and dayPnlPct <= -maxLossPct
+        why := "daily loss limit reached"
+    if why == "" and dayTargetPct > 0 and dayPnlPct >= dayTargetPct
+        why := "daily target reached, no new entries"
+    [why == "", why]
+
+// ---- Zone list, rebuilt every bar. Slot -1 is today's high, -2 today's low: targets only.
+float[]  zLo    = array.new<float>()
+float[]  zHi    = array.new<float>()
+int[]    zN     = array.new<int>()
+bool[]   zEntry = array.new<bool>()
+bool[]   zFresh = array.new<bool>()
+int[]    zHist  = array.new<int>()
+int[]    zHistP = array.new<int>()
+float[]  zRank  = array.new<float>()
+int[]    zRankN = array.new<int>()
+bool[]   zBlock = array.new<bool>()
+string[] zCode  = array.new<string>()
+int[]    zFirst = array.new<int>()
+int[]    zLast  = array.new<int>()
+int[]    zmSlot = array.new<int>()
+float[]  zcPx   = array.new<float>()
+int[]    zcSl   = array.new<int>()
+for i = 0 to NTOT - 1
+    float v = array.get(lvVal, i)
+    if not na(v) and f_slotOn(i)
+        array.push(zcPx, v)
+        array.push(zcSl, i)
+if not na(dRunH)
+    array.push(zcPx, dRunH)
+    array.push(zcSl, -1)
+if not na(dRunL)
+    array.push(zcPx, dRunL)
+    array.push(zcSl, -2)
+int nzc = array.size(zcPx)
+if nzc > 0
+    int[] zo = array.sort_indices(zcPx, order.ascending)
+    for k = 0 to nzc - 1
+        int j = array.get(zo, k)
+        float p = array.get(zcPx, j)
+        int sl = array.get(zcSl, j)
+        int g = array.size(zLo) - 1
+        bool joins = false
+        if g >= 0
+            joins := p - array.get(zLo, g) <= clusterTol
+        if not joins
+            array.push(zLo, p)
+            array.push(zHi, p)
+            array.push(zN, 0)
+            array.push(zEntry, false)
+            array.push(zFresh, true)
+            array.push(zHist, 0)
+            array.push(zHistP, 0)
+            array.push(zRank, float(na))
+            array.push(zRankN, 0)
+            array.push(zBlock, false)
+            array.push(zCode, "")
+            array.push(zFirst, array.size(zmSlot))
+            array.push(zLast, array.size(zmSlot))
+            g += 1
+        array.set(zHi, g, p)
+        array.set(zLast, g, array.size(zmSlot))
+        array.push(zmSlot, sl)
+        string code = "HOD"
+        if sl == -2
+            code := "LOD"
+        else if sl >= 0
+            code := array.get(lvCode, sl)
+        array.set(zCode, g, array.get(zCode, g) == "" ? code : array.get(zCode, g) + "+" + code)
+        if sl >= 0
+            array.set(zN, g, array.get(zN, g) + 1)
+            if f_entryOK(sl)
+                array.set(zEntry, g, true)
+            bool touchedNow = array.get(lvTouched, sl)
+            if touchedNow
+                array.set(zFresh, g, false)
+            int vt = array.get(lvVerdictToday, sl)
+            int h = array.get(zHist, g)
+            int hNew = vt == 3 ? 3 : (vt == 2 and h != 3) ? 15 : (touchedNow and h == 0) ? 6 : h
+            array.set(zHist, g, hNew)
+            // The same, ignoring a verdict made on this very bar: the state before this candle.
+            int vtP = array.get(lvVerdictBar, sl) == bar_index ? 0 : vt
+            int hP = array.get(zHistP, g)
+            int hPNew = vtP == 3 ? 3 : (vtP == 2 and hP != 3) ? 15 : (touchedNow and hP == 0) ? 6 : hP
+            array.set(zHistP, g, hPNew)
+            if array.get(lvSigBlock, sl) or bar_index - array.get(lvSigBar, sl) < cooldownBars
+                array.set(zBlock, g, true)
+            int ty = f_typeOf(sl)
+            float rk = array.get(tyRank, ty)
+            float cur = array.get(zRank, g)
+            if not na(rk) and (na(cur) or rk > cur)
+                array.set(zRank, g, rk)
+                array.set(zRankN, g, array.get(stHold, ty) + array.get(stBreak, ty))
+
+// ═══════════════════ [H] HTF CONFLUENCE (M6, plan 4.8) ═══════════════════
+// The last completed candle of each higher timeframe, read with [1] and lookahead on so it never
+// repaints. A candle rejects a zone when it traded into the zone and closed back on the approach
+// side with a wick of at least htfWickRatio of its range.
+[h5o, h5h, h5l, h5c]     = request.security(syminfo.tickerid, "5",    [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+[h15o, h15h, h15l, h15c] = request.security(syminfo.tickerid, htfTf2, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+[h60o, h60h, h60l, h60c] = request.security(syminfo.tickerid, htfTf3, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+[h4o, h4h, h4l, h4c]     = request.security(syminfo.tickerid, htfTf4, [open[1], high[1], low[1], close[1]], lookahead = barmerge.lookahead_on)
+f_htfRej(int dir, float zlo, float zhi, float o, float h, float l, float c) =>
+    float rng = h - l
+    bool ok = false
+    if not na(o) and not na(c) and rng > 0
+        if dir > 0
+            ok := l <= zhi + touchTol and c > zhi and (math.min(o, c) - l) >= htfWickRatio * rng
+        else
+            ok := h >= zlo - touchTol and c < zlo and (h - math.max(o, c)) >= htfWickRatio * rng
+    ok
+f_htfCount(int dir, float zlo, float zhi) =>
+    int n = 0
+    if htfOn
+        if f_htfRej(dir, zlo, zhi, h5o, h5h, h5l, h5c)
+            n += 1
+        if f_htfRej(dir, zlo, zhi, h15o, h15h, h15l, h15c)
+            n += 1
+        if f_htfRej(dir, zlo, zhi, h60o, h60h, h60l, h60c)
+            n += 1
+        if f_htfRej(dir, zlo, zhi, h4o, h4h, h4l, h4c)
+            n += 1
+    n
+
+// ---- Helpers for setups, geometry and the score.
+// The first zone whose near edge is at least minDist away in the trade direction; -1 if none.
+f_nextZone(int dir, float fromPx, float minDist, int skipIdx) =>
+    int best = -1
+    int nz = array.size(zLo)
+    if nz > 0
+        for z = 0 to nz - 1
+            if z != skipIdx
+                if dir > 0
+                    float edge = array.get(zLo, z)
+                    if edge - fromPx >= minDist and (best < 0 or edge < array.get(zLo, best))
+                        best := z
+                else
+                    float edge = array.get(zHi, z)
+                    if fromPx - edge >= minDist and (best < 0 or edge > array.get(zHi, best))
+                        best := z
+    best
+
+// Rejection bar test `off` bars ago (0 = this bar, 1 = the previous) for a zone [lo, hi] tested
+// from the approach side of dir (+1 support tested from above, -1 resistance from below).
+f_rejBar(int dir, float zlo, float zhi, int off) =>
+    float o  = open[off]
+    float h  = high[off]
+    float l  = low[off]
+    float c  = close[off]
+    float po = open[off + 1]
+    float pc = close[off + 1]
+    float pl = low[off + 1]
+    float ph = high[off + 1]
+    float rng = h - l
+    bool touched  = dir > 0 ? l <= zhi + touchTol : h >= zlo - touchTol
+    bool touched2 = dir > 0 ? math.min(l, pl) <= zhi + touchTol : math.max(h, ph) >= zlo - touchTol
+    bool fromSide = dir > 0 ? pc > zlo : pc < zhi
+    bool backSide = dir > 0 ? c > zhi : c < zlo
+    bool bigEnough = rng >= minBarATR * execATR
+    float wick = dir > 0 ? math.min(o, c) - l : h - math.max(o, c)
+    bool wickOK = wickOn and rng > 0 and wick >= wickRatio * rng and bigEnough and touched
+    bool pokeOK = pokeOn and touched and (dir > 0 ? l < zlo : h > zhi)
+    bool engOK  = engulfOn and touched2 and (dir > 0 ? (c > o and c >= math.max(po, pc) and o <= math.min(po, pc)) : (c < o and c <= math.min(po, pc) and o >= math.max(po, pc)))
+    bool strong = rng > 0 and wick >= 0.6 * rng and (dir > 0 ? c >= h - rng / 3 : c <= l + rng / 3)
+    bool ok = fromSide and backSide and (wickOK or pokeOK or engOK)
+    [ok, strong]
+
+// Hook points for a trade of direction dir. VWAP side: a trade is favoured on its own side of
+// VWAP. Stretch (reversals only): favoured when price is stretched away from VWAP against the
+// trade direction, full points at vwapStretchATR. EMA vote: favoured when the vote agrees.
+f_hookPoints(int dir, bool isRev) =>
+    int pts = 0
+    if vwapSideW > 0 and vwapSide == dir
+        pts += vwapSideW
+    if vwapStretchW > 0 and isRev
+        float st = -dir * vwapStretch
+        if st > 0
+            pts += math.round(vwapStretchW * math.min(st / vwapStretchATR, 1.0))
+    if emaVoteW > 0 and emaVote == dir
+        pts += emaVoteW
+    pts
+
+f_hookText() =>
+    (vwapSide > 0 ? "V+" : "V-") + (emaVote > 0 ? " E+" : emaVote < 0 ? " E-" : " E?")
+
+// Score (plan 4.5). Reliability from the rank: hold-rank for REV, break-rank (100 minus hold-rank)
+// for BRK, unknown = half. Stack 1 / 2 / 3+ = 25 % / 60 % / 100 % of its weight. History points
+// out of 15. HTF is 0 and bias neutral until M6. The score reads out of what is reachable today
+// (D-79): raw points over the points the current weights can produce, so 82 raw before M6 is 100.
+int hooksMax = vwapSideW + vwapStretchW + emaVoteW
+int scoreMax = math.max(1, wRel + wStack + wHist + wHTF + math.round(wBias * 7 / 15.0) + hooksMax)
+f_score(float rankPct, bool isRev, int stack, int hist, int hooks, int htf) =>
+    float rel = na(rankPct) ? 0.5 : (isRev ? rankPct : 100 - rankPct) / 100.0
+    int sRel   = math.round(wRel * rel)
+    int sStack = stack >= 3 ? wStack : stack == 2 ? math.round(wStack * 0.6) : math.round(wStack * 0.25)
+    int sHist  = math.round(wHist * hist / 15.0)
+    int sHTF   = math.round(wHTF * htf / 4.0)
+    int sBias  = math.round(wBias * 7 / 15.0)
+    int raw    = sRel + sStack + sHist + sHTF + sBias + hooks
+    [math.round(100.0 * raw / scoreMax), sRel, sStack, sHist, sBias, raw]
+
+f_score10(int sc) =>
+    str.tostring(math.round(sc / 10.0)) + "/10"
+
+f_tip(int sRel, int sStack, int sHist, int sBias, int hk, int raw, int htf) =>
+    "Reliability " + str.tostring(sRel) + "  Stack " + str.tostring(sStack) + "  History " + str.tostring(sHist) + "  HTF " + str.tostring(htf) + "/4 (" + str.tostring(math.round(wHTF * htf / 4.0)) + ")  Bias " + str.tostring(sBias) + " neutral (M6)  Hooks " + str.tostring(hk) + "  Raw " + str.tostring(raw) + " of " + str.tostring(scoreMax) + " reachable"
+
+// Explanation notes: one per direction per bar, the highest-priority reason wins.
+f_nearNote(int[] pri, string[] txt, int dir, int p, string t) =>
+    int k = dir > 0 ? 0 : 1
+    if p > array.get(pri, k)
+        array.set(pri, k, p)
+        array.set(txt, k, t)
+
+f_geomWhy(int t1, float risk, float tp1, float entry, float minTgt, float maxRisk) =>
+    t1 < 0 ? "no target at least " + str.tostring(minTgt, format.mintick) + " away" : risk <= 0 ? "stop sits on the entry" : risk > maxRisk ? "stop " + str.tostring(risk, format.mintick) + " wider than the cap " + str.tostring(maxRisk, format.mintick) : "reward " + str.tostring(math.abs(tp1 - entry) / risk, "#.0") + "R under " + str.tostring(minRR, "#.0") + "R"
+
+f_gateOK(bool isRev, float rk, int rkN) =>
+    bool ok = true
+    if rankGate and not na(rk) and rkN >= minSamples
+        ok := isRev ? rk >= 50 : rk < 50
+    ok
+
+f_sigSize() =>
+    sigSizeIn == "tiny" ? size.tiny : sigSizeIn == "small" ? size.small : sigSizeIn == "normal" ? size.normal : size.large
+
+// M10 (D-120): with the target off, a winning trade ends only when the level ratchet below gives
+// way. The paper tally sees no target either, because posTp is left empty in this mode.
+bool runMode = exitStyle == "Run until a level gives way"
+
+// ---- Order comments (D-89): the tester's trade list shows an order's comment in its Signal
+// column, so each entry carries the trade's setup, zone code, score, stack, level history
+// points (12 first test, 6 touched, 15 held today, 3 broke today), for reversals the count of
+// higher-timeframe candles that rejected the zone (f0 to f4, M6), and the session window; each
+// exit says T1, stop, half, be, trail or flat. One export of a Deep Backtesting run then holds
+// the breakdown.
+f_winTag() =>
+    inNYS ? "NY" : inLondonS ? "LON" : inAsiaS ? "ASIA" : "OTH"
+f_tradeTag(bool isRev, string code, int sc, int stack, int hist, int htf, int dir) =>
+    (isRev ? "REV " : "BRK ") + code + " s" + str.tostring(sc) + " k" + str.tostring(stack) + " h" + str.tostring(hist) + (isRev ? " f" + str.tostring(htf) : "") + " c" + str.tostring(f_confCount(dir)) + " " + f_winTag()
+
+
+// ---- Resting limit orders: reversal limits (kind 1) and break retests (kind 2). Geometry,
+// gate, score and filters are checked when the order is placed, as the tester requires, so a
+// fill is the signal. Each order carries its tester id (E1, E2, ...) so it can be cancelled.
+var int[]    pDir    = array.new<int>()
+var float[]  pLimit  = array.new<float>()
+var float[]  pLo     = array.new<float>()
+var float[]  pHi     = array.new<float>()
+var int[]    pBar    = array.new<int>()
+var string[] pCode   = array.new<string>()
+var int[]    pStack  = array.new<int>()
+var int[]    pKind   = array.new<int>()
+var float[]  pStopPx = array.new<float>()
+var float[]  pTp1    = array.new<float>()
+var float[]  pTp2    = array.new<float>()
+var int[]    pScore  = array.new<int>()
+var string[] pTip    = array.new<string>()
+var int[]    pId     = array.new<int>()
+f_removePending(int q) =>
+    array.remove(pDir, q)
+    array.remove(pLimit, q)
+    array.remove(pLo, q)
+    array.remove(pHi, q)
+    array.remove(pBar, q)
+    array.remove(pCode, q)
+    array.remove(pStack, q)
+    array.remove(pKind, q)
+    array.remove(pStopPx, q)
+    array.remove(pTp1, q)
+    array.remove(pTp2, q)
+    array.remove(pScore, q)
+    array.remove(pTip, q)
+    array.remove(pId, q)
+f_cancelAllPending() =>
+    int n = array.size(pDir)
+    if n > 0
+        for q = n - 1 to 0
+            strategy.cancel("E" + str.tostring(array.get(pId, q)))
+            f_removePending(q)
+f_pendingExists(int dir, float lim) =>
+    bool found = false
+    int n = array.size(pDir)
+    if n > 0
+        for q = 0 to n - 1
+            if array.get(pDir, q) == dir and math.abs(array.get(pLimit, q) - lim) <= clusterTol
+                found := true
+    found
+f_placePending(int dir, float lim, float zlo, float zhi, string code, int stack, int kind, float stopPx, float tp1, float tp2, int sc, string tip, int id, string tag) =>
+    array.push(pDir, dir)
+    array.push(pLimit, lim)
+    array.push(pLo, zlo)
+    array.push(pHi, zhi)
+    array.push(pBar, bar_index)
+    array.push(pCode, code)
+    array.push(pStack, stack)
+    array.push(pKind, kind)
+    array.push(pStopPx, stopPx)
+    array.push(pTp1, tp1)
+    array.push(pTp2, tp2)
+    array.push(pScore, sc)
+    array.push(pTip, tip)
+    array.push(pId, id)
+    if not sigOnly
+        strategy.entry("E" + str.tostring(id), dir > 0 ? strategy.long : strategy.short, qty = baseQty, limit = lim, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = tag)
+        strategy.exit("X" + str.tostring(id), from_entry = "E" + str.tostring(id), stop = stopPx, limit = runMode ? na : tp1, comment_profit = "T1", comment_loss = "stop")
+
+var label[] sigLabels = array.new<label>()
+var label[] nmLabels  = array.new<label>()
+var int revCount = 0
+var int brkCount = 0
+
+// ═══════ [G0] ONE POSITION AT A TIME: THE PAPER TALLY IN STEP WITH THE TESTER (D-80, M4) ═══════
+// Market entries fill at the next candle's open, as the tester and a bridge fill them; resting
+// limits fill at their price. Exits: the stop, the first target, or the flatten order, placed
+// one candle early so it fills at the open of the flatten candle. A stop and a target in the
+// same candle count as the stop. The info box shows the tally and the tester side by side.
+// M5 (D-32): the stop moves in stages on closed candles, and trails from stage 3; the tally
+// and the tester get the same stop price at the same close, so the two keep matching. Exits at
+// a moved stop are tagged "half" (risk halved), "be" (breakeven) or "trail" in the tally, on
+// the chart and in the tester.
+var int     posDir   = 0
+var float   posEntry = na
+var float   posStop  = na
+var float   posZlo   = na        // the zone the trade was taken at: a close past the far
+var float   posZhi   = na        // side of it, against the trade, voids the idea (M8)
+var float   posTp    = na
+var string  posCode  = ""
+var bool    posForce   = false   // a limit fill crossed its stop on the fill candle
+var bool    posForceTp = false   // a limit fill reached its target on the fill candle
+var int     posId    = 0         // the tester's order id of the open trade, for stop moves
+var float   posInit  = na        // the first stop; R = |entry - first stop|
+var int     posStage = 0         // 0 first stop, 1 risk halved, 2 breakeven
+var int     pendDir   = 0        // a market entry placed on the last candle, fills at this open
+var float   pendStop  = na
+var float   pendZlo   = na
+var float   pendZhi   = na
+var float   pendTp    = na
+var string  pendCode  = ""
+var int     pendScore = 0
+var int     pendSetup = 1
+var int     pendStack = 1
+var int     pendId    = 0
+var bool    flatPend  = false    // the flatten order is placed, fills at the next open
+var bool    voidPend  = false    // the void order is placed, fills at the next open (M8)
+var int     ordSeq    = 0        // tester order ids
+var int     ptCount  = 0
+var int     ptWin    = 0
+var int     ptLoss   = 0
+var int     ptFlat   = 0
+var int     ptBe     = 0         // exits at a moved stop (half or breakeven)
+var int     ptTrail  = 0         // exits at the trailing stop
+var float   ptNet    = 0.0
+var label[] exitLabels = array.new<label>()
+var label[] mgrLabels  = array.new<label>()
+// Breakdown tallies (D-82). Rows 0 to 3: score 5/10 or less, 6/10, 7/10, 8/10 or more.
+// Rows 4 and 5: REV, BRK. Rows 6 to 9: Asia window, London window, New York window, other
+// hours. Rows 10 to 12 (D-84): 1 level, 2 levels, 3 or more levels in the zone. Every closed
+// trade lands in one row of each group; the exit block adds it.
+var int[]   pbN    = array.new<int>(13, 0)
+var int[]   pbW    = array.new<int>(13, 0)
+var int[]   pbL    = array.new<int>(13, 0)
+var float[] pbWin  = array.new<float>(13, 0.0)
+var float[] pbLoss = array.new<float>(13, 0.0)
+var float[] pbNet  = array.new<float>(13, 0.0)
+var int     posRowS  = 0
+var int     posRowT  = 4
+var int     posRowH  = 9
+var int     posRowK  = 10
+var int     ptFirstT = na
+var int     ptDays   = 0
+// Per level type (D-84): a trade counts in the row of every level type in its zone, so the
+// statistics table can show which types carry the winners. The tallies themselves (tyPN, tyPW,
+// tyPNet) are declared in [C], above the table that draws them. The zone code ("PDH+P4H") is
+// parsed back into types; HOD and LOD are targets only and are skipped.
+var int[]   posTypes = array.new<int>()
+f_codeTypes(string code) =>
+    int[] out = array.new<int>()
+    string[] parts = str.split(code, "+")
+    int n = array.size(parts)
+    if n > 0
+        for k = 0 to n - 1
+            string c = array.get(parts, k)
+            int ty = array.indexof(tyCode, c)
+            if ty < 0
+                if str.startswith(c, "SR")
+                    ty := TY_SR
+                else if str.startswith(c, "SD") or c == "DEM" or c == "SUP"
+                    ty := TY_SD
+                else if c != "HOD" and c != "LOD" and c != ""
+                    ty := TY_CUS
+            if ty >= 0 and array.indexof(out, ty) < 0
+                array.push(out, ty)
+    out
+f_pbAdd(int r, float pts, bool win, bool loss) =>
+    array.set(pbN, r, array.get(pbN, r) + 1)
+    array.set(pbNet, r, array.get(pbNet, r) + pts)
+    if win
+        array.set(pbW, r, array.get(pbW, r) + 1)
+        array.set(pbWin, r, array.get(pbWin, r) + pts)
+    if loss
+        array.set(pbL, r, array.get(pbL, r) + 1)
+        array.set(pbLoss, r, array.get(pbLoss, r) + pts)
+if paperOn and not na(ptFirstT) and newTradingDay
+    ptDays += 1
+string sym = str.length(syminfo.root) > 0 ? syminfo.root : syminfo.ticker
+int cutMin  = math.floor(entryCutoff / 100) * 60 + entryCutoff % 100
+int flatMin = math.floor(flattenAt / 100) * 60 + flattenAt % 100
+f_exitMark(float px, string txt, bool win) =>
+    if showExits
+        array.push(exitLabels, label.new(bar_index, px, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(win ? color.teal : color.maroon, 30), textcolor = color.white, size = size.tiny))
+        if array.size(exitLabels) > exitKeep
+            label.delete(array.shift(exitLabels))
+f_mgrMark(float px, string txt) =>
+    if mgrMarks
+        array.push(mgrLabels, label.new(bar_index, px, txt, xloc = xloc.bar_index, style = label.style_label_left, color = color.new(color.navy, 20), textcolor = color.white, size = size.tiny))
+        if array.size(mgrLabels) > exitKeep
+            label.delete(array.shift(mgrLabels))
+f_stopWord(int stage) =>
+    stage == 3 ? "trail" : stage == 2 ? "be" : stage == 1 ? "half" : "stop"
+f_stageWord(int stage) =>
+    stage == 3 ? "TRAIL" : stage == 2 ? "BE" : "1/2R"
+// Confirmed swings for the trail (D-32 stage 3): a low that beats its neighbours on both sides
+// over structLB candles, known once the right-side candles have closed. Kept on closed candles.
+float pvLoNow = ta.pivotlow(low, structLB, structLB)
+float pvHiNow = ta.pivothigh(high, structLB, structLB)
+var float swingLo = na
+var float swingHi = na
+if barstate.isconfirmed
+    if not na(pvLoNow)
+        swingLo := pvLoNow
+    if not na(pvHiNow)
+        swingHi := pvHiNow
+// The staged stop (D-32, M5): the run-up since entry, measured on closed candles, sets the
+// stage; stage 1 puts the stop halfway to the entry, stage 2 at the entry plus a cushion, stage
+// 3 trails the higher (long) of the last confirmed swing minus structATR chart ATRs and the
+// close minus chaseATR chart ATRs, re-checked every closed candle. The stop only ever
+// tightens. Returns the stage and the stop to hold from the next candle.
+f_stageCalc(int dir, float entry, float initStop, float curStop, int curStage, float run) =>
+    float riskR = math.abs(entry - initStop)
+    int ns = (riskR > 0 and run >= stage3R * riskR) ? 3 : (riskR > 0 and run >= stage2R * riskR) ? 2 : (riskR > 0 and run >= stage1R * riskR) ? 1 : 0
+    int stage = math.max(ns, curStage)
+    float cushion = math.max(beTicks * syminfo.mintick, beATR * execATR)
+    float cand = stage >= 2 ? entry + dir * cushion : stage == 1 ? entry - dir * 0.5 * riskR : curStop
+    float newStop = dir > 0 ? math.max(curStop, cand) : math.min(curStop, cand)
+    if stage == 3
+        float swing = dir > 0 ? swingLo : swingHi
+        float structStop = na(swing) ? newStop : (dir > 0 ? swing - structATR * execATR : swing + structATR * execATR)
+        float chaseStop  = dir > 0 ? close - chaseATR * execATR : close + chaseATR * execATR
+        float trailStop  = dir > 0 ? math.max(structStop, chaseStop) : math.min(structStop, chaseStop)
+        newStop := dir > 0 ? math.max(newStop, trailStop) : math.min(newStop, trailStop)
+    [stage, newStop]
+// A market entry placed on the last candle fills at this candle's open; then the open trade's
+// exits are checked. The flatten order fills at the open, before any stop or target of the candle.
+if barstate.isconfirmed
+    if pendDir != 0 and posDir == 0
+        posDir   := pendDir
+        posEntry := open
+        posStop  := pendStop
+        posZlo   := pendZlo
+        posZhi   := pendZhi
+        posTp    := pendTp
+        posCode  := pendCode
+        posRowS  := math.min(3, math.max(0, math.round(pendScore / 10.0) - 5))
+        posRowT  := pendSetup == 1 ? 4 : 5
+        posRowH  := inNYS ? 8 : inLondonS ? 7 : inAsiaS ? 6 : 9
+        posRowK  := 9 + math.min(3, math.max(1, pendStack))
+        posTypes := f_codeTypes(pendCode)
+        posForce   := false
+        posForceTp := false
+        posId    := pendId
+        posInit  := pendStop
+        posStage := 0
+        dayTrades += 1
+        if na(ptFirstT)
+            ptFirstT := time
+            ptDays   := 1
+    pendDir := 0
+    if posDir != 0
+        // The flatten order fills at this candle's open, ahead of any stop or target inside the
+        // candle. A stop or target already crossed on a limit's fill candle comes first. An open
+        // that gaps through the target or the stop fills at the open, as the tester fills it.
+        bool endPend  = flatPend or voidPend
+        bool stopHit  = posForce or (not endPend and (posDir > 0 ? low <= posStop : high >= posStop))
+        bool tpHit    = posForceTp or (not endPend and (posDir > 0 ? high >= posTp : low <= posTp))
+        bool tpAtOpen = not posForce and not posForceTp and not endPend and (posDir > 0 ? open >= posTp : open <= posTp)
+        if endPend or stopHit or tpHit
+            string stopWhy = f_stopWord(posStage)
+            string why = "flat"
+            float  px  = open
+            if posForce
+                why := stopWhy
+                px  := posStop
+            else if posForceTp
+                why := "T1"
+                px  := posTp
+            else if flatPend
+                why := "flat"
+                px  := open
+            else if voidPend
+                why := "void"
+                px  := open
+            else if tpAtOpen
+                why := "T1"
+                px  := open
+            else if stopHit
+                why := stopWhy
+                px  := posDir > 0 ? math.min(posStop, open) : math.max(posStop, open)
+            else
+                why := "T1"
+                px  := posTp
+            float pts  = (px - posEntry) * posDir
+            bool  won  = why == "T1"
+            bool  lost = (why == "stop" or why == "half" or why == "be" or why == "trail" or why == "void") and pts < 0
+            ptCount += 1
+            if why == "half" or why == "be"
+                ptBe += 1
+            else if why == "trail"
+                ptTrail += 1
+            else if why == "stop"
+                ptLoss += 1
+            else if won
+                ptWin += 1
+            else
+                ptFlat += 1
+            if lost
+                dayLosses += 1
+            ptNet += pts
+            f_pbAdd(posRowS, pts, won, lost)
+            f_pbAdd(posRowT, pts, won, lost)
+            f_pbAdd(posRowH, pts, won, lost)
+            f_pbAdd(posRowK, pts, won, lost)
+            int npt = array.size(posTypes)
+            if npt > 0
+                for k = 0 to npt - 1
+                    int tyk = array.get(posTypes, k)
+                    array.set(tyPN, tyk, array.get(tyPN, tyk) + 1)
+                    if won
+                        array.set(tyPW, tyk, array.get(tyPW, tyk) + 1)
+                    array.set(tyPNet, tyk, array.get(tyPNet, tyk) + pts)
+            if paperOn
+                f_exitMark(px, why + " " + (pts >= 0 ? "+" : "") + str.tostring(pts, format.mintick), pts >= 0)
+            if alertsOn
+                alert('{"symbol":"' + sym + '","data":"close","event":"EXIT","reason":"' + why + '","level":"' + posCode + '","price":' + str.tostring(px, format.mintick) + ',"points":' + str.tostring(pts, format.mintick) + '}', alert.freq_once_per_bar_close)
+            posDir := 0
+            posForce   := false
+            posForceTp := false
+        else if mgrOn
+            // The stop moves in stages on the run-up of the closed candle (D-32); from stage 3 it
+            // trails every candle. The new stop is in force from the next candle, in the tally
+            // and in the tester alike.
+            float run = posDir > 0 ? high - posEntry : posEntry - low
+            [st2, sp2] = f_stageCalc(posDir, posEntry, posInit, posStop, posStage, run)
+            bool stageUp = st2 != posStage
+            posStage := st2
+            if sp2 != posStop
+                posStop := sp2
+                strategy.exit("X" + str.tostring(posId), from_entry = "E" + str.tostring(posId), stop = posStop, limit = runMode ? na : posTp, comment_profit = "T1", comment_loss = f_stopWord(posStage))
+                if alertsOn
+                    alert('{"symbol":"' + sym + '","data":"stop","event":"STOP","stage":' + str.tostring(posStage) + ',"level":"' + posCode + '","price":' + str.tostring(posStop, format.mintick) + '}', alert.freq_once_per_bar_close)
+            if stageUp
+                f_mgrMark(posStop, f_stageWord(posStage) + " " + str.tostring(posStop, format.mintick))
+    flatPend := false
+    voidPend := false
+
+// The candle before the flatten time (D-10): the flatten order goes in at its close, below,
+// and no new entry is placed on it.
+bool flatBar = flattenAt > 0 and modNow < flatMin and modNow + tfMinutes >= flatMin
+
+// ───────── [J2] POSITION VISUAL (M6 v0.3): each signal's plan, drawn until the next signal ─────────
+// Two shaded boxes (entry to first target, entry to stop), lines at the entry, the stop, the
+// targets and every R step, labels at the right end. The newest position runs to the right;
+// a new signal stops it at that bar and starts its own. The oldest are dropped past the cap.
+var box[]   pvBox = array.new<box>()
+var line[]  pvLine = array.new<line>()
+var label[] pvLab = array.new<label>()
+var int[]   pvNb  = array.new<int>()     // drawings per position, oldest first
+var int[]   pvNl  = array.new<int>()
+var int[]   pvNt  = array.new<int>()
+var int[]   pvX1  = array.new<int>()     // the bar each position started on
+f_pvLabel(float y, string txt, color bg, string sz) =>
+    if posVisText
+        array.push(pvLab, label.new(bar_index + 1, y, txt, xloc = xloc.bar_index, style = label.style_label_left, color = bg, textcolor = color.white, size = sz))
+        1
+    else
+        0
+// The newest position stops at this bar; its labels move to the bar it started on.
+f_pvFreeze() =>
+    int np = array.size(pvNb)
+    if np > 0
+        int nb = array.get(pvNb, np - 1)
+        int nl = array.get(pvNl, np - 1)
+        int nt = array.get(pvNt, np - 1)
+        int x1 = array.get(pvX1, np - 1)
+        int tb = array.size(pvBox)
+        int tl = array.size(pvLine)
+        int tt = array.size(pvLab)
+        if nb > 0
+            for i = tb - nb to tb - 1
+                box b = array.get(pvBox, i)
+                box.set_right(b, bar_index)
+                box.set_extend(b, extend.none)
+        if nl > 0
+            for i = tl - nl to tl - 1
+                line l = array.get(pvLine, i)
+                line.set_x2(l, bar_index)
+                line.set_extend(l, extend.none)
+        if nt > 0
+            for i = tt - nt to tt - 1
+                label.set_x(array.get(pvLab, i), x1)
+// Past the cap, the oldest position and all its drawings go.
+f_pvTrim() =>
+    while array.size(pvNb) > posVisKeep
+        int nb = array.shift(pvNb)
+        int nl = array.shift(pvNl)
+        int nt = array.shift(pvNt)
+        array.shift(pvX1)
+        if nb > 0
+            for i = 1 to nb
+                box.delete(array.shift(pvBox))
+        if nl > 0
+            for i = 1 to nl
+                line.delete(array.shift(pvLine))
+        if nt > 0
+            for i = 1 to nt
+                label.delete(array.shift(pvLab))
+// A new position from this bar.
+f_pvNew(int dir, float e, float s, float t1, float t2) =>
+    f_pvFreeze()
+    int nb = 0
+    int nl = 0
+    int nt = 0
+    float r = math.abs(e - s)
+    bool showT2 = posVisT2 and not na(t2)
+    float far = showT2 ? t2 : t1
+    color cP = color.new(color.green, 35)
+    color cR = color.new(color.red, 35)
+    array.push(pvBox, box.new(bar_index, math.max(e, t1), bar_index, math.min(e, t1), border_color = cP, border_width = 1, border_style = line.style_solid, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.green, 85)))
+    array.push(pvBox, box.new(bar_index, math.max(e, s), bar_index, math.min(e, s), border_color = cR, border_width = 1, border_style = line.style_solid, extend = extend.right, xloc = xloc.bar_index, bgcolor = color.new(color.red, 85)))
+    nb += 2
+    array.push(pvLine, line.new(bar_index, e, bar_index, e, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.white, 20), style = line.style_solid, width = 1))
+    array.push(pvLine, line.new(bar_index, s, bar_index, s, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.red, 0), style = line.style_solid, width = 1))
+    array.push(pvLine, line.new(bar_index, t1, bar_index, t1, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.green, 0), style = line.style_solid, width = 1))
+    nl += 3
+    if showT2
+        array.push(pvLine, line.new(bar_index, t2, bar_index, t2, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.green, 40), style = line.style_dashed, width = 1))
+        nl += 1
+    nt += f_pvLabel(s, "SL " + str.tostring(s, format.mintick), color.new(color.maroon, 20), size.small)
+    nt += f_pvLabel(e, "E " + str.tostring(e, format.mintick), color.new(color.gray, 20), size.small)
+    nt += f_pvLabel(t1, "T1 " + str.tostring(t1, format.mintick) + (r > 0 ? "  " + str.tostring(math.abs(t1 - e) / r, "#.0") + "R" : ""), color.new(color.teal, 20), size.small)
+    if showT2
+        nt += f_pvLabel(t2, "T2 " + str.tostring(t2, format.mintick) + (r > 0 ? "  " + str.tostring(math.abs(t2 - e) / r, "#.0") + "R" : ""), color.new(color.teal, 40), size.small)
+    if r > 0
+        int k = 1
+        while k <= 8 and k * posVisStep * r < math.abs(far - e)
+            float y = e + dir * k * posVisStep * r
+            array.push(pvLine, line.new(bar_index, y, bar_index, y, xloc = xloc.bar_index, extend = extend.right, color = color.new(color.gray, 40), style = line.style_dotted, width = 1))
+            nl += 1
+            nt += f_pvLabel(y, str.tostring(k * posVisStep, "#.##") + "R", color.new(color.gray, 60), size.tiny)
+            k += 1
+    array.push(pvNb, nb)
+    array.push(pvNl, nl)
+    array.push(pvNt, nt)
+    array.push(pvX1, bar_index)
+    f_pvTrim()
+// The newest position's labels follow the right edge.
+f_pvFollow() =>
+    int np = array.size(pvNt)
+    if np > 0
+        int nt = array.get(pvNt, np - 1)
+        int tt = array.size(pvLab)
+        if nt > 0
+            for i = tt - nt to tt - 1
+                label.set_x(array.get(pvLab, i), bar_index + 1)
+
+if barstate.isconfirmed and array.size(zLo) > 0
+    float stopBuf = math.max(stopUnit * unit, stopTicks * syminfo.mintick)
+    float minTgt  = math.max(tgtUnit * unit, tgtTicks * syminfo.mintick)
+    float brkTol2 = math.max(brkUnit * unit, brkTicks * syminfo.mintick)
+    float maxRisk = maxRiskATR * unit
+    float stopCap = stopCapUnit > 0 ? math.max(stopCapUnit * unit, stopCapTicks * syminfo.mintick) : na
+    int nz = array.size(zLo)
+    int    bestScore = -1
+    int    bestDir   = 0
+    int    bestSetup = 0
+    int    bestZone  = -1
+    float  bestEntry = na
+    float  bestStop  = na
+    float  bestZlo   = na
+    float  bestZhi   = na
+    float  bestTp1   = na
+    float  bestTp2   = na
+    string bestCode  = ""
+    string bestTip   = ""
+    bool   sigTaken  = false
+    bool   bestLimit = false
+    bool   fillForce   = false   // the resting order's stop was hit later on its fill candle
+    bool   fillForceTp = false   // its target was
+    int    bestStack = 1
+    int    bestHist  = 12
+    int    bestHtf   = 0
+    int    bestId    = 0
+    float  fillRun   = 0.0       // run-up along the path after a resting order's fill
+    bool diag    = nearMiss != "Off"
+    bool diagAll = nearMiss == "Rules and candles"
+    bool revLimitOn  = revEntry != "Close of the follow-through candle"
+    bool revLimitRej = revEntry == "Limit at the level after the rejection candle"
+    int[]    nmPri = array.new<int>(2, -1)
+    string[] nmTxt = array.new<string>(2, "")
+    bool lateDay = flatBar or (entryCutoff > 0 and modNow >= cutMin and (flattenAt == 0 or modNow <= flatMin))
+    // Flat by the tally's own book. The tester's position is not part of this: on the candle a
+    // resting order fills, the tester already holds the trade when the script runs, and that
+    // fill is what step 1 reads. The tester's position only guards new placements below.
+    bool flatNow = posDir == 0 and pendDir == 0
+    [filtOK, filtWhy] = f_filtersOK()
+    // 1. Fills of resting orders, read before anything is cancelled, because the tester filled
+    //    them inside this candle. The tester assumes one path through a candle: the open, the
+    //    extreme nearer the open, the other extreme, the close. When more than one order was
+    //    crossed, the one that path reaches first is the fill and the OCA group cancels the
+    //    rest; an order the open gapped through fills at the open. The rest of the path says
+    //    whether the stop or the target was hit on the fill candle.
+    int npd = array.size(pDir)
+    bool highFirst = high - open <= open - low
+    int   fillQ    = -1
+    int   fillTier = 9
+    float fillDist = na
+    if npd > 0 and flatNow
+        for q = 0 to npd - 1
+            int dir = array.get(pDir, q)
+            float lim = array.get(pLimit, q)
+            if (dir > 0 ? low <= lim : high >= lim)
+                bool atOpen = dir > 0 ? open <= lim : open >= lim
+                bool leg1   = dir > 0 ? not highFirst : highFirst
+                int  tier   = atOpen ? 0 : leg1 ? 1 : 2
+                float dist  = math.abs(lim - open)
+                if tier < fillTier or (tier == fillTier and dist < fillDist)
+                    fillQ    := q
+                    fillTier := tier
+                    fillDist := dist
+    if fillQ >= 0
+        int   fDir  = array.get(pDir, fillQ)
+        float fLim  = array.get(pLimit, fillQ)
+        float fPx   = fDir > 0 ? math.min(fLim, open) : math.max(fLim, open)
+        float fStop = array.get(pStopPx, fillQ)
+        float fTp   = array.get(pTp1, fillQ)
+        // The path after the fill: both extremes and the close after a fill at the open or on
+        // the first leg, the second extreme and the close after a fill on the second leg.
+        float e1 = highFirst ? high : low
+        float e2 = highFirst ? low : high
+        float[] fPath = array.from(e2, close)
+        if fillTier <= 1
+            fPath := array.from(e1, e2, close)
+        string same = ""
+        float prev = fPx
+        for k = 0 to array.size(fPath) - 1
+            float nx = array.get(fPath, k)
+            fillRun := math.max(fillRun, fDir > 0 ? nx - fPx : fPx - nx)
+            if same == ""
+                if fDir > 0
+                    if nx < prev and nx <= fStop
+                        same := "stop"
+                    else if nx > prev and nx >= fTp
+                        same := "T1"
+                else
+                    if nx > prev and nx >= fStop
+                        same := "stop"
+                    else if nx < prev and nx <= fTp
+                        same := "T1"
+            prev := nx
+        sigTaken    := true
+        bestScore   := array.get(pScore, fillQ)
+        bestDir     := fDir
+        bestSetup   := array.get(pKind, fillQ)
+        bestZone    := -1
+        bestLimit   := true
+        bestStack   := array.get(pStack, fillQ)
+        bestEntry   := fPx
+        bestStop    := fStop
+        bestZlo     := array.get(pLo, fillQ)
+        bestZhi     := array.get(pHi, fillQ)
+        bestTp1     := fTp
+        bestTp2     := array.get(pTp2, fillQ)
+        bestCode    := array.get(pCode, fillQ)
+        bestTip     := array.get(pTip, fillQ)
+        fillForce   := same == "stop"
+        fillForceTp := same == "T1"
+        bestId      := array.get(pId, fillQ)
+        f_removePending(fillQ)
+    // Orders that failed (a close back through the zone) or expired are cancelled. Walk
+    // backwards so removal is safe.
+    int npd2 = array.size(pDir)
+    if npd2 > 0
+        for q = npd2 - 1 to 0
+            int dir = array.get(pDir, q)
+            float lim = array.get(pLimit, q)
+            bool isRevP = array.get(pKind, q) == 1
+            bool failed  = dir > 0 ? close < array.get(pLo, q) : close > array.get(pHi, q)
+            bool expired = bar_index - array.get(pBar, q) >= (isRevP ? revLimitBars : retestBars)
+            if failed or expired
+                strategy.cancel("E" + str.tostring(array.get(pId, q)))
+                if diagAll
+                    string whoB = (dir > 0 ? "LONG " : "SHORT ") + (isRevP ? "REV " : "BRK ") + array.get(pCode, q)
+                    f_nearNote(nmPri, nmTxt, dir, 0, failed ? whoB + ": price closed back through the level before the " + (isRevP ? "fill" : "retest") + ", order cancelled" : whoB + ": " + (isRevP ? "limit" : "retest order") + " at " + str.tostring(lim, format.mintick) + " not filled within " + str.tostring(isRevP ? revLimitBars : retestBars) + " bars, order expired")
+                f_removePending(q)
+    // Inside the entry cutoff window the remaining resting orders are cancelled.
+    if lateDay
+        f_cancelAllPending()
+    // 2. Reversal setups: a market entry at the next candle's open (default) or a resting limit
+    //    placed now. With explanations on, blocked setups are still checked so a grey tag can
+    //    say why.
+    if revOn
+        for z = 0 to nz - 1
+            bool zOK = array.get(zEntry, z)
+            bool zBl = array.get(zBlock, z)
+            if (zOK and not zBl) or diag
+                float zlo = array.get(zLo, z)
+                float zhi = array.get(zHi, z)
+                bool midRange = inRange and zlo > rgL + rangeEdge * (rgH - rgL) and zhi < rgH - rangeEdge * (rgH - rgL)
+                for d = 0 to 1
+                    int dir = d == 0 ? 1 : -1
+                    [rej1, strong1] = f_rejBar(dir, zlo, zhi, 1)
+                    [rej0, strong0] = f_rejBar(dir, zlo, zhi, 0)
+                    bool ftOK = dir > 0 ? (close > open and close > zhi) : (close < open and close < zlo)
+                    bool twoBar  = rej1 and ftOK
+                    bool pattern = revLimitRej ? rej0 : (twoBar or (strongSkip and rej0 and strong0))
+                    // The rejection candle's extreme (the previous candle in the two-candle
+                    // pattern, this candle otherwise) sets the wick stop (D-83).
+                    bool  usePrev  = twoBar and not revLimitRej
+                    float rejExt   = dir > 0 ? (usePrev ? low[1] : low) : (usePrev ? high[1] : high)
+                    float zoneStop = dir > 0 ? zlo - stopBuf : zhi + stopBuf
+                    float wickStop = dir > 0 ? rejExt - stopBuf : rejExt + stopBuf
+                    float stop = revStop == "Beyond the rejection wick" ? wickStop : revStop == "The farther of the two" ? (dir > 0 ? math.min(zoneStop, wickStop) : math.max(zoneStop, wickStop)) : zoneStop
+                    string who = (dir > 0 ? "LONG REV " : "SHORT REV ") + array.get(zCode, z)
+                    if pattern and not zOK
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: a level in this zone is still forming, its session is running")
+                    else if pattern and zBl
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: this zone signalled within the last " + str.tostring(sigCooldownMin) + " minutes, or price has not left it since")
+                    else if pattern and midRange
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: level sits inside the last " + str.tostring(rangeMin) + " minutes' range " + str.tostring(rgL, format.mintick) + " to " + str.tostring(rgH, format.mintick) + ", edges only (range filter)")
+                    else if pattern and not volOK
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: volume " + str.tostring(volAvg > 0 ? volume / volAvg : 0, "#.0") + "x the 20-bar average, needs " + str.tostring(volConfirmMult, "#.0") + "x")
+                    else if pattern and not f_confPass(dir)
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: " + f_confWhy(dir))
+                    else if pattern and not filtOK
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: " + filtWhy)
+                    else if pattern and lateDay
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 500, who + " skipped: inside the entry cutoff window")
+                    else if pattern and (not flatNow or sigTaken or strategy.position_size != 0)
+                        if diag
+                            f_nearNote(nmPri, nmTxt, dir, 500, who + " skipped: already in a trade, one at a time")
+                    else if pattern
+                        float entry = revLimitOn ? (dir > 0 ? zhi : zlo) : close
+                        if not na(stopCap) and math.abs(entry - stop) > stopCap
+                            stop := entry - dir * stopCap
+                        float risk  = math.abs(entry - stop)
+                        int t1 = f_nextZone(dir, entry, minTgt, z)
+                        float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
+                        int t2 = t1 >= 0 ? f_nextZone(dir, tp1, minTgt, t1) : -1
+                        float tp2 = t2 >= 0 ? (dir > 0 ? array.get(zLo, t2) : array.get(zHi, t2)) : na
+                        bool geomOK = t1 >= 0 and risk > 0 and risk <= maxRisk and math.abs(tp1 - entry) / risk >= minRR
+                        float rk = array.get(zRank, z)
+                        if not geomOK
+                            if diag
+                                f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: " + f_geomWhy(t1, risk, tp1, entry, minTgt, maxRisk))
+                        else if not f_gateOK(true, rk, array.get(zRankN, z))
+                            if diag
+                                f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: rank gate, this level type is in the bottom half for holding")
+                        else
+                            int hist = array.get(zHist, z) == 0 ? 12 : array.get(zHist, z)
+                            int hk = f_hookPoints(dir, true)
+                            int htfN = f_htfCount(dir, zlo, zhi)
+                            [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, true, array.get(zN, z), hist, hk, htfN)
+                            if htfMin > 0 and htfN < htfMin
+                                if diag
+                                    f_nearNote(nmPri, nmTxt, dir, 1, who + " not taken: " + str.tostring(htfN) + " of 4 higher-timeframe candles rejected the zone, needs " + str.tostring(htfMin))
+                            else if sc < minScore
+                                if diag
+                                    f_nearNote(nmPri, nmTxt, dir, sc, who + " not taken: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw, htfN) + ")")
+                            else if revLimitOn
+                                // Rest a limit at the zone's near edge; the fill is the signal (D-83).
+                                if not f_pendingExists(dir, entry)
+                                    ordSeq += 1
+                                    f_placePending(dir, entry, zlo, zhi, array.get(zCode, z), array.get(zN, z), 1, stop, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw, htfN), ordSeq, f_tradeTag(true, array.get(zCode, z), sc, array.get(zN, z), hist, htfN, dir))
+                            else if sc > bestScore
+                                bestScore := sc
+                                bestDir   := dir
+                                bestSetup := 1
+                                bestZone  := z
+                                bestLimit := false
+                                bestStack := array.get(zN, z)
+                                bestHist  := hist
+                                bestHtf   := htfN
+                                bestEntry := entry
+                                bestStop  := stop
+                                bestZlo   := zlo
+                                bestZhi   := zhi
+                                bestTp1   := tp1
+                                bestTp2   := tp2
+                                bestCode  := array.get(zCode, z)
+                                bestTip   := f_tip(sRel, sStack, sHist, sBias, hk, raw, htfN)
+                    else if diagAll and rej1 and zOK and not zBl and not revLimitRej
+                        f_nearNote(nmPri, nmTxt, dir, 0, who + ": rejection candle on the previous bar, but this candle did not follow through, it needs a " + (dir > 0 ? "green close above " + str.tostring(zhi, format.mintick) : "red close below " + str.tostring(zlo, format.mintick)))
+    // 3. New breaks: a close through a zone by the break distance, from the other side, with
+    //    enough body, rests a retest limit at the broken edge (D-50), checked for geometry, gate,
+    //    score and filters now. Only while flat.
+    if brkOn and flatNow and not sigTaken and strategy.position_size == 0 and bestScore < 0 and not lateDay and filtOK
+        float body = math.abs(close - open)
+        bool bodyOK = minBreakBody <= 0 or body >= minBreakBody * execATR
+        if bodyOK
+            for z = 0 to nz - 1
+                if array.get(zEntry, z) and not array.get(zBlock, z)
+                    float zlo = array.get(zLo, z)
+                    float zhi = array.get(zHi, z)
+                    bool brokeDown = close[1] >= zlo and close < zlo - brkTol2
+                    bool brokeUp   = close[1] <= zhi and close > zhi + brkTol2
+                    if brokeDown or brokeUp
+                        int dir = brokeDown ? -1 : 1
+                        float lim = brokeDown ? zlo : zhi
+                        if not f_confPass(dir)
+                            if diag
+                                f_nearNote(nmPri, nmTxt, dir, 1, (dir > 0 ? "LONG BRK " : "SHORT BRK ") + array.get(zCode, z) + " not placed: " + f_confWhy(dir))
+                        else if not f_pendingExists(dir, lim)
+                            float stopB = brokeDown ? zhi + stopBuf : zlo - stopBuf
+                            if not na(stopCap) and math.abs(lim - stopB) > stopCap
+                                stopB := lim - dir * stopCap
+                            float risk  = math.abs(lim - stopB)
+                            int t1 = f_nextZone(dir, lim, minTgt, -1)
+                            float tp1 = t1 >= 0 ? (dir > 0 ? array.get(zLo, t1) : array.get(zHi, t1)) : na
+                            int t2 = t1 >= 0 ? f_nextZone(dir, tp1, minTgt, t1) : -1
+                            float tp2 = t2 >= 0 ? (dir > 0 ? array.get(zLo, t2) : array.get(zHi, t2)) : na
+                            bool geomOK = t1 >= 0 and risk > 0 and risk <= maxRisk and math.abs(tp1 - lim) / risk >= minRR
+                            float rk = array.get(zRank, z)
+                            string whoB = (dir > 0 ? "LONG BRK " : "SHORT BRK ") + array.get(zCode, z)
+                            if not geomOK
+                                if diag
+                                    f_nearNote(nmPri, nmTxt, dir, 1, whoB + " not placed: " + f_geomWhy(t1, risk, tp1, lim, minTgt, maxRisk))
+                            else if not f_gateOK(false, rk, array.get(zRankN, z))
+                                if diag
+                                    f_nearNote(nmPri, nmTxt, dir, 1, whoB + " not placed: rank gate, this level type is in the top half for holding")
+                            else
+                                // A first break of a level scores like a first test; a level that
+                                // already held or broke earlier today scores as touched.
+                                int hP = array.get(zHistP, z)
+                                int histB = hP == 0 or hP == 6 ? 12 : 6
+                                int hk = f_hookPoints(dir, false)
+                                [sc, sRel, sStack, sHist, sBias, raw] = f_score(rk, false, array.get(zN, z), histB, hk, 0)
+                                if sc < minScore
+                                    if diag
+                                        f_nearNote(nmPri, nmTxt, dir, sc, whoB + " not placed: score " + str.tostring(sc) + " under " + str.tostring(minScore) + " (" + f_tip(sRel, sStack, sHist, sBias, hk, raw, 0) + ")")
+                                else
+                                    ordSeq += 1
+                                    f_placePending(dir, lim, zlo, zhi, array.get(zCode, z), array.get(zN, z), 2, stopB, tp1, tp2, sc, f_tip(sRel, sStack, sHist, sBias, hk, raw, 0), ordSeq, f_tradeTag(false, array.get(zCode, z), sc, array.get(zN, z), histB, 0, dir))
+    // 4. One signal per candle: the fill from step 1, or the best market candidate from step 2.
+    if bestScore >= 0
+        string dirTxt   = bestDir > 0 ? "LONG" : "SHORT"
+        string setupTxt = bestSetup == 1 ? "REV" : "BRK"
+        string head = dirTxt + " " + setupTxt + " " + bestCode + "  " + f_score10(bestScore)
+        sigTaken := true
+        string details = (bestLimit ? "E " : "E next open, about ") + str.tostring(bestEntry, format.mintick) + "  SL " + str.tostring(bestStop, format.mintick) + "  T1 " + str.tostring(bestTp1, format.mintick)
+        if not na(bestTp2)
+            details := details + "  T2 " + str.tostring(bestTp2, format.mintick)
+        if bestSetup == 1 and htfOn
+            details := details + "  HTF " + str.tostring(bestHtf) + "/4"
+        if showHooks
+            details := details + "  " + f_hookText()
+        string mini = (bestDir > 0 ? "▲ " : "▼ ") + f_score10(bestScore)
+        string txt = sigDetail == "Full" ? head + "  " + details : sigDetail == "Compact" ? head : mini
+        if sigLabelsOn
+            color lc = bestSetup == 1 ? (bestDir > 0 ? color.new(color.lime, 15) : color.new(color.red, 15)) : (bestDir > 0 ? color.new(color.aqua, 15) : color.new(color.orange, 15))
+            array.push(sigLabels, label.new(bar_index, bestDir > 0 ? low : high, txt, xloc = xloc.bar_index, style = bestDir > 0 ? label.style_label_up : label.style_label_down, color = lc, textcolor = bestDir > 0 ? color.black : color.white, size = f_sigSize(), tooltip = head + " (" + str.tostring(bestScore) + " of 100)\n" + details + "\n" + bestTip))
+            if array.size(sigLabels) > sigKeep
+                label.delete(array.shift(sigLabels))
+        if posVisOn
+            f_pvNew(bestDir, bestEntry, bestStop, bestTp1, bestTp2)
+        if alertsOn and not sigOnly
+            string js = '{"symbol":"' + sym + '","data":"' + (bestDir > 0 ? "buy" : "sell") + '","quantity":' + str.tostring(baseQty) + ',"sl":' + str.tostring(bestStop, format.mintick) + ',"event":"ENTRY","setup":"' + setupTxt + '","level":"' + bestCode + '","score":' + str.tostring(bestScore) + ',"entry":' + str.tostring(bestEntry, format.mintick) + ',"tp1":' + str.tostring(bestTp1, format.mintick) + (na(bestTp2) ? "" : ',"tp2":' + str.tostring(bestTp2, format.mintick)) + '}'
+            alert(js, alert.freq_once_per_bar_close)
+        if bestSetup == 1
+            revCount += 1
+        else
+            brkCount += 1
+        if sigOnly
+            dayTrades += 1
+        if bestLimit and not sigOnly
+            // The resting order filled on this candle: the paper position opens at its price now,
+            // as the tester's did. A stop or target the rest of the candle's path crossed after
+            // the fill counts at the next check.
+            posDir   := bestDir
+            posEntry := bestEntry
+            posStop  := bestStop
+            posZlo   := bestZlo
+            posZhi   := bestZhi
+            posTp    := bestTp1
+            posCode  := bestCode
+            posRowS  := math.min(3, math.max(0, math.round(bestScore / 10.0) - 5))
+            posRowT  := bestSetup == 1 ? 4 : 5
+            posRowH  := inNYS ? 8 : inLondonS ? 7 : inAsiaS ? 6 : 9
+            posRowK  := 9 + math.min(3, math.max(1, bestStack))
+            posTypes := f_codeTypes(bestCode)
+            dayTrades += 1
+            if na(ptFirstT)
+                ptFirstT := time
+                ptDays   := 1
+            posForce   := fillForce
+            posForceTp := fillForceTp
+            posId    := bestId
+            posInit  := bestStop
+            posStage := 0
+            if mgrOn and not posForce and not posForceTp
+                // The fill candle's path after the fill can already earn a stage.
+                [st3, sp3] = f_stageCalc(posDir, posEntry, posInit, posStop, posStage, fillRun)
+                bool stageUp3 = st3 != posStage
+                posStage := st3
+                if sp3 != posStop
+                    posStop := sp3
+                    strategy.exit("X" + str.tostring(posId), from_entry = "E" + str.tostring(posId), stop = posStop, limit = runMode ? na : posTp, comment_profit = "T1", comment_loss = f_stopWord(posStage))
+                    if alertsOn
+                        alert('{"symbol":"' + sym + '","data":"stop","event":"STOP","stage":' + str.tostring(posStage) + ',"level":"' + posCode + '","price":' + str.tostring(posStop, format.mintick) + '}', alert.freq_once_per_bar_close)
+                if stageUp3
+                    f_mgrMark(posStop, f_stageWord(posStage) + " " + str.tostring(posStop, format.mintick))
+        else if not sigOnly
+            // Market entry: the tester fills it at the next candle's open, and so does the tally.
+            ordSeq += 1
+            pendId    := ordSeq
+            pendDir   := bestDir
+            pendStop  := bestStop
+            pendZlo   := bestZlo
+            pendZhi   := bestZhi
+            pendTp    := bestTp1
+            pendCode  := bestCode
+            pendScore := bestScore
+            pendSetup := bestSetup
+            pendStack := bestStack
+            strategy.entry("E" + str.tostring(ordSeq), bestDir > 0 ? strategy.long : strategy.short, qty = baseQty, oca_name = "L2L", oca_type = strategy.oca.cancel, comment = f_tradeTag(bestSetup == 1, bestCode, bestScore, bestStack, bestHist, bestHtf, bestDir))
+            strategy.exit("X" + str.tostring(ordSeq), from_entry = "E" + str.tostring(ordSeq), stop = bestStop, limit = runMode ? na : bestTp1, comment_profit = "T1", comment_loss = "stop")
+        f_cancelAllPending()
+        int bz = bestZone
+        if bz < 0
+            for z = 0 to nz - 1
+                if bz < 0 and bestEntry >= array.get(zLo, z) - touchTol and bestEntry <= array.get(zHi, z) + touchTol
+                    bz := z
+        if bz >= 0
+            for m = array.get(zFirst, bz) to array.get(zLast, bz)
+                int sl = array.get(zmSlot, m)
+                if sl >= 0
+                    array.set(lvSigBlock, sl, true)
+                    array.set(lvSigBar, sl, bar_index)
+    // Explanation tags: one per direction on bars where a setup formed but no signal was taken.
+    if diag
+        for k = 0 to 1
+            int nd = k == 0 ? 1 : -1
+            if array.get(nmPri, k) >= 0 and not (sigTaken and bestDir == nd)
+                array.push(nmLabels, label.new(bar_index, nd > 0 ? low : high, "?", xloc = xloc.bar_index, style = nd > 0 ? label.style_label_up : label.style_label_down, color = color.new(color.gray, 30), textcolor = color.white, size = size.tiny, tooltip = array.get(nmTxt, k)))
+                if array.size(nmLabels) > nearKeep
+                    label.delete(array.shift(nmLabels))
+    // Re-arm signal blocks once a whole bar trades clear of the level's band.
+    for i = 0 to NTOT - 1
+        if array.get(lvSigBlock, i)
+            float p = array.get(lvVal, i)
+            float w = array.get(lvWidth, i)
+            if na(p) or high < p - w - touchTol or low > p + w + touchTol
+                array.set(lvSigBlock, i, false)
+
+// Flatten (D-10): the order is placed on the candle before the flatten time, so it fills at the
+// open of the flatten candle, 15:55 CT by default. It runs after the signal block, so a resting
+// order that filled on this candle is counted before the flatten closes it, as in the tester.
+// Any resting orders left are cancelled with it.
+if barstate.isconfirmed and flatBar
+    strategy.close_all(comment = "flat")
+    if posDir != 0
+        flatPend := true
+    f_cancelAllPending()
+
+// ───────────────── [N] LEVEL RATCHET (M10, D-120) ─────────────────
+// With no target, something has to decide when the move is over. Every level the trade gets past
+// becomes the new line in the sand: the highest zone entirely below the close for a long, the
+// lowest entirely above it for a short. The line only ever moves with the trade, never against it,
+// so a move that keeps running keeps the trade and gives back at most the distance from the last
+// level it cleared. The stop follows the line once the line is the better of the two, which leaves
+// a hard backstop for a gap without ever moving the stop the wrong way.
+if runMode and posDir != 0 and barstate.isconfirmed and not na(posZlo) and not na(posZhi)
+    int nzr = array.size(zLo)
+    if nzr > 0
+        for zr = 0 to nzr - 1
+            float rlo = array.get(zLo, zr)
+            float rhi = array.get(zHi, zr)
+            if not na(rlo) and not na(rhi)
+                if posDir > 0 and rhi < close and rlo > posZlo
+                    posZlo := rlo
+                    posZhi := rhi
+                if posDir < 0 and rlo > close and rhi < posZhi
+                    posZlo := rlo
+                    posZhi := rhi
+        // The stop follows, never leads: it only moves when the ratchet puts it in a better place.
+        // Same buffer the entry stops use; it is computed here because that one is local to the
+        // signal block.
+        float rBuf = math.max(stopUnit * unit, stopTicks * syminfo.mintick)
+        float ratchetStop = posDir > 0 ? posZlo - rBuf : posZhi + rBuf
+        bool  better = not na(posStop) and (posDir > 0 ? ratchetStop > posStop : ratchetStop < posStop)
+        if better and posId > 0 and not sigOnly
+            posStop := ratchetStop
+            strategy.exit("X" + str.tostring(posId), from_entry = "E" + str.tostring(posId), stop = posStop, limit = na, comment_profit = "T1", comment_loss = "trail")
+
+// The idea is dead (M8, D-115). The source method keeps no fixed stop; it closes when the reason
+// for the trade has gone. The reason here is that the level holds, so the first candle that closes
+// past the far side of the zone against the trade ends it. The order goes in at that close and
+// fills at the next open, exactly as the flatten does, and the stop above remains as a backstop
+// for a gap or a slam straight through.
+if voidOn and barstate.isconfirmed and not flatBar and posDir != 0 and not flatPend and not voidPend and not na(posZlo) and not na(posZhi)
+    if (posDir > 0 ? close < posZlo : close > posZhi)
+        strategy.close_all(comment = "void")
+        voidPend := true
+        if alertsOn
+            alert('{"symbol":"' + sym + '","data":"close","event":"VOID","level":"' + posCode + '","price":' + str.tostring(close, format.mintick) + '}', alert.freq_once_per_bar_close)
+
+// The newest position's labels follow the right edge (M6 v0.3).
+if posVisOn
+    f_pvFollow()
+
+// The stop in force, as of each candle's close (M5): the first stop, then each stage and the trail.
+plot(showStopLine and posDir != 0 ? posStop : na, "Stop in force", color = color.new(color.navy, 0), style = plot.style_linebr, linewidth = 1)
+
+// ───────────────── [A6] DRAWING (last bar only) ─────────────────
+// Every level is its own line, starting at the candle that made it. Levels within the share
+// distance (default: the touch tolerance) share one tag so the names stay readable. Zones for
+// trading are built in M3 from the cluster tolerance; drawing does not merge them.
+// Drawings are placed by time. A line starts at the candle that made its level, which can sit
+// thousands of candles back, and a strategy refuses a position that far back by candle count
+// ("requested historical offset beyond the buffer"); a time needs no history. One time per
+// candle is kept in a list; a position to the right of the last candle is projected.
+var int[] barT = array.new<int>()
+if array.size(barT) == bar_index
+    array.push(barT, time)
+int msPerBar = timeframe.in_seconds() * 1000
+f_barTime(int x) =>
+    int n = array.size(barT)
+    x < n ? array.get(barT, math.max(x, 0)) : time + (x - bar_index) * msPerBar
+var line[]  drawL = array.new<line>()
+var label[] drawT = array.new<label>()
+
+f_clearDrawings() =>
+    int nL = array.size(drawL)
+    if nL > 0
+        for i = 0 to nL - 1
+            line.delete(array.get(drawL, i))
+    array.clear(drawL)
+    int nT = array.size(drawT)
+    if nT > 0
+        for i = 0 to nT - 1
+            label.delete(array.get(drawT, i))
+    array.clear(drawT)
+
+f_lineStart(int anchor) =>
+    int xa = anchorMode == "Candle" and anchor > 0 ? anchor : bar_index - rightLen
+    int x1 = math.max(xa, bar_index - maxLineBars)
+    math.max(x1, 0)
+
+// Drawings cannot sit more than 500 bars past the last candle.
+f_capX(int x) =>
+    math.min(x, bar_index + 480)
+
+// A tag's width on screen grows with the label size. Scales the bars-per-character input.
+f_sizeFactor() =>
+    labelSizeIn == "tiny" ? 0.6 : labelSizeIn == "small" ? 0.8 : labelSizeIn == "normal" ? 1.0 : 1.3
+
+// Bars that a text of this many characters covers on screen.
+f_textBars(int chars) =>
+    math.round(chars * tagChars * f_sizeFactor())
+
+f_labelText(string base, float price, bool touched) =>
+    string txt = base
+    if showPrice
+        txt := txt + "  " + str.tostring(price, format.mintick)
+    if showFreshMark and not touched
+        txt := txt + " *"
+    txt
+
+// A line runs from the candle that made the level to the column of the tag that names it, so a
+// staggered tag still hangs off its own line.
+f_drawLine(float price, int fam, int anchor, int xEnd) =>
+    color col = f_famColor(fam)
+    int x1 = f_lineStart(anchor)
+    array.push(drawL, line.new(f_barTime(x1), price, f_barTime(xEnd), price, xloc = xloc.bar_time, color = color.new(col, 10), width = lineWidth, style = f_lineStyle()))
+
+// Boxed: a tag whose point sits on the line end. Text only: plain text starting at the line end.
+f_drawLabel(float price, string txt, int fam, int xEnd) =>
+    color col = f_famColor(fam)
+    if labelStyle == "Text only"
+        int xc = f_capX(xEnd + 2 + math.round(f_textBars(str.length(txt)) / 2.0))
+        array.push(drawT, label.new(f_barTime(xc), price, txt, xloc = xloc.bar_time, style = label.style_none, textcolor = col, size = f_labelSize()))
+    else
+        array.push(drawT, label.new(f_barTime(xEnd), price, txt, xloc = xloc.bar_time, style = label.style_label_left, color = color.new(col, 25), textcolor = color.white, size = f_labelSize()))
+
+// Pick the first column whose last tag sits more than tol below this price. Prices arrive in
+// ascending order, so only the tag below can overlap. When every column is busy, take the one
+// with the most room. colLast is updated in place.
+f_pickColumn(float[] colLast, float price, float tol) =>
+    int cols = array.size(colLast)
+    int col = -1
+    float farthest = na
+    int farCol = 0
+    for ci = 0 to cols - 1
+        float lp = array.get(colLast, ci)
+        if col < 0 and (na(lp) or price - lp > tol)
+            col := ci
+        if na(farthest) or lp < farthest
+            farthest := lp
+            farCol := ci
+    if col < 0
+        col := farCol
+    array.set(colLast, col, price)
+    col
+
+var int levelsDrawn = 0
+if barstate.islast
+    f_clearDrawings()
+    float[]  px = array.new<float>()
+    string[] cd = array.new<string>()
+    int[]    fm = array.new<int>()
+    bool[]   tc = array.new<bool>()
+    int[]    an = array.new<int>()
+    bool useShort = labelMode == "Short codes"
+    for i = 0 to NTOT - 1
+        float v = array.get(lvVal, i)
+        bool near = not limitRange or math.abs(v - close) <= drawRange * unit
+        if not na(v) and f_slotOn(i) and near
+            bool isManual = (i >= CUS0 and i < SR0)
+            array.push(px, v)
+            array.push(cd, useShort ? array.get(lvCode, i) : array.get(lvName, i))
+            array.push(fm, array.get(lvFam, i))
+            array.push(tc, array.get(lvTouched, i))
+            array.push(an, isManual ? dOpenB : array.get(lvAnchor, i))
+    int n = array.size(px)
+    levelsDrawn := n
+    if n > 0
+        int[] idx = array.sort_indices(px, order.ascending)
+        string sep = " / "
+        float mergeTol = math.max(mergeUnit * unit, mergeTicks * syminfo.mintick)
+        // Stagger distance: a share of the daily ATR, scaled by the square root of the chart
+        // timeframe because a chart shows a fixed number of bars and its price range grows about
+        // that fast. Tick floor underneath. 0 turns staggering off.
+        float tfMin = math.max(timeframe.in_seconds() / 60.0, 1.0)
+        float staggerTol = staggerUnit > 0 ? math.max(staggerUnit * unit * math.sqrt(tfMin), staggerTicks * syminfo.mintick) : 0.0
+        int cols = math.max(staggerCols, 1)
+        // Pass 1: neighbours within the share distance form one tag. Members are contiguous in
+        // price order, so a group is a first and a last position in idx. The tag sits at the mean.
+        float[]  gPrice = array.new<float>()
+        string[] gText  = array.new<string>()
+        int[]    gFam   = array.new<int>()
+        bool[]   gTouch = array.new<bool>()
+        int[]    gFirst = array.new<int>()
+        int[]    gLast  = array.new<int>()
+        float gStart = na
+        float gSum   = 0.0
+        for k = 0 to n - 1
+            int j = array.get(idx, k)
+            float p = array.get(px, j)
+            string c = array.get(cd, j)
+            int f = array.get(fm, j)
+            bool t = array.get(tc, j)
+            int g = array.size(gText) - 1
+            bool joins = false
+            if g >= 0
+                joins := p - gStart <= mergeTol
+            if joins
+                int oldFam = array.get(gFam, g)
+                array.set(gText, g, array.get(gText, g) + sep + c)
+                array.set(gFam, g, f_famRank(f) < f_famRank(oldFam) ? f : oldFam)
+                array.set(gTouch, g, array.get(gTouch, g) or t)
+                array.set(gLast, g, k)
+                gSum += p
+                array.set(gPrice, g, gSum / (k - array.get(gFirst, g) + 1))
+            else
+                gStart := p
+                gSum := p
+                array.push(gPrice, p)
+                array.push(gText, c)
+                array.push(gFam, f)
+                array.push(gTouch, t)
+                array.push(gFirst, k)
+                array.push(gLast, k)
+        // Pass 2: each tag takes the first column whose previous tag is far enough below it, and
+        // every column remembers its longest text.
+        int ng = array.size(gText)
+        string[] gShow    = array.new<string>(ng, "")
+        int[]    gCol     = array.new<int>(ng, 0)
+        float[]  colLast  = array.new<float>(cols)
+        int[]    colChars = array.new<int>(cols, 0)
+        for gi = 0 to ng - 1
+            float gp = array.get(gPrice, gi)
+            string txt = f_labelText(array.get(gText, gi), gp, array.get(gTouch, gi))
+            int col = f_pickColumn(colLast, gp, staggerTol)
+            array.set(gShow, gi, txt)
+            array.set(gCol, gi, col)
+            array.set(colChars, col, math.max(array.get(colChars, col), str.length(txt)))
+        // Pass 3: column positions. Each column starts where the longest tag to its left ends.
+        int[] colX = array.new<int>(cols, 0)
+        int xNext = bar_index + labelOffset
+        for ci = 0 to cols - 1
+            array.set(colX, ci, f_capX(xNext))
+            xNext += f_textBars(array.get(colChars, ci)) + colGap
+        // Pass 4: every member line runs to its tag's column, then the tag is drawn.
+        for gi = 0 to ng - 1
+            int xEnd = array.get(colX, array.get(gCol, gi))
+            for k = array.get(gFirst, gi) to array.get(gLast, gi)
+                int j = array.get(idx, k)
+                f_drawLine(array.get(px, j), array.get(fm, j), array.get(an, j), xEnd)
+            f_drawLabel(array.get(gPrice, gi), array.get(gShow, gi), array.get(gFam, gi), xEnd)
+
+// ───────────────────────────── [A7] INFO BOX ─────────────────────────────
+var table info = table.new(position.top_right, 2, 19, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+f_cell(int r, string k, string v) =>
+    table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
+    table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
+if barstate.islast and showInfo
+    f_cell(0, "L2L M10", "v0.1")
+    f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
+    f_cell(2, "Timezone", tz)
+    f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
+    f_cell(4, "Cluster tol", str.tostring(clusterTol, format.mintick) + " (" + str.tostring(math.round(clusterTol / syminfo.mintick)) + " ticks)")
+    f_cell(5, "Touch tol", str.tostring(touchTol, format.mintick) + " (" + str.tostring(math.round(touchTol / syminfo.mintick)) + " ticks)")
+    f_cell(6, "Levels drawn", str.tostring(levelsDrawn))
+    f_cell(7, "SR levels", str.tostring(srCount) + " of " + str.tostring(array.size(pvPx)) + " pivots")
+    f_cell(8, "Interactions", str.tostring(countedTotal) + " counted, " + str.tostring(touchCount) + " touches")
+    f_cell(9, "Zones", str.tostring(array.size(zLo)) + " hidden")
+    f_cell(10, "Signals", str.tostring(revCount) + " REV, " + str.tostring(brkCount) + " BRK")
+    f_cell(11, runMode ? "Exit style" : "S&D zones", runMode ? ("run; line at " + (posDir == 0 ? "no trade" : str.tostring(posDir > 0 ? posZlo : posZhi, format.mintick))) : (str.tostring(sdLive) + " live of " + str.tostring(NSD)))
+    f_cell(18, "S&D zones", str.tostring(sdLive) + " live of " + str.tostring(NSD))
+    f_cell(12, "VIX / big tech", (vixDir > 0 ? "VIX up" : vixDir < 0 ? "VIX down" : "VIX flat") + ", tech " + str.tostring(magUp) + " up / " + str.tostring(magDn) + " down" + (magN < magMin ? " (abstaining)" : ""))
+    f_cell(13, "Volume side", (bvSide > 0 ? "buying" : bvSide < 0 ? "selling" : "level") + " by " + str.tostring(math.abs(bvPct), "#.0") + " %, flip " + (bvFlipAge > 998 ? "none" : str.tostring(bvFlipAge) + " ago") + ", vel " + str.tostring(bvVel, "#.0"))
+    if paperOn
+        f_cell(14, "Paper trades", str.tostring(ptCount) + ": " + str.tostring(ptWin) + " T1, " + str.tostring(ptLoss) + " stop, " + str.tostring(ptBe) + " half/be, " + str.tostring(ptTrail) + " trail, " + str.tostring(ptFlat) + " flat")
+        f_cell(15, "Paper points", (ptNet >= 0 ? "+" : "") + str.tostring(ptNet, format.mintick) + (posDir != 0 ? "  (in a " + (posDir > 0 ? "long" : "short") + (posStage > 0 ? ", stage " + str.tostring(posStage) : "") + ")" : ""))
+    // The tester's own count and net after costs, for the cross-check with the paper rows.
+    float testerPts = syminfo.pointvalue > 0 ? strategy.netprofit / (syminfo.pointvalue * baseQty) : na
+    f_cell(16, "Tester", sigOnly ? "signals only, no orders" : (str.tostring(strategy.closedtrades) + " closed, " + str.tostring(strategy.wintrades) + " won" + (strategy.position_size != 0 ? ", 1 open" : "")))
+    f_cell(17, "Tester net", str.tostring(strategy.netprofit, "#.##") + " " + syminfo.currency + " (" + (testerPts >= 0 ? "+" : "") + str.tostring(testerPts, format.mintick) + " pts after costs)")
+
+// ───────────────────── [A7b] PAPER BREAKDOWN TABLE (D-82) ─────────────────────
+// The paper trades split by score, by setup and by session window: trades, the share that
+// reached the first target, the average gain of those, the average loss of the stopped ones,
+// and the net points. The header shows the first trade's date and the trading days since.
+f_breakPos() =>
+    breakPos == "Middle left" ? position.middle_left : breakPos == "Top left" ? position.top_left : breakPos == "Bottom left" ? position.bottom_left : position.middle_right
+var table pbT = table.new(f_breakPos(), 6, 16, bgcolor = color.new(color.black, 60), border_width = 1, border_color = color.new(color.gray, 60))
+f_pcell(int c, int r, string txt, color tc, color bg) =>
+    table.cell(pbT, c, r, txt, text_color = tc, text_size = size.small, bgcolor = bg, text_halign = c == 0 ? text.align_left : text.align_right)
+f_pbRow(int r, string name, int n, int nW, int nL, float winPts, float lossPts, float net) =>
+    color bgc = color.new(color.black, 100)
+    f_pcell(0, r, name, color.white, bgc)
+    f_pcell(1, r, str.tostring(n), color.white, bgc)
+    f_pcell(2, r, n > 0 ? str.tostring(100.0 * nW / n, "#") : "", color.white, bgc)
+    f_pcell(3, r, nW > 0 ? "+" + str.tostring(winPts / nW, format.mintick) : "", color.white, bgc)
+    f_pcell(4, r, nL > 0 ? str.tostring(lossPts / nL, format.mintick) : "", color.white, bgc)
+    f_pcell(5, r, n > 0 ? (net >= 0 ? "+" : "") + str.tostring(net, format.mintick) : "", net > 0 ? color.lime : net < 0 ? color.orange : color.white, bgc)
+if barstate.islast and paperOn and showBreak
+    color hdrB = color.new(color.gray, 70)
+    color dimB = color.new(color.white, 20)
+    string since = na(ptFirstT) ? "no trades yet" : "since " + str.format_time(ptFirstT, "d MMM yyyy", tz) + ", " + str.tostring(ptDays) + " trading days"
+    f_pcell(0, 0, "Paper trades " + since, dimB, hdrB)
+    table.merge_cells(pbT, 0, 0, 5, 0)
+    f_pcell(0, 1, "Group", dimB, hdrB)
+    f_pcell(1, 1, "Trades", dimB, hdrB)
+    f_pcell(2, 1, "T1 %", dimB, hdrB)
+    f_pcell(3, 1, "Avg T1", dimB, hdrB)
+    f_pcell(4, 1, "Avg stop", dimB, hdrB)
+    f_pcell(5, 1, "Points", dimB, hdrB)
+    float aWin  = 0.0
+    float aLoss = 0.0
+    for r = 0 to 3
+        aWin  += array.get(pbWin, r)
+        aLoss += array.get(pbLoss, r)
+    f_pbRow(2, "All", ptCount, ptWin, ptLoss, aWin, aLoss, ptNet)
+    string[] pbName = array.from("Score 5/10 or less", "Score 6/10", "Score 7/10", "Score 8/10 or more", "REV", "BRK", "Asia window", "London window", "New York window", "Other hours", "1 level in the zone", "2 levels in the zone", "3 or more levels")
+    for r = 0 to 12
+        f_pbRow(r + 3, array.get(pbName, r), array.get(pbN, r), array.get(pbW, r), array.get(pbL, r), array.get(pbWin, r), array.get(pbLoss, r), array.get(pbNet, r))
+
+// ───────────────────── [A8] OPTIONAL HISTORY PLOTS (replay checks) ─────────────────────
+plot(showHist and dRangeOn   ? pdh   : na, "PDH", color = colDaily,  style = plot.style_linebr)
+plot(showHist and dRangeOn   ? pdl   : na, "PDL", color = colDaily,  style = plot.style_linebr)
+plot(showHist and dOpenOn    ? dOpen : na, "DO",  color = color.new(colDaily, 40), style = plot.style_linebr)
+plot(showHist and moOn       ? mo    : na, "MO",  color = color.new(colDaily, 40), style = plot.style_linebr)
+plot(showHist and h4RangeOn  ? p4h   : na, "P4H", color = col4H,     style = plot.style_linebr)
+plot(showHist and h4RangeOn  ? p4l   : na, "P4L", color = col4H,     style = plot.style_linebr)
+plot(showHist and monRangeOn ? mnhS  : na, "MNH", color = colMonday, style = plot.style_linebr)
+plot(showHist and monRangeOn ? mnlS  : na, "MNL", color = colMonday, style = plot.style_linebr)
+plot(showHist and aRangeOn   ? ah    : na, "AH",  color = colAsia,   style = plot.style_linebr)
+plot(showHist and aRangeOn   ? al    : na, "AL",  color = colAsia,   style = plot.style_linebr)
+plot(showHist and lRangeOn   ? lh    : na, "LH",  color = colLondon, style = plot.style_linebr)
+plot(showHist and lRangeOn   ? ll    : na, "LL",  color = colLondon, style = plot.style_linebr)
+plot(showHist and nRangeOn   ? nh    : na, "NH",  color = colNY,     style = plot.style_linebr)
+plot(showHist and nRangeOn   ? nl    : na, "NL",  color = colNY,     style = plot.style_linebr)
+plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plot.style_linebr)
+plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
+
+// ============================================================================
+//  END OF FILE  (L2L M10 v0.1). If this line is missing in your editor, the paste was cut off.
+// ============================================================================

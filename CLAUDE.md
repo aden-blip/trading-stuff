@@ -25,10 +25,14 @@ SI/SIL, written for TradingView Pine Script v6. The owner trades from Central Ti
 - **Scripts in `pine/`:** `l2l.pine` is M7 v0.1, the method as described, kept frozen as the
   baseline every later run is judged against. `l2l_m8.pine` is M8, the trade in his shape.
   `l2l_m9.pine` is M9, the source method alone with nothing of the owner's in it (D-118).
+  `l2l_m10.pine` is M10, M9 with no target and the level used as a trail instead (D-120).
   A milestone that changes behaviour gets its own file so all of them can run on one chart at
   once. `reference/handoff_links.md` holds each script's copy page.
 - No NQ-specific numbers in code: distances are daily-ATR units with tick floors.
 - Commit and push to the working branch after each documentation or code change.
+- **Settled, do not re-ask (D-120):** there is no trade record of the owner's and there will not
+  be one; and the owner watches the source trade profitably live, daily, so the source's results
+  are not in question.
 - **Plain language for the owner.** The owner has no coding knowledge. Explain every change,
   error and check in everyday words: what it does on the chart and what to look for, never
   variable names, loops or compiler terms. Code only appears in the script paste itself.

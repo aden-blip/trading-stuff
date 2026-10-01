@@ -2164,3 +2164,63 @@ move and should stop being the default.
 **What is not concluded.** That the method does not work. Three of its parts cannot be written in
 Pine at all — the order book, the news calendar, the 1-hour entries — and he names all three. A
 method whose edge lives in the order book would look exactly like this file.
+
+---
+
+### D-120  No target: the trade is left to run, and the level becomes a trail  (DECIDED)
+**Answer (owner, 2026-10-01):** "idk why were having a target? he just scalps the level and lets it
+run so us targeting 30 points doesnt make sense if the trade is gonna run 100 points."
+
+**He is right, and the M9 export agrees from the other side.** Moving the target closer made the
+year worse at every step, monotonically:
+
+| Target | Win % | PF | Net |
+|---|---|---|---|
+| as traded (median 33 pts) | 22.9 | 0.81 | −$4,094 |
+| 30 points | 27.7 | 0.71 | −$5,873 |
+| 20 points | 31.3 | 0.61 | −$7,626 |
+
+More winners, less money, every step. The winners need room. **What no export can test is removing
+the target**, because the record of what price did after a trade books out simply stops. D-110
+closed "target placement" on exactly this table and that conclusion stands — it was never a test of
+having no target at all, and the distinction was not drawn at the time. Reopened on that basis.
+
+**M10 = M9 with one change.** `pine/l2l_m10.pine`. The target comes off; the geometry check is
+left exactly as it was, so both scripts take the same trades and only the exit differs. That is
+what makes the two runs comparable.
+
+**What ends the trade instead: the level ratchet.** M8's exit already closes a trade when a candle
+closes past the far side of the zone it was taken at. In M10 that line **moves**. Every time the
+trade clears a level, the line steps up to that level — the highest zone entirely below the close
+for a long, the lowest entirely above it for a short. It never moves against the trade. So a move
+that keeps running keeps the trade, and the most it can give back is the distance from the last
+level it cleared. The stop follows the line whenever the line is the better of the two, which keeps
+a hard backstop against a gap without ever moving the stop the wrong way; those exits are tagged
+`trail` in the export so they can be told from `stop` and `void`.
+
+This is level-to-level as a **trail** rather than as a target, and it is the shape the source
+describes: no fixed stop, out when the reason has gone. It is also the first thing tried on the win
+side in this whole project. D-119 named that as the only lever with room in it; every previous
+attempt has been on the loss side.
+
+**Two things the owner settled in the same breath, both recorded so they are not re-asked.**
+
+1. **There is no trade record and there will not be one.** "i also dont have any trades to show
+   you." D-47 and D-108 asked for it four times. **Closed, permanently.** No session should ask
+   again.
+2. **The source is watched making money live, daily.** "ive just watched him daily make money
+   live." That is first-hand observation over many days, not a published highlight reel, and it is
+   much stronger evidence than anything this project has. **D-119's fifth possibility — that the
+   claimed profitability might not be real — is withdrawn.** It should not be raised again without
+   new evidence.
+
+The two together sharpen the question rather than leaving it open. The method works in his hands
+and the written-down version is a coin flip, so the gap is specifically in what he does that has
+not been written down. D-119's remaining candidates stand, in order: he selects which setups to
+take and the bot takes them in order; the edge is in the read at the level, not the level; and the
+order book, the news and the 1-hour entries cannot be written in Pine at all. The target was a
+fourth candidate nobody had named, and it came from the owner.
+
+**Judged against:** M9 v0.1, 502 trades, PF 0.813, −$4,094, average win $154 and average loss $56.
+M10 should take the same number of trades. If the win side does not grow, the answer is no and the
+target was not the problem.
