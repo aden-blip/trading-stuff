@@ -1373,6 +1373,56 @@ Magnificent 7 stay as confluences.
    being decided by assertion. Runs A and B of D-102 are still owed and still go first: they are
    one setting each and they settle the stop question before a new trigger changes the sample.
 
+### D-106  The sweep mechanism is confirmed from the existing exports; the level list it works on is the opposite of the proposal  (DECIDED)
+The owner asked for the M8 proposal to be tested from the trade lists already in hand rather than
+built. Part of it can be, and the part that can is decisive. Amends D-105, which stays the record
+of what was proposed.
+1. **What the exports cannot answer, and why.** A trade list carries one row per trade: its entry,
+   exit, excursions and tags. It holds no bar data, so there is no way to find a prior swing high
+   or low, or to see whether price traded through one before the entry. The external-range sweep
+   cannot be measured from it at any token cost. The VIX and the Magnificent 7 are worse: the
+   export has no second instrument in it at all. Both need the script.
+2. **What can be answered: the nearest measurable cousin.** The level history tag already records
+   whether the level had been **broken** earlier that day (h3) or had **held** (h15). A level that
+   has been broken has by definition had price trade through it and take what was resting there,
+   which is the owner's mechanism applied to the level itself rather than to a prior swing.
+
+   | | M6 year (2,276 reversals) | M7 year (248 reversals) |
+   |---|---|---|
+   | level was broken first | -5.14 a trade, PF 0.96 | **+6.07 a trade, PF 1.14, both halves +** |
+   | level had held | -32.92 a trade, PF 0.77, both halves - | -9.63 a trade, PF 0.82, both halves - |
+
+   The gap is 28 USD a trade on the M6 year and 16 on M7, and it points the same way in both.
+   **The owner's mechanism is right:** the level is worth trading after liquidity has been taken
+   at it, not before.
+3. **The decisive test, and it splits the proposal.** Applying that condition to the two level
+   groups on the M6 year, the only run with both sets switched on:
+
+   | With "broken first" applied | Trades | PF | Net | Per trade | Halves |
+   |---|---|---|---|---|---|
+   | The proposed keep list | 347 | 0.95 | -2,525 | -7.28 | split (H1 +654, H2 -3,179) |
+   | **Session highs and lows** | **276** | **1.15** | **+5,798** | **+21.01** | **both positive** |
+
+   The condition **rescues session highs and lows into clear profit and does not rescue the keep
+   list**. This is the sharpest version of D-100 point 3: a session high that gets run and then
+   reclaimed is the sweep pattern; a 4-hour open being "broken" is price crossing a line that
+   nothing ever defended. The mechanism needs somewhere liquidity actually rests, and a fresh open
+   has none.
+4. **The honest caution on that number.** The M6 second half is +880 on about 138 trades, roughly
+   +6 a trade against +36 in the first half: positive in both, far weaker in the second. The
+   condition was named by the owner before the table was built rather than fished out of it, and
+   it replicates across two exports and both halves, which is why it is adopted; the size of the
+   edge is not yet trustworthy.
+5. **What is decided.** The session highs and lows stay. The proposed keep list is not adopted:
+   the 4-hour open, the previous 4-hour high, low and open, and the daily open stay off, measured
+   at -22.51 a trade across 1,570 trades and still negative once the sweep proxy is applied. The
+   midnight open and the quarterly levels are left open, too few trades to call. The sweep
+   mechanism is adopted in principle and goes to the build as a gate on the level history, which
+   is a few lines rather than a new version, since the score already carries the tag and no gate
+   exists. The external-range version and the VIX stay on the build list behind it.
+6. **Order unchanged.** Runs A and B of D-102 still go first. They are settings only, they cost
+   nothing, and they settle the stop question before a new trigger changes the sample.
+
 ---
 
 ## L. New in round 4
