@@ -5,9 +5,19 @@ candle later; the score stops gating at 50 on a number that runs backwards; and 
 when a candle closes back through the level, which is the source method's exit rather than a fixed
 stop. Everything else is untouched.
 
-**Before you start.** An existing chart keeps its saved settings, so after pasting either reset
-the settings in the dialog or remove the strategy and add it again. The info box must read
-`L2L M8 v0.1` and the tester tab `L2L M8 - Strategy`.
+**This is its own script.** `pine/l2l_m8.pine` is a separate file from `pine/l2l.pine`, not a
+replacement for it. Paste it into a NEW tab in the Pine editor and add it to the chart alongside
+M7, so both can be flipped between on the same bars. The titles differ, so TradingView keeps them
+apart and M8 arrives with fresh settings — there is nothing to reset. The info box must read
+`L2L M8 v0.1` and the tester tab `L2L M8 - Strategy`. If M8 was pasted over M7 in the same tab
+instead, reset the settings in the dialog or remove and re-add the strategy.
+
+**Copy pages with a working copy button** (the file card in chat cuts off after about 150 lines):
+
+| Script | Page |
+| --- | --- |
+| M7 v0.1, the frozen baseline | <https://claude.ai/artifact/7nqowDwxKXusmXfLtXr7yP> |
+| M8 v0.1, this one | <https://claude.ai/artifact/QXDv1nywdXej1e3Cdzmv5S> |
 
 **Tester setup, unchanged:** Deep Backtesting, "Last 365 days DEEP", capital 500,000, 5-minute
 MNQ, Central time. Properties needs nothing. Under Script execution, "On bar close" stays ticked.

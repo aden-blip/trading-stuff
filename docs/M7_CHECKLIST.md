@@ -4,6 +4,11 @@
 logic changed from M6 v0.5, only the defaults (D-101), so a compile error here would be a paste
 problem, not a code problem.
 
+**Copy page with a working copy button** (the file card in chat cuts off after about 150 lines):
+<https://claude.ai/artifact/7nqowDwxKXusmXfLtXr7yP>. M8 has its own page and its own script,
+`pine/l2l_m8.pine`: <https://claude.ai/artifact/QXDv1nywdXej1e3Cdzmv5S>. M7 stays frozen as the
+baseline every later run is judged against.
+
 **Before you start.** An existing chart keeps its own saved settings, so pasting the new script
 alone changes nothing on it. After pasting, either open the settings dialog and reset it to
 defaults, or remove the strategy from the chart and add it again. The info box must read
