@@ -6,6 +6,8 @@ SI/SIL, written for TradingView Pine Script v6. The owner trades from Central Ti
 ## Read first
 - `docs/PLAN.md` is the design. `docs/DECISIONS.md` is the decision log with statuses. `docs/RESEARCH.md`
   holds platform, broker and cost research. `reference/` holds links and material the owner supplies.
+- `tools/video_notes.py` splits a screen recording into its audio track and still frames, because
+  Claude cannot open a video but can read images and transcribe audio. Needs `pip install imageio-ffmpeg`.
 - `tools/trade_list_report.py` turns a tester export (list of trades, CSV) into the breakdown
   tables and `tools/compare_trade_lists.py` splits a long export in halves (a finding counts
   only when both halves agree); save every export and its readout under `reference/backtests/<date>/`.
