@@ -1,5 +1,28 @@
 # Changelog
 
+## M8 v0.1, 2026-10-01
+
+Three changes, all from D-115: make the trade the shape the source method describes.
+
+- **The entry now rests at the level.** "Reversal entry" defaults to *Limit at the level after the
+  follow-through* instead of the close of the follow-through candle. The old default got in a
+  candle or two past the level, which is neither the source's method nor the owner's. Break trades
+  already rested at the broken edge and are unchanged. Some setups will now never fill, which is
+  the point: if price does not come back to the level, there was no trade.
+- **The score stops filtering.** "Minimum score to signal" drops from 50 to 0. Three separate
+  readings (D-85, D-91, D-113) found the score runs backwards, and at 50 it was silently throwing
+  away every signal below the bar on the strength of that number.
+- **New: the idea-is-dead exit.** "Close the trade when a candle closes back through the level",
+  on by default, in the Trade geometry group. The source keeps no fixed stop; he closes when the
+  reason for the trade has gone. The reason here is that the level holds, so the first candle that
+  closes past the far side of the zone against the trade ends it. The order goes in at that close
+  and fills at the next open, exactly as the 15:55 flatten does. The stop stays as a backstop for
+  a gap or a slam straight through. These exits read **void** in the tally, on the chart, in the
+  alerts and in the tester's trade list, so the export separates them from stops.
+
+Nothing else changed: the levels, the filters, the targets, the caps and the higher-timeframe
+count are all as they were. The info box reads v0.1 and the title reads L2L M8.
+
 ## M7 v0.1, 2026-09-22
 
 New defaults only. Not one line of logic changed, so nothing new can break; every box below can
