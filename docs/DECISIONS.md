@@ -1525,6 +1525,75 @@ settle it.
    have to be raised again: the export is wanted either way, and if it shows the method paying, it
    also shows exactly how.
 
+### D-109  A bug in the readout tool, now fixed: every adverse excursion was overstated by one commission  (DECIDED)
+Found while measuring exit rules. `tools/trade_list_report.py` restored the tester's excursion
+columns by adding half the round-trip commission back to both of them. That is right for the
+favourable side and wrong for the adverse side, which needs it subtracted.
+1. **The proof needs no judgement.** A stopped trade ends at its stop, so its adverse excursion
+   must equal its loss distance exactly. With the old sign, **306 of 306** M7 stop-outs and
+   **2,142 of 2,142** M6 stop-outs disagreed, every one of them by the same 0.8 points. With the
+   sign corrected, none of them disagree, in either file.
+2. **What it affected.** Only figures derived from the adverse excursion, which means the
+   "drawdown before the win" tables and anything built on how far a trade went against the entry.
+   On the M7 year, winners that went at least 5 points against the entry fall from 71 to 68, at
+   least 10 points from 39 to 33, at least 15 from 11 to 8. The share of winners that traded back
+   through the entry at all goes from an apparent 100 % to 97 %.
+3. **What it did not affect.** Everything built on the favourable excursion, which was always
+   correct: D-102 point 3's run-up figures, D-104 point 3's "wrong from the first candle" split,
+   and the whole first-break analysis and its refutation. Net P&L, profit factor, win rate, the
+   closed-trade drawdown and every by-level, by-hour and by-half table are computed from the net
+   column and never touched the excursions. **No conclusion in the decision log changes.**
+4. **What was done.** The sign is corrected with the check written into the code as a comment, and
+   every readout under `reference/backtests/` was regenerated from the corrected tool.
+5. **The lesson worth keeping.** The bug survived 21 backtest sessions because nothing ever checked
+   a derived column against a value it must equal by construction. A stopped trade's adverse
+   excursion equalling its stop distance is exactly that kind of check. Where a readout derives a
+   quantity that some other column pins exactly, the tool should assert it rather than trust it.
+
+### D-110  Exit logic: three mechanisms rejected on the data, two unanswerable from a trade list, and the structural reason why  (DECIDED)
+The owner asked for a way to decide when to exit beyond hitting the stop or the target. Five
+candidates were measured on the 417-trade export and anything promising was put through the D-107
+gate. Full readout `reference/backtests/2026-10-01/exit_logic_evidence.md`.
+1. **How much of the loss an exit rule can even reach.** Of the 306 losers costing 20,353: 50 %
+   never ran even a quarter of their stop in favour, costing 10,264, and no exit rule touches a
+   trade that never goes in favour. 42 %, costing 8,679, were up half a stop or more before being
+   stopped. So roughly 8,700 of the year's 20,400 of losses is addressable, and the other half is
+   an entry problem.
+2. **Time stops: rejected, both halves.** 63 % of trades resolve inside the entry candle, so a
+   time stop can only act on the 18 % that survive past bar 1 — and that surviving population is
+   **the only profitable part of the run**, +6,934 against -8,360 for everything that resolves by
+   bar 1. Even the impossible ceiling, scratching every surviving loser while leaving every
+   surviving winner alone, is +918 at N=1 and still a losing year at every longer N. Cutting the
+   survivors takes the year to -8,603.
+3. **Moving the target: rejected, both halves, and this one is fully measurable.** Every fixed
+   target from 10 to 80 points loses, in both halves, because the cost to the 102 existing winners
+   always exceeds the gain from rescued losers: at 10 points, -14,888 against +11,696. Targets in
+   R behave the same. **The current target placement is right and this question is now closed.**
+4. **The target ladder: failed the gate.** Its ceiling assumes promotion always works; its floor,
+   promotion never working, is worse than the baseline at every setting and negative in both
+   halves. The gate killed it on a sharper point: 70 % of stop-outs resolve inside the entry bar
+   and 68 % of the ladder's rescue comes from trades lasting 0 to 1 bars, so the fill order cannot
+   be settled — and Deep Backtesting with Bar Magnifier off cannot settle it either.
+5. **The breakeven stop and the give-back exit cannot be answered from a trade list at all, and
+   this is structural.** Both hinge on whether a winner's drawdown came before or after its
+   run-up. The export records how far price travelled each way and **never in what order**. 97 %
+   of winners traded back through their entry at some point, with a median of 0.42 of their own
+   risk, so the entire winner book is exposed, not a subset. The breakeven stop's honest range on
+   the M7 year is **-11,490 to +7,562** against a -1,426 baseline, and nothing in the file narrows
+   it. The break-even scratch rate is 47 % at a quarter R, 41 % at a half, 32 % at three quarters.
+   The two halves agree on every one of those figures to within a point, which means they agree
+   that it is undetermined, not that there is an edge.
+6. **What is decided.** No exit rule is built from the export. Run B of D-102 is now the whole
+   exit programme rather than one of two runs: the tester knows the bar-by-bar order that the
+   export cannot, so one session settles in minutes what 417 rows never will. Judge it against run
+   A, and treat anything inside roughly plus or minus 1,500 as noise, since the two halves swing
+   from +77 to -1,503 on their own. **Bar Magnifier should be on for that run**, because most
+   stop-outs resolve inside the entry candle and without it the tester is guessing at the same
+   ordering the export cannot supply.
+7. **The standing lesson.** A trade list can never answer a question about when something happened
+   inside a trade. Entry filters, level selection and target distance are answerable from an
+   export; anything about sequence inside the bar is not, and belongs in the tester from the start.
+
 ---
 
 ## L. New in round 4

@@ -100,8 +100,12 @@ def load(path, pointvalue):
         t["gross"] = t["net"] + t["comm"]
         t["pts"] = t["gross"] / usd_per_pt
         half = t["comm"] / 2.0
+        # The tester's excursion columns are net of one side's commission, so the favourable one
+        # is restored by adding it back and the adverse one by SUBTRACTING it. The check: a
+        # stopped trade ends at its stop, so its adverse excursion must equal its loss distance.
+        # That held for 0 of 2,142 M6 stops with a + here and for all 2,142 with a - (D-109).
         t["mfe"] = max(0.0, (t["mfe_usd"] + half) / usd_per_pt)
-        t["mae"] = max(0.0, (-t["mae_usd"] + half) / usd_per_pt) if t["mae_usd"] < 0 else 0.0
+        t["mae"] = max(0.0, (-t["mae_usd"] - half) / usd_per_pt) if t["mae_usd"] < 0 else 0.0
         t["month"] = t["entry_time"].strftime("%Y-%m")
         t["week"] = t["entry_time"].strftime("%G-W%V")
         t["hour"] = t["entry_time"].hour
