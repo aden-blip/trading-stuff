@@ -20,8 +20,11 @@ SI/SIL, written for TradingView Pine Script v6. The owner trades from Central Ti
 - Vocabulary: "reversal trade" (REV) for a level that holds, "break trade" (BRK) for a level that fails,
   "flip" for closing at a target and entering the other way. Never "fade".
 - All clock times in documents are Central Time with New York in brackets.
-- Pine cannot be compiled here. Ship one milestone at a time, keep the script in one file with the
+- Pine cannot be compiled here. Ship one milestone at a time, keep each script in one file with the
   module headers from the plan, and have the owner paste it into TradingView and report the first error line.
+- **Scripts in `pine/`:** `l2l.pine` is M7 v0.1, the method as described, kept frozen as the
+  baseline every later run is judged against. `l2l_m8.pine` is M8 and the line of development.
+  A milestone that changes behaviour gets its own file so both can run on the chart at once.
 - No NQ-specific numbers in code: distances are daily-ATR units with tick floors.
 - Commit and push to the working branch after each documentation or code change.
 - **Plain language for the owner.** The owner has no coding knowledge. Explain every change,
