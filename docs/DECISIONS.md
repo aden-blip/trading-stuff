@@ -2127,9 +2127,14 @@ smaller and different effect than I described. The entry stands with this correc
 | Cost of trading (commission + slippage) | −$7.20 |
 | **Before costs** | **−$0.96** |
 
-The standard error on that is $4.49, so t = −0.21 and the 95 % range for the true edge before costs
-runs from −$9.75 to +$7.84 a trade. **Before costs the method is statistically indistinguishable
-from a coin flip, and the entire loss is the cost of trading.** The best half of the year, to 1
+That −$0.96 is the most generous reading available, because it adds back slippage on all four
+fills. TradingView applies slippage to market and stop orders, not to orders that rest at a price,
+and in this run the entry always rests and 114 of the 502 exits are first-target limits. On that
+reading the modelled slippage is nearer $1.55 a trade than $4.00, which puts the edge before costs
+at about **−$3.41** rather than −$0.96. The export cannot separate slippage from the fill prices,
+so the honest statement is a range: **somewhere between −$3.40 and −$1.00 a trade before costs,
+with a standard error of $4.49.** Either end is inside one standard error of zero (t = −0.21 to
+−0.76). **There is no measurable edge in either direction, and the costs do the rest.** The best half of the year, to 1
 April, was +$1.93 a trade net and +$9.13 before costs — above the cost line, but on 251 trades and
 with the halves differing at t = 2.26, which is the sort of gap that appears by chance often enough
 not to build on.
@@ -2145,9 +2150,12 @@ move and should stop being the default.
    be cut without hurting the hit rate. Nothing has ever been tried on the win side: no runner, no
    second target, no trailing beyond the first level. Average win $154 against average loss $56 is
    the only lever with room in it.
-2. **Attack the $7.20.** It is 88 % of the loss. Slippage is modelled at 2 ticks on every fill; the
-   resting-limit entry M8 introduced should not pay that, and if the model is charging it anyway the
-   whole year is being read through a cost that is not real. Checking that costs nothing.
+2. **Know the real cost.** Commission is a firm $3.20 a trade; modelled slippage is somewhere
+   between $1.55 and $4.00 depending on which fills TradingView charges it to, and that uncertainty
+   is larger than the gap between the two readings of the edge above. Settling it costs one run with
+   slippage set to zero, and it is needed before any further arithmetic on this file is trustworthy.
+   It will not rescue the result: the largest possible correction is about $2.45 a trade against a
+   gap to break-even of $8.16.
 3. **Get a real trade record.** The owner's own history (D-47, reopened by D-108) has been asked for
    four times and never supplied, and no record of the source's actual trades exists either. Without
    one, there is no way to tell a wrong implementation from a method that does not survive contact
