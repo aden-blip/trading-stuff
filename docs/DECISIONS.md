@@ -1615,10 +1615,14 @@ hard to use in replay; they remain additional confluences he applies live.
    New York open, high and low, Asia open, high and low, London high and low. This is D-105 point
    2 restated in his own voice, and it is still the opposite of what both exports measured. The
    disagreement is now precisely located rather than inferred.
-3. **The all-time high is his single most important level and the script does not have it.** Not
-   switched off — absent from the 38 codes. On an index at all-time highs for much of the test
-   year this is a level he trades and the strategy has never once seen. Two of his three worked
-   examples are all-time-high sweeps. This is the clearest unforced gap in the project.
+3. **WITHDRAWN. The all-time high is not a level he uses.** He corrected this straight away:
+   the market simply happens to be at all-time highs at the moment, so that label sits on top of
+   the current year high and the previous month high and appears in his examples by coincidence.
+   The script already carries the year high, which stands in for it whenever price is anywhere
+   near it, and in the M6 year the year high was touched 15 times in 365 days. An all-time-high
+   level is therefore degenerate with a level already present when it matters and a distant
+   irrelevance the rest of the time. **It is not added**, and the suggestion in point 2 that it
+   might explain the level disagreement is withdrawn with it: that disagreement stands unresolved.
 4. **He enters on the 1-minute, not the 5-minute.** At 07:30: *"This double bottom on the one
    minute would have been a better setup. We would have gotten in on the one minute."* The
    strategy is 5-minute only. This bears directly on D-108 point 3: a finer entry is exactly what
@@ -1641,11 +1645,35 @@ hard to use in replay; they remain additional confluences he applies live.
 9. **Recorded honestly: three of his examples stopped out** (06:50, 08:04, 12:17), which he flags
    himself. The walkthrough is evidence about his process, not about his edge; it says what he
    does and why, not whether it pays.
-10. **What is decided.** The stack scoring is inverted in the next code change, since point 1
-    carries his rule, the data and the out-of-sample discipline together. The all-time high is
-    added as a level. Nothing else here is built yet: the 1-minute entry, the double top and
+10. **What is decided.** One change, not two: the stack scoring, and only once the ambiguity in
+    D-112 is settled. The all-time high is not added (point 3). Nothing else here is built yet: the 1-minute entry, the double top and
     bottom trigger, fair value gaps and volume imbalances are recorded as measured divergences and
     go on the build list behind runs A and B, which are still owed and still cost nothing.
+
+### D-112  "Clean" may mean one price, not one level, and the script cannot tell the difference  (OPEN, needs the owner)
+Re-reading the walkthrough after the all-time-high correction turned up a contradiction in the
+stacking finding of D-111 point 1 that has to be settled before anything is built.
+1. **The contradiction.** At 07:00 he says he will not take a setup where several levels sit
+   together and wants it "clear, cut and clean". But the trade he does take, at 03:40 and again at
+   11:13, is at a line labelled *Current Year High / All-Time High / Prev 4H High / AS-H* — four
+   level names at once. By the script's counting that is a four-level stack, the kind he just said
+   he avoids.
+2. **The likely resolution, and why it matters.** The script merges any levels within 0.02 daily
+   ATR, about 6 points on MNQ, into one zone and counts them as a stack. That lumps together two
+   situations a trader sees as opposites: four different names describing *the same single price*,
+   which reads as one strong clean line, and three separate levels spread across a 15-point band,
+   which reads as mush. If his rule is really about the second and not the first, then simply
+   inverting the stack score would be wrong — it would penalise exactly the setups he takes.
+3. **What the data cannot settle.** The export records which level codes were in each zone but not
+   their individual prices, so there is no way to separate "four names, one price" from "four
+   levels, spread out" after the fact. The measured result — single-code zones at PF 0.99 against
+   0.76 and 0.78 — is consistent with either reading.
+4. **The question for the owner**, and it changes what gets built: when you say you want it clean,
+   do you mean (a) one line with as few other levels near it as possible, so four names on the
+   same price is still messy, or (b) one *price*, where several names landing on the identical
+   level is good and what you avoid is several levels at slightly different prices?
+5. **Until it is answered**, the stack scoring is left alone. D-111 point 1 stands as a measured
+   agreement between his rule and the data; what it implies for the code does not.
 
 ---
 
