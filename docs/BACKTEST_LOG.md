@@ -33,6 +33,72 @@ Screenshots or trade list attached under reference/backtests/<date>/ :
 
 ---
 
+## 2026-10-01  Session 22  (M8 v0.1, the trade in his shape; screenshot only, export awaited)
+
+Symbol / timeframe / date range: MNQ, 5-minute, Deep Backtesting "Last 365 days DEEP", capital
+500,000, Central time. Trades are 2 MNQ.
+Costs used (commission per side, slippage ticks): the script's own, unchanged. Reported
+commission load 8.19 % of gross profit, which is exactly 401 x $3.20, so the round-trip
+commission is modelled as intended. Slippage is in the fills.
+Settings changed from defaults: none. M8 v0.1 defaults are the three D-115 changes: reversal
+entry resting at the level, minimum score 0, and the "closes back through the level" exit on.
+A trade tagged `s43` appears in the top five signals, so the score gate really is off (under
+M7's gate of 50 that trade could not exist); `f1` reversal tags are present, so the reversal
+history minimum is at its default of 1. The owner did not change anything by hand.
+
+Headline stats:
+| Trades | Win % | Profit factor | Net P&L | Max drawdown | Avg win | Avg loss | Avg time in trade |
+|---|---|---|---|---|---|---|---|
+| 401 (85 win, 316 lose, 0 breakeven) | 21.20 % | 0.878 | −$2,183.20 (−0.44 %) | $2,759.00 (0.55 %) | $184.34 | $56.49 | not measured (export awaited) |
+
+Gross profit $15,669.00, gross loss $17,852.20, expectancy −$5.44 a trade, largest win $749.80,
+largest loss $99.20, outlier P&L $7,687.00.
+
+By setup: REV trades / win % / net P&L vs BRK trades / win % / net P&L: not measured (export
+awaited). The visible top-five signal list is three BRK and two REV.
+By level type (top 3 and bottom 3 by net P&L): the five named signals carry +$3,176.40 and the
+remaining 278 names carry −$5,359.60. Top: BRK PWL +$848.80, REV LH +$749.80, BRK AH +$583.40,
+BRK PDL +$572.60, REV PWL +$421.80. Bottom not itemised on screen.
+By session (Asia / London / New York) where relevant: not measured for the deep run. The
+on-chart paper tally, which covers only the 72 loaded days and not the backtest, reads New York
+116, Asia 17, London 0, other hours 1.
+
+How it reacted (what the trades looked like, where it entered too early or late, stops that made
+no sense): the shape of the trade changed exactly as intended and the bottom line did not.
+Losses are small and uniform — $56.49 on average, which at $4 a point on two contracts is about
+13 points, against a stop cap of 0.03 daily ATR, roughly 16 points on current MNQ. So the new
+exit is cutting about three points earlier than the stop would have, not dramatically earlier.
+The largest single loss is $99.20, about 24 points, which is wider than the stop cap allows and
+therefore cannot be a stop: it is either the new exit filling at a gapped next open or the 15:55
+flatten. Against that, the win rate fell from 26.62 % (M7) to 21.20 %, which is the cost of
+cutting early: trades that would have come back and reached the target are now closed first.
+Average win $184.34 against average loss $56.49 is a payoff of 3.26 to 1; the break-even hit rate
+at that payoff is 23.46 %, so the run is 2.26 points of win rate — about nine trades in 401 —
+short of break-even. That is a much closer miss and a much better-shaped distribution than M7's,
+on a worse bottom line.
+
+Compared with the M7 baseline (session 21: 417 trades, 26.62 %, PF 0.93, −$1,426.40, drawdown
+$3,842): fewer trades, lower win rate, lower profit factor, a worse net, and a drawdown cut by
+28 %. Stripping the modelled commission from both, M8 clears about +$1.76 a trade before costs
+against M7's +$3.78, so the raw edge per trade fell even though the loss distribution improved.
+Against the D-102 gate figure the three changes aimed at (240 trades, PF 1.12, +$1,279) this is
+a clear miss, well outside the ±$1,500 noise band.
+
+Issues found (bugs, repainting, alerts, drawing problems): none confirmed. Two open questions.
+(1) The tester's "Script execution" control shows a badge of 2, meaning two of its options are
+on; which two is not readable from the screenshot and it matters here, because the bar magnifier
+changes how a resting limit order and a close-through exit are filled inside a candle. (2) The
+split between "void" and "stop" exits cannot be read from the summary at all, so whether the new
+exit fired on most losers or only a few is still unknown. Both need the export.
+
+Changes made before the next session (setting or code, and why): none yet. Three changes landed
+at once and the summary cannot separate them, so the next step is the export, then three runs
+that each put one change back — the entry style, the score gate, and the new exit — so each can
+be priced on its own. No code change until that is done.
+
+Screenshots or trade list attached under reference/backtests/<date>/ : screenshots in the chat of
+2026-10-01; the trade list export has been requested and is not yet saved.
+
 ## 2026-09-22  Session 21  (M7 v0.1)
 
 Symbol / timeframe / date range: MNQ1! 5-minute, Deep Backtesting "Last 365 days DEEP", 500,000
