@@ -1594,6 +1594,59 @@ gate. Full readout `reference/backtests/2026-10-01/exit_logic_evidence.md`.
    inside a trade. Entry filters, level selection and target distance are answerable from an
    export; anything about sequence inside the bar is not, and belongs in the tester from the start.
 
+### D-111  The owner's own walkthrough: the stacking rule is confirmed three ways, and five things he trades are not in the script  (DECIDED)
+A 21-minute screen recording of the owner trading the system in replay, 2026-10-01, transcribed and
+read frame by frame. Transcript: `reference/transcripts/owner_walkthrough_2026-10-01.txt`. He notes
+the examples were not his best and that the VIX and Magnificent 7 were left out because they are
+hard to use in replay; they remain additional confluences he applies live.
+1. **The stacking rule, and it is the strongest finding this project has produced.** At 07:00 he
+   says, unprompted: *"I do not like to take positions whenever there is a bunch of levels like
+   this all together, I like it to be clear, cut and clean."* The export agrees: single-level
+   zones 300 trades at PF 0.99, two levels 90 at PF 0.76, three or more 27 at PF 0.78.
+   **The script does the exact opposite**: `sStack` pays the full 20 points for three or more
+   levels, 12 for two and 5 for one. His method, the measured data and the code all disagree,
+   with the code the odd one out. This is not a searched slice: it is a stated rule confirmed
+   independently in the data, which is why it clears the D-107 gate where the others did not.
+2. **His level hierarchy, stated explicitly (02:03 to 02:16, plus the midnight open added at
+   04:44).** Strongest first: all-time highs ("the most important levels"), current year highs,
+   monthly open, quarterly open, daily open, midnight open, previous 4-hour highs, lows and opens,
+   previous week highs, previous day highs and lows, previous month and quarter highs. Weaker, and
+   in his words "levels to pay attention to, however they are not stronger than the first set":
+   New York open, high and low, Asia open, high and low, London high and low. This is D-105 point
+   2 restated in his own voice, and it is still the opposite of what both exports measured. The
+   disagreement is now precisely located rather than inferred.
+3. **The all-time high is his single most important level and the script does not have it.** Not
+   switched off — absent from the 38 codes. On an index at all-time highs for much of the test
+   year this is a level he trades and the strategy has never once seen. Two of his three worked
+   examples are all-time-high sweeps. This is the clearest unforced gap in the project.
+4. **He enters on the 1-minute, not the 5-minute.** At 07:30: *"This double bottom on the one
+   minute would have been a better setup. We would have gotten in on the one minute."* The
+   strategy is 5-minute only. This bears directly on D-108 point 3: a finer entry is exactly what
+   produces the small drawdown he describes and the script cannot reproduce.
+5. **His trigger is a double top or double bottom, not a rejection candle.** Named at 06:31, 07:30
+   and 12:57. The script's trigger is a wick or engulfing candle plus a follow-through close.
+   These are different objects; the script has never tested his.
+6. **Two things on his chart that the script has no concept of:** fair value gaps, which he marks
+   as blue boxes and deletes once filled, and volume imbalances, which he uses as targets (13:17).
+   Note that the source method explicitly rejects fair value gaps, so this is the owner's own
+   addition and a genuine divergence from Socrates, not from the script alone.
+7. **Confirmations that need no change.** External range liquidity is defined at 05:45 as price
+   breaking the prior range extreme, with internal range liquidity being the highs inside it,
+   which matches D-105. The target is the next key level (03:51), which the script already does.
+   He avoids the cash open (10:40: *"because of the open happening, I would have waited and missed
+   this"*), which the opening blackout already covers. He requires an actual touch of the level,
+   with roughly a 50-tick tolerance (13:01, 13:09).
+8. **His stop is structural, not a distance.** At 07:48 he sets it to *"this wick here from the
+   start of the day"*. The script uses a daily-ATR distance with a cap.
+9. **Recorded honestly: three of his examples stopped out** (06:50, 08:04, 12:17), which he flags
+   himself. The walkthrough is evidence about his process, not about his edge; it says what he
+   does and why, not whether it pays.
+10. **What is decided.** The stack scoring is inverted in the next code change, since point 1
+    carries his rule, the data and the out-of-sample discipline together. The all-time high is
+    added as a level. Nothing else here is built yet: the 1-minute entry, the double top and
+    bottom trigger, fair value gaps and volume imbalances are recorded as measured divergences and
+    go on the build list behind runs A and B, which are still owed and still cost nothing.
+
 ---
 
 ## L. New in round 4

@@ -1,0 +1,274 @@
+[00:01] Okay, so this is a video file to kind of test and explain my strategy so that we can help turn this into a VOT.
+[00:12] I'm currently looking at today's date of Wednesday, the 30th of September and 2026.
+[00:22] I will jump between some other dates. I'll let you know those dates whenever I get there so that we can
+[00:29] determine and you can kind of see what I'm looking at.
+[00:31] So as a chart set up, fair value gaps are always marked in this blue box.
+[00:37] So if you see one of these blue boxes with the dash line in the middle, it is a blue,
+[00:45] I'm sorry, it is a fair value gap,
+[00:48] you know, because sometimes they're, you know, they're from way far away, so you might not see them.
+[00:54] I delete, typically delete them as I go if they are not,
+[00:59] if they do not, or if they do get filled, I'll delete them as I go.
+[01:02] I do have a indicator that shows them, but usually
+[01:07] that kind of can make the screen too complicated sometimes, so sometimes I'll turn it off, right, for example, right now.
+[01:13] So anyways, so I'm gonna mark off a couple of setups here, explain,
+[01:18] I'm sorry, I'm gonna do it in this order.
+[01:20] I'm gonna explain some of the levels on why they are better or worse,
+[01:24] and then I will tell you why or why I would not have shorted there.
+[01:28] Now, the better levels are color coded, however, a couple of them are not working,
+[01:36] so I will give you the list to pay attention to.
+[01:39] So monthly open, quarterly open, daily open, previous four hour lows,
+[01:45] four hour opens, four hour highs, previous weekly highs, previous day lows, previous day highs,
+[01:55] previous monthly highs, previous quarterly highs, previous weekly highs,
+[01:58] current year highs, all time, and all time highs are the most important levels.
+[02:03] Things like daily open, or not, sorry, not daily open,
+[02:08] New York open, New York high, Asia open, Asia high, Asia low, New York low, London low, London high,
+[02:13] etcetera, etcetera, they are levels to pay attention to,
+[02:16] however, they are not levels that are stronger than the first set that I told you about.
+[02:23] So if you can see, I have some of them color coded for me to pay more attention to.
+[02:30] However, these ones appear for some reason are not working,
+[02:32] and I think it's because they're stacking.
+[02:33] That is a separate note for us to fix, don't worry about that for now.
+[02:37] But the first set up would have been somewhere rotten right here.
+[02:42] So I know we would not have been able to get a current year high
+[02:47] slash all time highs to the tick like this,
+[02:51] because if I scroll back and I'm going to switch to the 15 minute time frame here for you,
+[02:57] if I scroll back here, you can see previous month high and previous quarterly high
+[03:00] was also previous all time highs right here.
+[03:04] So we obviously pushed above that, made a new all time highs and then shorted it off.
+[03:08] However, according to the system, this would work as a set up because we swept
+[03:14] liquidity here at this high and then we started to reject on a smaller time frame.
+[03:20] So I'm going to jump back down to the five minute, make this larger to fit our
+[03:25] screen a little bit better.
+[03:26] So you can see this line at previous month high, previous quarterly high and previous
+[03:30] weekly high was also previous all time highs.
+[03:33] It just happens to be that today is October 1st.
+[03:36] So we are now on a new quarter, et cetera, et cetera.
+[03:40] So we come up, we push past here, we hesitate and then we start to reject, right?
+[03:45] So you could almost think about there being a box here of some sort, not this
+[03:48] being a fair value gap, but you get what I'm saying.
+[03:51] So we would have taken a short from here and then I ideally like to target the next
+[03:57] key level. Now, because of the time frames, this may have ran a little bit weird with
+[04:03] the one day difference.
+[04:05] So I'm going to go into replay mode real fast and you'll see what we would have had
+[04:13] happen here. So this is live candles.
+[04:16] I'm going to do it every one should update every one candle per minute.
+[04:24] So you can see here, okay, bang, bang.
+[04:26] This is breaking of previous all time highs.
+[04:29] We start to hesitate up here.
+[04:30] This is each candle is five minutes.
+[04:33] We get in our entry, then we run down low and then you can see the new target,
+[04:38] the targets that we would have had like midnight open right here, which also to
+[04:43] note that is an important level.
+[04:44] You can add that to the initial list.
+[04:46] Midnight open could have been our target here, right?
+[04:50] Our stops could have been here and then we let it run out to see what it's going to do.
+[04:57] And you can see, obviously we dropped off immediately past midnight open and this
+[05:01] could have continued to run.
+[05:03] You could also could have targeted previous four hour low here.
+[05:07] One of those two would have built been good targets.
+[05:10] You can see, obviously it would have ran.
+[05:12] The first one at previous day high in New York high would have been a 225 point
+[05:22] TP and then the second one would have been a 318 point TP.
+[05:28] Now, if we were to continue to let this running out, I believe it comes back,
+[05:31] but I wouldn't have wanted to sit through this this long, but hypothetically,
+[05:34] I'm sure we probably could have held this to the monthly open.
+[05:38] So that is a good setup and you can see how price is actively going.
+[05:45] This is also, I'm going to pause the thing real quick, this also notes to how we
+[05:50] talked about in our other chat about taking external, external range liquidity.
+[05:56] So like internal range liquidity might have been like these highs here,
+[05:59] like taking some liquidity here at the midnight open and stuff, but external
+[06:03] range would have been these highs since we broke previous highs or if we were
+[06:08] to come down and break here, like this would be external range liquidity.
+[06:14] So if we keep right letting this play out, I, I'm going to get rid of this
+[06:18] position or I'll just shorten it up to where we would have went to TP.
+[06:22] So right there, and then we'll look for another setup as this comes through.
+[06:27] So now you technically could have taken another one right off here.
+[06:31] This created a double top and could have set our stops at midnight open and then
+[06:37] targeted, let's say the monthly open here.
+[06:43] And let's see how this would have played out.
+[06:45] This one may or may not work.
+[06:46] I'm not entirely sure, but I'm okay.
+[06:50] See, so that one would have hit stop loss.
+[06:52] So that would not be a good position.
+[06:54] All right, read price action so you know why that wouldn't work.
+[07:00] All right, and I will also note that I do not like to take positions.
+[07:04] Whenever there is a bunch of levels like this all together, I like it to be clear,
+[07:10] cut and clean.
+[07:22] So I'm just going to keep letting this go until we get a position.
+[07:27] Okay, this would have been a position here.
+[07:30] This double bottom on the one minute would have been a better setup.
+[07:34] We would have gotten in on the one minute.
+[07:36] All right, as soon as we saw this starting to reject, the monthly open,
+[07:39] quarterly open, daily open, New York, low and London, low is all right here.
+[07:43] We would have got in at this double bottom on the one minute when it started to make.
+[07:48] So even if we got filled a little high, we would have set our stops to this
+[07:52] wick here from the start of the day.
+[07:57] All right, and then we would just target the four hour open at a very at a minimum
+[08:03] and then let this run.
+[08:04] Okay, see, we got wicked out there.
+[08:14] I'm sorry, that would have been a stop loss, not a wick out.
+[08:17] Okay, let's let this run out for a little longer.
+[08:28] Just let it keep doing its thing, keep doing its thing.
+[08:33] Okay, I think that is this is current time.
+[08:39] So there would be no setups here at the moment.
+[08:43] All right, so the next setup we will be looking for would probably either be a long
+[08:47] off of this previous weekly mid or a short off of the monthly quarterly open.
+[08:54] Now messing with current price action is a little bit harder right now because
+[08:59] it's later in the day.
+[08:59] I don't think the setups and stuff look that good.
+[09:02] We're probably past the time where it would have been good.
+[09:05] So I'm going to go back another couple of days and then let's just.
+[09:14] Yeah, go look at that.
+[09:15] So this is from it's fine today.
+[09:20] I'm just going to choose any random day here, say somewhere in here.
+[09:30] Why not?
+[09:30] Let's go right here.
+[09:41] Okay, so because of current price action, I guess it's not going to pull the things over.
+[09:48] I'm going to go to the four hour real quick and see why it's not showing.
+[09:56] Okay, so it's pulling them like way, way over.
+[10:05] I think, yeah, because it's reading off of current price action, which is really weird.
+[10:09] But anyways, I'm going to let this run for a minute.
+[10:13] So this is currently at 6.20 a.m. on Tuesday the 22nd.
+[10:22] All right, you can see.
+[10:25] We are hanging out, hanging out, hanging out.
+[10:27] We're at 7.30 a.m. so far.
+[10:30] So this one, we have probably wait until 8.30
+[10:34] for the open happen and then give it 30 minutes or so to see what the market does.
+[10:40] See, like you probably could have longed this.
+[10:45] But because of the open happening, I would have waited and missed this.
+[10:52] So let's wait till nine o'clock, nine o'clock is right here.
+[10:57] Okay, nine o'clock happens here.
+[11:00] This is, I believe, all time highs, actually.
+[11:05] I believe this is all time highs here.
+[11:07] So this might be, it might have been our previous high from what I was just showing
+[11:10] you before on the other chart.
+[11:13] All right, so we take liquidity, look, oh, good.
+[11:16] So this is all time highs here.
+[11:18] We take liquidity to the top, make new all time highs, then we short from here.
+[11:24] Set our stops.
+[11:24] If it makes a new all time high or wrong, let's just say we target
+[11:28] whatever this line, I know purple has been not open.
+[11:31] So we'll target midnight open here and let it run.
+[11:35] Let's see what it does.
+[11:54] So we're continuing to make lower highs and lower lows.
+[12:00] Maybe not.
+[12:11] Let's let this keep rolling.
+[12:13] So we're at 1 p.m.
+[12:14] now.
+[12:14] So this is like not the best.
+[12:17] We're back to entry here and stop lost.
+[12:19] Okay, so maybe this one wouldn't have been good to take.
+[12:24] It's hard for me to tell you which ones I should have or should not have taken
+[12:27] without seeing the actual levels here because they're playing out weird.
+[12:37] Let's just let it run for a minute.
+[12:53] Okay, so this is a new day.
+[12:57] Let's see if we can make a double top up here.
+[13:01] No entry here because we didn't touch the level.
+[13:07] But this is what we would be looking for.
+[13:09] Maybe set this like 50 ticks.
+[13:13] Okay, that would have been a touch.
+[13:17] And then there's a volume and balance here.
+[13:18] We target this volume and balance.
+[13:23] I'll mark out the volume and balance with what I typically do for the FEGs
+[13:27] right here.
+[13:28] And that would have been not yet.
+[13:39] There you go.
+[13:40] That's TP there.
+[13:45] Now, the good thing to mention is that we don't have this necessarily set up.
+[13:51] So I'm going to get out of rep, I'm going to get rid of this and then go out of replay mode
+[13:55] and show you how I would trail a position that takes a little bit longer
+[13:59] because this one obviously just kind of ran straight to TP, the original example.
+[14:05] But let's say, I guess we have to use kind of we kind of have to use current price
+[14:11] action because the indicator.
+[14:12] So let's say we shorted from this, when did this say we shorted from the previous four
+[14:19] hour high, we had, I don't know, a 50 tick stop.
+[14:24] Let's try to use that as our like normal amount.
+[14:28] And then let's just say we targeted the monthly open here.
+[14:34] We would have sat there a lot of chop here.
+[14:37] Now, when this was happening, which I'm going to switch the 15 minute chart
+[14:42] so we can see a little bit cleaner and I have some room to draw on the charts.
+[14:47] So let's say we shorted from up here, maybe maybe we got it at midnight open
+[14:53] because price action was a little bit later.
+[14:56] So purple, like I said, purple is midnight open.
+[14:58] So let's say we got in here somewhere, we set it above those highs, we let it run.
+[15:05] So now we would have trailed this.
+[15:08] I probably would have trailed this a couple different ways.
+[15:15] Maybe I'll even here.
+[15:16] I'll actually go back into replay mode as if we were in the, in the trade.
+[15:22] All right.
+[15:22] So, and then I'll drop that into the five minute so that we can kind of see
+[15:28] accurately as it would happen.
+[15:31] All right, so we get in here.
+[15:33] I believe it should be the next five minute candle.
+[15:37] Yep.
+[15:38] Okay.
+[15:39] Okay.
+[15:39] Okay.
+[15:40] All right.
+[15:40] So we would have gotten in right here on this candle at six a.m.
+[15:48] And then we would have shorted from there, said our stopped above the highs.
+[15:52] Uh, another good reason for us to get in would have been the rejection
+[15:57] of this fair value gap right here.
+[15:59] And then there is another fair value gap right here.
+[16:05] So now, so how I would have trailed this, I would have marked out different levels.
+[16:10] I always do them in this order.
+[16:13] I have my stop loss.
+[16:15] Then I set a level for a 50% risk off, 50% risk off.
+[16:26] Then I'll set another level for full break even.
+[16:31] I would use probably somewhere right here as my break even point.
+[16:40] Break even on candle.
+[16:43] It's always on a, on a candle close on candle, on a candle close break of that line.
+[16:52] And then I would have probably gone four hour open as the TPU one, Tp one.
+[17:03] And I always like to put the dollar amount.
+[17:05] We don't know the dollar amount here.
+[17:07] So I'm just going to put some question marks there.
+[17:10] Tp two could have been this Asia open.
+[17:14] I know why I said these levels are not stronger, but they can be targets
+[17:17] during the trades.
+[17:20] And so let's go Tp two dollars, I'm not sure.
+[17:29] All right.
+[17:29] And let's just say Tp three was the previous four hour low.
+[17:33] We would have let this one run.
+[17:35] So this would be Tp three dollars.
+[17:50] I'm not sure.
+[17:52] And so the way this would work is after we break this 50% risk off line
+[17:59] and the candle closes outside of it, I would then reduce my risk by 50%.
+[18:04] So if this original stop was, let's say a hundred ticks right here,
+[18:09] I would drop it down to 50 ticks right here.
+[18:12] So now we, our loss has minimized in the event that we do lose.
+[18:16] Now I'll play this candle out.
+[18:19] All right, candle break candle break on candle break even.
+[18:25] So now there's no risk on this trade at all.
+[18:30] All right.
+[18:30] I usually set the stop break even plus a little bit in case of spreads
+[18:35] or fees, then after we break each one of these levels,
+[18:41] I drag my Tp to the previous level.
+[18:43] So for example, on this break even candle, my stop would be at the 50%.
+[18:49] My break even would basically be, I'm sorry, my break even line for my stop
+[18:54] loss in profit would essentially be somewhere around this 50% risk off, right?
+[18:59] Then after I crop, we get a candle close just like this past Tp one.
+[19:03] I would pull my stop loss to the break even on candle break, which is this line here
+[19:08] at 30,000, 79, 880 area.
+[19:13] Then if we break Tp two, let's see how it would have played out.
+[19:17] OK, candle close, candle close did not pull pass this.
+[19:27] And so we would have gotten wicked out actually right here.
+[19:31] So we only would have been able to take here to here.
+[19:35] So maybe my system is potentially flawed in some ways, but I do know that this area
+[19:41] is a little choppy.
+[19:43] It looks like it would have ran, I believe, after a while.
+[19:51] But so this is the trade we would have gotten had I done that.
+[19:53] And this is the system that I like to try to do for all of them.
+[19:57] Typically, the setups that I'm going for will hit these levels faster.
+[20:07] However, this is at like eight o'clock in the morning.
+[20:09] So the New York Open is probably why we continue to short off.
+[20:15] So this is typically a time of the day.
+[20:17] I don't like to trade.
+[20:18] I'm just trying to find examples to you because I have limited price action
+[20:21] with like the candle closes and stuff like that.
+[20:24] But so you could have taken this and then honestly let it rock throughout
+[20:28] this whole thing if you really wanted to and then just gone just straight break even.
+[20:32] But typically I like to try to have these targets.
+[20:35] So I'm going to stop the video here because I'm sure this is going to be very long.
+[20:40] But yeah, so let's see if this is something that we can fall off into an idea
+[20:46] and then kind of go from there.
+[20:49] Yeah.
