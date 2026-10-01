@@ -1868,3 +1868,76 @@ to experiment with during backtesting.
 **Answer:** Your call: the journal predates this strategy and would only show personal tendencies.
 Session and level statistics come from the bot's own backtests instead. The search for the file is
 over. Profiles stay as proposed.
+
+---
+
+### D-116  Every finding so far came from levels he would never trade  (DECIDED)
+**Answer (owner, 2026-10-01):** "this is supposed to only be what Socrates would take so we need to
+set the settings around that." He is right, and the census below shows the problem is larger than a
+tuning question.
+
+**The census.** Every one of the 417 trades in the M7 deep run (session 21) was read for which level
+codes it touched. In order:
+
+| Code | Family | Trades | | Code | Family | Trades |
+|---|---|---|---|---|---|---|
+| AH | Asia high | 72 | | NH | New York high | 20 |
+| AL | Asia low | 65 | | NL | New York low | 17 |
+| LL | London low | 60 | | LOD / HOD | day low / high | 9 / 9 |
+| LH | London high | 59 | | PMH / PML | prev month high / low | 9 / 5 |
+| PDH | prev day high | 50 | | SR4 / SR5 | drawn S/R | 7 / 6 |
+| PDL | prev day low | 47 | | YH / YL | year high / low | 2 / 1 |
+| MNH / MNL | Monday high / low | 35 / 27 | | | | |
+| PWL / PWH | prev week low / high | 34 / 26 | | | | |
+| SR3 | drawn S/R | 23 | | | | |
+
+And the levels he names as the good ones:
+
+| 4-hour high/low | **0 trades** |
+| Daily open | **0 trades** |
+| Midnight open | **0 trades** |
+| Quarterly high / low / open | **0 trades** |
+
+**So:** 256 of 417 trades — 61 % — were on session highs and lows, which he says are not good
+setups, and **not one trade in a year was taken at any level he actually names.** The 4-hour and
+daily-open and midnight-open switches ship off, and the quarterly switch is on but a quarterly high
+or low is touched perhaps twice a year on a trending instrument, so it never fired.
+
+**What this invalidates.** Every number drawn from this sample describes a strategy trading mostly
+the level types the method excludes. D-102 (the reversal history gate), D-104 (where the losers
+are), D-107 (the first-break rule), D-110 (exits), D-111 and D-113 (stacking) were all measured on
+it. None of them are wrong about the sample; all of them may be wrong about the method. They are
+re-marked PROVISIONAL pending a run on his level set, and the same applies to session 22's M8 run,
+which changed how the trade is taken without changing which levels it is taken at.
+
+**The level set to run (M8 v0.1, settings only, no code change):**
+
+| Group | Setting | Do |
+|---|---|---|
+| 4-hour | Prev H/L | **turn ON** (was off; his first-named level) |
+| Daily | Open | **turn ON** (was off) |
+| Daily | Midnight open | **turn ON** (was off) |
+| Quarterly | Open | **turn ON** (was off) |
+| Sessions | Asia H/L | **turn OFF** (was on) |
+| Sessions | London H/L | **turn OFF** (was on) |
+| Sessions | NY H/L | **turn OFF** (was on) |
+| Untagged S/R | Find SR levels | **turn OFF** (was on) |
+| Daily / Weekly / Monthly / Quarterly | Prev H/L | leave on |
+| Yearly | Current H/L | leave on |
+| Monday range | Range | leave on, flagged below |
+
+**The contradiction, stated once.** On the sample we have, the two best level codes of the year are
+Asia high (72 trades, PF 1.20, +$9.41 a trade) and London low (60 trades, PF 1.16, +$7.55 a trade),
+and both halves of the year agree on both. They are the two he says to skip. Against that: prev day
+low loses $21.24 a trade and the script's guess at his untagged S/R lines loses $33.94 a trade, both
+also agreeing across halves. The reading that fits both the owner's instruction and the data is
+D-114's: this build implements about a quarter of his system, so a level type that pays inside a
+quarter of the method is not evidence about the whole method. His instruction wins; the contradiction
+is recorded so it can be tested later rather than argued now.
+
+**Open, not decided:** (a) Monday high/low is in the indicator he uses but he did not name it; left
+on. (b) Untagged S/R is turned off because it is the script's imitation of lines he draws by hand,
+not his level list, and it is the worst group in the data; when he supplies the real prices they go
+in under "My pivots" instead. (c) 4-hour highs and lows produce roughly twelve new levels a day, so
+the trade count may jump; if it clears about 900 the lookback needs a limit before the run means
+anything.
