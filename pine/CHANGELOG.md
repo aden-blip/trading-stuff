@@ -1,5 +1,51 @@
 # Changelog
 
+## M9 v0.1, 2026-10-01  (`pine/l2l_m9.pine`, a third separate script)
+
+M9 is a **new file**. M7 (`pine/l2l.pine`) stays the frozen baseline and M8 (`pine/l2l_m8.pine`)
+is untouched. All three titles differ, so all three can sit on one chart with their own tester tab.
+
+This one is the source method and nothing else (D-118). Everything of the owner's is out;
+everything of the source's that can be written in Pine is in.
+
+**Out** (D-117): the hand-typed pivot prices, the custom level box, the Monday range, the opening
+blackout. The ten level slots the hand-typed pivots used are now the supply and demand zones, so
+the level table is the same size and every rule that applies to a level applies to a zone.
+
+**In:**
+
+- **Supply and demand zones** — the half of his method the script had zero lines for. A zone is the
+  candle a move left from: a candle that travels more than 1.2 chart ATRs in one go, with a body at
+  least half its range, closing beyond the previous candle, leaves the previous candle's range as a
+  zone. Demand under an up move, supply over a down one. A zone lives until a candle closes through
+  its far side. Zones stack with levels at the same price, are ranked, trade both ways and can be
+  targets. Codes in the export: `DEM` and `SUP`.
+- **The VIX and big tech** — the VIX must not be moving the same way as the trade, and at least four
+  of AAPL, MSFT, NVDA, AMZN, GOOGL, META and TSLA must be moving with it. Each is compared with its
+  own 20-candle average on the chart's own timeframe, so none of it repaints. Before the stock
+  market opens the seven are still holding yesterday's close and vote neither way, so the basket
+  abstains rather than blocking — without that, nothing could trade between 08:00 and 08:30 Central,
+  which is half the window the source names as his best.
+- **Bull versus bear volume** — each candle's volume split by where it closed inside its own range,
+  both sides smoothed over 13 candles, the trade needing its own side ahead by at least 5 %. The
+  flip bar and the velocity are computed and shown but do not gate anything yet. The plain
+  volume-size check stays on underneath.
+- **His levels and his clock as defaults** (D-116, D-117): 4-hour previous high and low on, daily
+  open on, midnight open on, quarterly open on; session highs and lows off; the New York window
+  starting at 08:00 Central instead of 08:30.
+
+**The trade tag gains a field.** Every entry carries ` c<n>`, how many of the three confluences
+agreed (0 to 3), counted whether or not that confluence is gating — so a run with one switched off
+still records what it would have said. `tools/trade_list_report.py` reads it and splits on it; older
+exports without the field still parse.
+
+**Not in, and not possible here:** the order book (Pine has no Level 2 data), the news calendar, and
+his 1-hour entries. A run of M9 is his method minus those three.
+
+**Not compiled.** 319 changed lines over M8, checked structurally only (brackets, indentation,
+declaration order, 18 of 40 higher-timeframe requests, info-box bounds). The first paste may still
+stop on an error line.
+
 ## M8 v0.1, 2026-10-01  (`pine/l2l_m8.pine`, a separate script)
 
 M8 is a **new file**, not a replacement. `pine/l2l.pine` stays at M7 v0.1 as the frozen

@@ -1989,3 +1989,65 @@ off for every run; the daily high and low have been on and are two of the worse 
 (PDH −$5.26 a trade, PDL −$21.24). Both halves agree on PDL. That disagreement is recorded, not
 resolved: it is the same situation as D-116's, a named level failing inside a quarter of the method.
 It also tells us the "bounce or retest" pairing is his, so break trades stay in.
+
+---
+
+### D-118  M9: the source method on its own, as a third script  (DECIDED)
+**Answer (owner, 2026-10-01):** "his strategy uses vix and such so all of that needs to be built in.
+make an updated script using only socrates strategy disregard everything i use except what he
+teaches. this is a separate idea for now." So M9 is a new file, `pine/l2l_m9.pine`, beside M7 (the
+frozen baseline) and M8 (the trade in his shape). M7 and M8 are untouched.
+
+**What came out.** Everything of the owner's named in D-117: the hand-typed pivot prices, the custom
+level box, the Monday range, the opening blackout. The range-edge filter stays in the file but off,
+as it already was. The ten slots the hand-typed pivots used are now the supply and demand zones, so
+the level table is the same size and every rule that applies to a level applies to a zone.
+
+**What went in.** The four things D-114 found he runs and this project had never built. Each has its
+own switch, so each can be priced alone by turning the other two off.
+
+1. **[M] Supply and demand zones.** He calls this half his identity: *"I am a supply and demand or
+   pivot trader based on pivots near key levels, that's the only thing I look at when I'm trading."*
+   A zone is the candle a move left from: when one candle travels more than 1.2 chart ATRs in a
+   single go, with a body at least half its range, and closes beyond the previous candle, the
+   previous candle's range becomes the zone. Demand under an up move, supply over a down one. A
+   zone lives until a candle closes through its far side. Live zones join the level list: they
+   stack, they rank, they trade both ways and they can be targets. Codes in the export: `DEM`,
+   `SUP`.
+2. **[K] The VIX and big tech.** *"NASDAQ is rejecting our Monday High while at the same time the
+   vix is starting to get some buying power up so I'm going to enter a short based off of this
+   information alone"*, and of the pairing, *"this is how I make most of my trades."* The VIX must
+   not be moving the same way as the trade, and at least four of AAPL, MSFT, NVDA, AMZN, GOOGL,
+   META and TSLA must be moving with it. Each series is compared with its own 20-candle average on
+   the chart's own timeframe, so none of it repaints.
+   **The abstain rule matters.** Before the stock market opens, each of the seven is still holding
+   yesterday's close, so it sits on its own average and votes neither way. If fewer than four of
+   them have an opinion the basket abstains instead of blocking. Without that, nothing could trade
+   between 08:00 and 08:30 Central, which is half the window D-117 found he names as his best.
+3. **[L] Bull versus bear volume.** *"When a candle reaches one of these key levels or pivots, all I
+   would need to enter the trade then would be strong volume following suit."* The named indicator
+   is Bull vs Bear Power by DGT, and what he reads from it is *"the bull side and the bear side
+   strength, the flips and the switches and the velocity."* Each candle's volume is split by where
+   it closed inside its own range, both sides are smoothed over 13 candles, and the trade needs its
+   own side ahead by at least 5 %. The flip bar and the velocity are computed and shown in the info
+   box but do not gate anything yet. This sits on top of the plain volume-size check, which stays.
+4. **His levels and his clock**, from D-116 and D-117, as defaults rather than as a settings list.
+
+**The trade tag gains a field.** Every entry now carries ` c<n>`, how many of the three confluences
+agreed, 0 to 3. The count is taken whether or not that confluence is gating, so a run with a gate
+switched off still records what it would have said. `tools/trade_list_report.py` reads it and splits
+on it; exports without the field still parse.
+
+**One deliberate asymmetry, so it is not read later as a bug.** The gate asks the VIX *not to
+contradict* the trade; the tag count asks it to *actively confirm*. In practice these differ only
+when the VIX sits exactly on its average, which is approximately never, but the looser form is the
+gate so that a flat VIX cannot empty the trade list.
+
+**What still cannot be written in Pine, and so is not in M9:** the order book (no Level 2 data), the
+news calendar, and his 1-hour entries (D-114 point 4: *"the timeframes that I use mainly are the 5
+minute and 1 hour for my entries"*). A run of M9 is his method minus those three, not his method.
+
+**Not compiled here.** Pine cannot be compiled in this environment, and M9 is 319 changed lines over
+M8. The script passed a structural check (brackets, indentation, declaration order, the request
+budget at 18 of 40, info-box bounds) but the first paste may still stop on an error. One error line
+at a time, as always.
