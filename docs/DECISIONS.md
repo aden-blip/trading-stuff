@@ -1373,7 +1373,10 @@ Magnificent 7 stay as confluences.
    being decided by assertion. Runs A and B of D-102 are still owed and still go first: they are
    one setting each and they settle the stop question before a new trigger changes the sample.
 
-### D-106  The sweep mechanism is confirmed from the existing exports; the level list it works on is the opposite of the proposal  (DECIDED)
+### D-106  The sweep mechanism is confirmed from the existing exports; the level list it works on is the opposite of the proposal  (PARTLY WITHDRAWN by D-107)
+**Point 3 is withdrawn.** Five adversarial checks found the first-break split to be day
+selection in hindsight, not liquidity; see D-107. Point 2 stands only as a direction and
+point 5 stands on its own evidence.
 The owner asked for the M8 proposal to be tested from the trade lists already in hand rather than
 built. Part of it can be, and the part that can is decisive. Amends D-105, which stays the record
 of what was proposed.
@@ -1422,6 +1425,58 @@ of what was proposed.
    exists. The external-range version and the VIX stay on the build list behind it.
 6. **Order unchanged.** Runs A and B of D-102 still go first. They are settings only, they cost
    nothing, and they settle the stop question before a new trigger changes the sample.
+
+### D-107  The first-break rule is dead: it is day selection in hindsight, not liquidity. D-106 point 3 is withdrawn  (DECIDED)
+Five independent adversarial checks were run against the first-break finding before it was built.
+**All five refuted it at high confidence.** Full readout:
+`reference/backtests/2026-10-01/verify_first_break.md`.
+1. **The mechanism fails its own test.** Only 29 of 165 eligible days contain both a first and a
+   later trade; all 36 later trades live on those days. **On those same days the first trades are
+   worse than the later ones: -98.00 a trade against -86.59.** The headline +123.73 gap decomposes
+   into a same-day being-first effect of **-11.42**, the wrong sign, and a day-selection effect of
+   **+167.20**. A within-day permutation test, shuffling P&L inside each day so the day and level
+   structure is preserved, gives p = 0.664. The apparent significance came entirely from ignoring
+   that the later trades sit on 29 bad days.
+2. **What the rule is really measuring.** Days on which a broken session level is tested *only
+   once* are good days. That split is large and consistent — 194 trades at +82.41 a trade, PF 1.68,
+   positive in both halves, against 82 trades at -124.27, PF 0.30, negative in both halves — but it
+   is knowable only after the day has finished. The ordinal "first" does not approximate it: 46 of
+   the 240 firsts fall in the revisited, losing group, so the rule keeps the worst trades.
+3. **It is noise at the size it was found.** The cell ranks 6th of 70 comparable cells of the
+   search grid, and the search-corrected p-value is about 0.60. 73 % of the +8,915 comes from 5 of
+   240 trades and 8 of 240 carry all of it; the median first-break trade is -123. The bootstrap
+   confidence interval on per-trade P&L spans zero. The blind half's +2,160 becomes -1,348 once two
+   of its 133 trades are removed.
+4. **It reverses on the slices nobody looked at.** The identical first-versus-later split applied
+   to non-session level codes gives first -10,887 and later +1,899 — the opposite sign on a larger
+   later sample than the claim's own. Session levels tagged "touched" reverse the same way. There
+   is no first-good-later-bad effect anywhere else in the book.
+5. **M7 confirms nothing.** Its +341 over 42 trades is one trade wide: -275 without the best trade,
+   median -59, 7 of 12 months negative, and its two agreeing halves are +141 and +200, each of
+   which flips without a single trade. M7 is also the same 365 days re-run with different settings,
+   not a later period, so it was never independent evidence.
+6. **It would not survive a real run either.** Nearly six in ten of its winners sit outside the New
+   York window now traded, and 57 % of its winners had already run further against the entry than
+   the current stop allows. Under today's settings it is 42 trades a year worth +341 with a
+   drawdown larger than the profit and a losing-side sample of two.
+7. **What is withdrawn and what stands.** D-106 point 3 is **withdrawn**: the first-break filter is
+   not adopted and must not be built. D-106 point 2 stands only as a direction, not an edge:
+   reversals at a session level that had been broken are mildly positive in both M6 halves
+   (+4,918 / +880) and in 11 of 13 months, but the same day-selection contamination applies, the
+   sample is thin, and it is not validated. D-106 point 5 stands on its own evidence: the proposed
+   keep list is still negative at -22.51 a trade across 1,570 trades and is not adopted.
+8. **The one thing worth taking forward.** "This broken session level will be tested only once
+   today" is the largest clean split in the data, +82.41 against -124.27 a trade with both halves
+   agreeing on each side. It is hindsight as stated. The research question is whether anything
+   observable *before* the first entry predicts it: the overnight range, the daily ATR against its
+   own average, the first hour's range, whether news is scheduled. That is a real lead and it is
+   recorded here rather than acted on.
+9. **The standing rule, now stated once and for all.** A slice found by searching the export is a
+   description of the past. Before any such slice becomes a rule it must pass: a same-structure
+   permutation test that preserves day and level grouping, a search-corrected p-value, a
+   leave-the-best-few-out check, and a mechanism that does not require knowing the rest of the day.
+   D-99 point 4, D-104 point 1 and this entry are three strikes; the next candidate goes through
+   that gate before it reaches the owner, not after.
 
 ---
 
