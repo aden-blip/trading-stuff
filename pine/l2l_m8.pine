@@ -1,6 +1,10 @@
 //@version=6
 // ============================================================================
-//  Level-to-Level (L2L)  |  Milestone 7: the method as described  |  M7 v0.1
+//  Level-to-Level (L2L)  |  Milestone 8: the trade in his shape  |  M8 v0.1
+//
+//  A SEPARATE SCRIPT from M7, not a replacement. Paste this into a NEW Pine editor tab and add
+//  it to the chart alongside M7 so the two can be compared on the same bars. The strategy title
+//  and short title differ, so TradingView keeps them apart. M7 stays in pine/l2l.pine.
 //
 //  docs/PLAN.md describes every module. This file holds modules [A] to [F].
 //  Module map for the finished script:
@@ -48,7 +52,7 @@
 //  PASTE CHECK: the last line of this file is an END OF FILE marker. If your
 //  editor does not show it, the copy was cut short and the script will not compile.
 // ============================================================================
-strategy("L2L M7 - Strategy", shorttitle = "L2L M7", overlay = true,
+strategy("L2L M8 - Strategy", shorttitle = "L2L M8", overlay = true,
      max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500,
      pyramiding = 0, initial_capital = 50000, currency = currency.USD,
      margin_long = 5, margin_short = 5,
@@ -161,7 +165,7 @@ minBarATR    = input.float(0.6, "Rejection bar range, chart ATRs", step = 0.1, m
 strongSkip   = input.bool(false, "Strong rejection enters without follow-through", group = gRev, tooltip = "A wick of 60 % or more with a close in the far third enters at the rejection bar's close instead of waiting one bar.")
 volConfirmIn = input.string("On", "Volume confirmation", options = ["Auto", "On", "Off"], group = gRev, tooltip = "On from M7 v0.1: the method names volume as its only confirmation and twenty backtest sessions never once had it on (D-100). Auto: on for the Index profile (NQ, MNQ, ES, MES), off elsewhere. On or Auto: the follow-through bar's volume must reach the multiple of the 20-bar average. This measures total volume, not buying against selling pressure, which is the form the method actually reads and is still to be built (D-78).")
 volConfirmMult = input.float(1.0, "Volume multiple of the 20-bar average", step = 0.1, minval = 0.1, group = gRev)
-revEntry     = input.string("Close of the follow-through candle", "Reversal entry (test, D-83)", options = ["Close of the follow-through candle", "Limit at the level after the follow-through", "Limit at the level after the rejection candle"], group = gRev, tooltip = "Where the reversal trade gets in. Close of the follow-through candle: the plan's default, a candle or two away from the level. Limit at the level after the follow-through: same setup, but the order rests at the zone edge and fills only if price comes back to it. Limit at the level after the rejection candle: no follow-through needed, the order rests at the zone edge as soon as the rejection candle closes, the quick-return entry. A resting limit is cancelled after the bars below, or when a candle closes back through the zone.")
+revEntry     = input.string("Limit at the level after the follow-through", "Reversal entry (test, D-83)", options = ["Close of the follow-through candle", "Limit at the level after the follow-through", "Limit at the level after the rejection candle"], group = gRev, tooltip = "Where the reversal trade gets in. Close of the follow-through candle: the plan's default, a candle or two away from the level. Limit at the level after the follow-through: same setup, but the order rests at the zone edge and fills only if price comes back to it. Limit at the level after the rejection candle: no follow-through needed, the order rests at the zone edge as soon as the rejection candle closes, the quick-return entry. A resting limit is cancelled after the bars below, or when a candle closes back through the zone.")
 revLimitBars = input.int(6, "Reversal limit rests for, bars", minval = 1, maxval = 100, group = gRev)
 revStop      = input.string("Beyond the rejection wick", "Reversal stop (test, D-83)", options = ["Beyond the zone", "Beyond the rejection wick", "The farther of the two"], group = gRev, tooltip = "Beyond the zone: the far side of the whole zone plus the buffer, the plan's default; wide when several levels stack. Beyond the rejection wick: the rejection candle's extreme plus the buffer. The farther of the two: whichever sits further from the entry.")
 
@@ -182,6 +186,7 @@ maxRiskATR   = input.float(0.35, "Maximum stop distance, daily ATR", step = 0.05
 execAtrLen   = input.int(14, "Chart ATR length", minval = 2, group = gTr)
 stopCapUnit  = input.float(0.03, "Stop no wider than, daily ATR (0 = off)", step = 0.005, minval = 0, group = gTr, inline = "sc", tooltip = "A cap on every stop (D-98). When the stop a setup would use sits farther from the entry than this, it moves in to this distance from the entry; a nearer stop stays where it is. 0 leaves the stops as the setup defines them. The floor in ticks keeps the cap above the noise on a quiet day.")
 stopCapTicks = input.int(8, "floor, ticks", minval = 0, group = gTr, inline = "sc")
+voidOn       = input.bool(true, "Close the trade when a candle closes back through the level", group = gTr, tooltip = "M8 (D-115). The source method has no fixed stop: it closes when the idea is dead. The idea here is that the level holds, so the trade is over on the first candle that closes past the far side of the zone, against the trade. The stop above stays as a backstop for a gap or a slam through. Exits show as \"void\" in the tally, on the chart and in the tester.")
 
 gSc = "Score (0 to 100)"
 wRel     = input.int(40, "Reliability", minval = 0, maxval = 100, group = gSc, inline = "w1")
@@ -189,7 +194,7 @@ wStack   = input.int(20, "Stack", minval = 0, maxval = 100, group = gSc, inline 
 wHist    = input.int(15, "Level history", minval = 0, maxval = 100, group = gSc, inline = "w2")
 wHTF     = input.int(0, "HTF rejection (M6)", minval = 0, maxval = 100, group = gSc, inline = "w2", tooltip = "Points for higher-timeframe candles that rejected the same zone, full points at 4 of 4. 0 until the trade list says the count matters (D-93); the plan's 10 returns then.")
 wBias    = input.int(15, "Bias (M6)", minval = 0, maxval = 100, group = gSc, inline = "w3")
-minScore = input.int(50, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "The score reads out of 100 of what the bot can measure today: raw points over the points reachable with the weights above (82 before M6, 100 after). 50 here means 5/10 on the tag. The plan's 60 returns once M6 fills the score, and the M4 backtest by score bucket sets the final bar.")
+minScore = input.int(0, "Minimum score to signal", minval = 0, maxval = 100, group = gSc, inline = "w3", tooltip = "The score reads out of 100 of what the bot can measure today: raw points over the points reachable with the weights above (82 before M6, 100 after). 50 here means 5/10 on the tag. The plan's 60 returns once M6 fills the score, and the M4 backtest by score bucket sets the final bar.")
 rankGate = input.bool(false, "Rank gate: top half reversals only, bottom half breaks only", group = gSc, tooltip = "Off: every level type may be traded both ways and the ranking only moves the score. On: types in the top half by hold rate take reversals only, the bottom half breaks only, types with too few samples both ways.")
 minSamples = input.int(30, "Samples before the gate applies", minval = 1, group = gSc)
 
@@ -1544,6 +1549,8 @@ var int brkCount = 0
 var int     posDir   = 0
 var float   posEntry = na
 var float   posStop  = na
+var float   posZlo   = na        // the zone the trade was taken at: a close past the far
+var float   posZhi   = na        // side of it, against the trade, voids the idea (M8)
 var float   posTp    = na
 var string  posCode  = ""
 var bool    posForce   = false   // a limit fill crossed its stop on the fill candle
@@ -1553,6 +1560,8 @@ var float   posInit  = na        // the first stop; R = |entry - first stop|
 var int     posStage = 0         // 0 first stop, 1 risk halved, 2 breakeven
 var int     pendDir   = 0        // a market entry placed on the last candle, fills at this open
 var float   pendStop  = na
+var float   pendZlo   = na
+var float   pendZhi   = na
 var float   pendTp    = na
 var string  pendCode  = ""
 var int     pendScore = 0
@@ -1560,6 +1569,7 @@ var int     pendSetup = 1
 var int     pendStack = 1
 var int     pendId    = 0
 var bool    flatPend  = false    // the flatten order is placed, fills at the next open
+var bool    voidPend  = false    // the void order is placed, fills at the next open (M8)
 var int     ordSeq    = 0        // tester order ids
 var int     ptCount  = 0
 var int     ptWin    = 0
@@ -1674,6 +1684,8 @@ if barstate.isconfirmed
         posDir   := pendDir
         posEntry := open
         posStop  := pendStop
+        posZlo   := pendZlo
+        posZhi   := pendZhi
         posTp    := pendTp
         posCode  := pendCode
         posRowS  := math.min(3, math.max(0, math.round(pendScore / 10.0) - 5))
@@ -1695,10 +1707,11 @@ if barstate.isconfirmed
         // The flatten order fills at this candle's open, ahead of any stop or target inside the
         // candle. A stop or target already crossed on a limit's fill candle comes first. An open
         // that gaps through the target or the stop fills at the open, as the tester fills it.
-        bool stopHit  = posForce or (not flatPend and (posDir > 0 ? low <= posStop : high >= posStop))
-        bool tpHit    = posForceTp or (not flatPend and (posDir > 0 ? high >= posTp : low <= posTp))
-        bool tpAtOpen = not posForce and not posForceTp and not flatPend and (posDir > 0 ? open >= posTp : open <= posTp)
-        if flatPend or stopHit or tpHit
+        bool endPend  = flatPend or voidPend
+        bool stopHit  = posForce or (not endPend and (posDir > 0 ? low <= posStop : high >= posStop))
+        bool tpHit    = posForceTp or (not endPend and (posDir > 0 ? high >= posTp : low <= posTp))
+        bool tpAtOpen = not posForce and not posForceTp and not endPend and (posDir > 0 ? open >= posTp : open <= posTp)
+        if endPend or stopHit or tpHit
             string stopWhy = f_stopWord(posStage)
             string why = "flat"
             float  px  = open
@@ -1711,6 +1724,9 @@ if barstate.isconfirmed
             else if flatPend
                 why := "flat"
                 px  := open
+            else if voidPend
+                why := "void"
+                px  := open
             else if tpAtOpen
                 why := "T1"
                 px  := open
@@ -1722,7 +1738,7 @@ if barstate.isconfirmed
                 px  := posTp
             float pts  = (px - posEntry) * posDir
             bool  won  = why == "T1"
-            bool  lost = (why == "stop" or why == "half" or why == "be" or why == "trail") and pts < 0
+            bool  lost = (why == "stop" or why == "half" or why == "be" or why == "trail" or why == "void") and pts < 0
             ptCount += 1
             if why == "half" or why == "be"
                 ptBe += 1
@@ -1772,6 +1788,7 @@ if barstate.isconfirmed
             if stageUp
                 f_mgrMark(posStop, f_stageWord(posStage) + " " + str.tostring(posStop, format.mintick))
     flatPend := false
+    voidPend := false
 
 // The candle before the flatten time (D-10): the flatten order goes in at its close, below,
 // and no new entry is placed on it.
@@ -1896,6 +1913,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
     int    bestZone  = -1
     float  bestEntry = na
     float  bestStop  = na
+    float  bestZlo   = na
+    float  bestZhi   = na
     float  bestTp1   = na
     float  bestTp2   = na
     string bestCode  = ""
@@ -1984,6 +2003,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
         bestStack   := array.get(pStack, fillQ)
         bestEntry   := fPx
         bestStop    := fStop
+        bestZlo     := array.get(pLo, fillQ)
+        bestZhi     := array.get(pHi, fillQ)
         bestTp1     := fTp
         bestTp2     := array.get(pTp2, fillQ)
         bestCode    := array.get(pCode, fillQ)
@@ -2102,6 +2123,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
                                 bestHtf   := htfN
                                 bestEntry := entry
                                 bestStop  := stop
+                                bestZlo   := zlo
+                                bestZhi   := zhi
                                 bestTp1   := tp1
                                 bestTp2   := tp2
                                 bestCode  := array.get(zCode, z)
@@ -2193,6 +2216,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
             posDir   := bestDir
             posEntry := bestEntry
             posStop  := bestStop
+            posZlo   := bestZlo
+            posZhi   := bestZhi
             posTp    := bestTp1
             posCode  := bestCode
             posRowS  := math.min(3, math.max(0, math.round(bestScore / 10.0) - 5))
@@ -2227,6 +2252,8 @@ if barstate.isconfirmed and array.size(zLo) > 0
             pendId    := ordSeq
             pendDir   := bestDir
             pendStop  := bestStop
+            pendZlo   := bestZlo
+            pendZhi   := bestZhi
             pendTp    := bestTp1
             pendCode  := bestCode
             pendScore := bestScore
@@ -2271,6 +2298,18 @@ if barstate.isconfirmed and flatBar
     if posDir != 0
         flatPend := true
     f_cancelAllPending()
+
+// The idea is dead (M8, D-115). The source method keeps no fixed stop; it closes when the reason
+// for the trade has gone. The reason here is that the level holds, so the first candle that closes
+// past the far side of the zone against the trade ends it. The order goes in at that close and
+// fills at the next open, exactly as the flatten does, and the stop above remains as a backstop
+// for a gap or a slam straight through.
+if voidOn and barstate.isconfirmed and not flatBar and posDir != 0 and not flatPend and not voidPend and not na(posZlo) and not na(posZhi)
+    if (posDir > 0 ? close < posZlo : close > posZhi)
+        strategy.close_all(comment = "void")
+        voidPend := true
+        if alertsOn
+            alert('{"symbol":"' + sym + '","data":"close","event":"VOID","level":"' + posCode + '","price":' + str.tostring(close, format.mintick) + '}', alert.freq_once_per_bar_close)
 
 // The newest position's labels follow the right edge (M6 v0.3).
 if posVisOn
@@ -2472,7 +2511,7 @@ f_cell(int r, string k, string v) =>
     table.cell(info, 0, r, k, text_color = color.new(color.white, 20), text_size = size.small, text_halign = text.align_left)
     table.cell(info, 1, r, v, text_color = color.white, text_size = size.small, text_halign = text.align_right)
 if barstate.islast and showInfo
-    f_cell(0, "L2L M7", "v0.1")
+    f_cell(0, "L2L M8", "v0.1")
     f_cell(1, "Profile", profile + (isFut ? " (futures)" : ""))
     f_cell(2, "Timezone", tz)
     f_cell(3, "Daily ATR", str.tostring(unit, format.mintick))
@@ -2554,5 +2593,5 @@ plot(showHist and wRangeOn   ? pwh   : na, "PWH", color = colWeekly, style = plo
 plot(showHist and wRangeOn   ? pwl   : na, "PWL", color = colWeekly, style = plot.style_linebr)
 
 // ============================================================================
-//  END OF FILE  (L2L M7 v0.1). If this line is missing in your editor, the paste was cut off.
+//  END OF FILE  (L2L M8 v0.1). If this line is missing in your editor, the paste was cut off.
 // ============================================================================

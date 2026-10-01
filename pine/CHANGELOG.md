@@ -1,6 +1,10 @@
 # Changelog
 
-## M8 v0.1, 2026-10-01
+## M8 v0.1, 2026-10-01  (`pine/l2l_m8.pine`, a separate script)
+
+M8 is a **new file**, not a replacement. `pine/l2l.pine` stays at M7 v0.1 as the frozen
+baseline, so the two can sit on the same chart and be compared on the same bars. The strategy
+titles differ, so TradingView keeps them apart.
 
 Three changes, all from D-115: make the trade the shape the source method describes.
 
